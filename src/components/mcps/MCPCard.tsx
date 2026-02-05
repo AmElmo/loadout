@@ -1,8 +1,9 @@
-import { ChevronDown, ChevronUp, Terminal, Globe } from "lucide-react";
+import { ChevronDown, ChevronUp } from "lucide-react";
 import { useState } from "react";
 import type { MCPItem } from "@/types";
 import { cn } from "@/lib/utils";
 import { HealthBadge } from "./HealthBadge";
+import { MCPIcon } from "./MCPIcon";
 import { ToolBadges } from "./ToolBadge";
 
 interface MCPCardProps {
@@ -32,18 +33,7 @@ export function MCPCard({ mcp }: MCPCardProps) {
         onClick={() => setExpanded(!expanded)}
         className="flex w-full items-center gap-3 p-4 text-left hover:bg-muted/50"
       >
-        <div
-          className={cn(
-            "flex h-10 w-10 shrink-0 items-center justify-center rounded-lg",
-            isHttp ? "bg-blue-500/10" : "bg-primary/10"
-          )}
-        >
-          {isHttp ? (
-            <Globe className="h-5 w-5 text-blue-500" />
-          ) : (
-            <Terminal className="h-5 w-5 text-primary" />
-          )}
-        </div>
+        <MCPIcon name={mcp.name} mcpType={mcp.mcpType} url={mcp.url} />
 
         <div className="min-w-0 flex-1">
           <div className="flex items-center gap-2">
