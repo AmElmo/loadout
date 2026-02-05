@@ -10,11 +10,18 @@ interface MCPIconProps {
 }
 
 /**
- * Extract domain from a URL for favicon fetching
+ * Extract root domain from a URL for favicon fetching
+ * e.g., "https://mcp.linear.app/mcp" -> "linear.app"
  */
-function extractDomain(url: string): string | null {
+function extractRootDomain(url: string): string | null {
   try {
     const parsed = new URL(url);
+    const parts = parsed.hostname.split(".");
+    // Get last two parts (e.g., "linear.app" from "mcp.linear.app")
+    // Handle cases like "example.co.uk" by taking last 2-3 parts
+    if (parts.length >= 2) {
+      return parts.slice(-2).join(".");
+    }
     return parsed.hostname;
   } catch {
     return null;
@@ -57,7 +64,7 @@ export function MCPIcon({ name, mcpType, url, className }: MCPIconProps) {
   const [faviconError, setFaviconError] = useState(false);
 
   const isHttp = mcpType === "http";
-  const domain = url ? extractDomain(url) : null;
+  const domain = url ? extractRootDomain(url) : null;
   const canShowFavicon = isHttp && domain && !faviconError;
 
   // For HTTP with valid domain: try favicon
