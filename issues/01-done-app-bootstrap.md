@@ -1,7 +1,7 @@
 # Issue 1: App Bootstrap + Workspace Selection
 
 **Phase:** 1 (Read-Only MVP)
-**Status:** Pending
+**Status:** Implemented
 
 ---
 
@@ -11,16 +11,21 @@ Set up the Tauri + React foundation with workspace selection. Since Tauri apps h
 
 ## Acceptance Criteria
 
-- [ ] Tauri 2.x + React 18 + TypeScript + Vite project initialized
-- [ ] shadcn/ui + Tailwind CSS configured
-- [ ] Zustand store + TanStack Query scaffolding
-- [ ] Navigation sidebar with tabs: **MCPs** (default), **Skills**, **Config**
-- [ ] "Select Workspace" folder picker (Tauri dialog plugin)
-- [ ] Repo root detection (walk up to find `.git`)
-- [ ] Recent workspaces list (persist last 5)
-- [ ] Current workspace indicator in header
-- [ ] Empty states for each tab
-- [ ] Tauri FS permissions configured for `~/.claude/`, `~/.codex/`, `~/.gemini/`, `~/.agents/`
+- [x] Tauri 2.x + React 18 + TypeScript + Vite project initialized
+- [x] shadcn/ui + Tailwind CSS configured
+- [x] Zustand store + TanStack Query scaffolding
+- [x] Navigation sidebar with tabs: **MCPs** (default), **Skills**, **Config**
+- [x] "Select Workspace" folder picker (Tauri dialog plugin)
+- [x] Repo root detection (walk up to find `.git`)
+- [x] Recent workspaces list (persist last 5)
+- [x] Current workspace indicator in header
+- [x] Empty states for each tab
+- [x] Tauri FS permissions configured for `~/.claude/`, `~/.codex/`, `~/.gemini/`, `~/.agents/`
+
+## Prerequisites for Testing
+
+- **Rust toolchain**: Requires `rustup` and `cargo` to be installed
+  - Install via: `curl --proto '=https' --tlsv1.2 -sSf https://sh.rustup.rs | sh`
 
 ## Technical Details
 
