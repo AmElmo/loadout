@@ -1,7 +1,7 @@
 # Issue 2: MCP Registry
 
 **Phase:** 1 (Read-Only MVP)
-**Status:** Pending
+**Status:** Done
 
 ---
 
@@ -11,18 +11,18 @@ Scan and display all MCP servers configured across Claude Code, Codex CLI, and G
 
 ## Acceptance Criteria
 
-- [ ] Rust backend parses MCPs from all three tools:
+- [x] Rust backend parses MCPs from all three tools:
   - Claude: `~/.claude.json` (user) and `$PROJECT_ROOT/.mcp.json` (project)
   - Codex: `~/.codex/config.toml` → `[mcp_servers.*]` (TOML)
   - Gemini: `~/.gemini/settings.json` → `mcpServers` (JSON)
 
 > **Project root**: Use repo root (`.git` parent) when found, otherwise use selected folder.
-- [ ] Tauri command `scan_mcps()` returns unified list
-- [ ] MCP list displays: name, source tool badge, command, args, scope (user/project)
-- [ ] Health indicator: ✓ healthy / ? unknown (default) / ✗ failed
-- [ ] Click MCP to see full config details
-- [ ] "In Claude, Codex, Gemini" badges showing where each MCP is configured
-- [ ] Empty state when no MCPs configured
+- [x] Tauri command `scan_mcps()` returns unified list
+- [x] MCP list displays: name, source tool badge, command, args, scope (user/project)
+- [x] Health indicator: ✓ healthy / ? unknown (default) / ✗ failed
+- [x] Click MCP to see full config details
+- [x] "In Claude, Codex, Gemini" badges showing where each MCP is configured
+- [x] Empty state when no MCPs configured
 
 ## Technical Details
 

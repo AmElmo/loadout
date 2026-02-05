@@ -2,7 +2,12 @@ use serde::{Deserialize, Serialize};
 use std::path::PathBuf;
 use thiserror::Error;
 
+mod commands;
+mod parsers;
+mod scanners;
 mod workspace;
+
+use commands::scan_mcps;
 
 #[derive(Debug, Error)]
 pub enum LoadoutError {
@@ -84,6 +89,7 @@ pub fn run() {
             find_repo_root,
             get_workspace_info,
             get_home_dir,
+            scan_mcps,
         ])
         .run(tauri::generate_context!())
         .expect("error while running tauri application");

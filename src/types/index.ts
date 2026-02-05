@@ -14,7 +14,11 @@ export type LoadoutItemType =
 
 export type SourceTool = "claude" | "codex" | "gemini";
 
-export type Scope = "user" | "repo" | "admin" | "system";
+export type Scope = "user" | "repo" | "admin" | "system" | "project";
+
+export type HealthStatus = "healthy" | "unknown" | "failed";
+
+export type MCPType = "stdio" | "http";
 
 export type Maturity = "stable" | "experimental" | "deprecated";
 
@@ -56,7 +60,8 @@ export interface WorkspaceInfo {
 }
 
 /**
- * MCP Server configuration (normalized)
+ * MCP Server configuration (normalized) - legacy type
+ * @deprecated Use MCPItem instead
  */
 export interface MCPServer {
   name: string;
@@ -66,6 +71,35 @@ export interface MCPServer {
   sourceTool: SourceTool;
   scope: Scope;
   path: string;
+}
+
+/**
+ * MCP item returned from the scanner
+ * Matches the Rust MCPItem struct
+ */
+export interface MCPItem {
+  /** Unique identifier */
+  id: string;
+  /** Server name */
+  name: string;
+  /** MCP type: stdio or http */
+  mcpType: MCPType;
+  /** Command to run (for stdio type) */
+  command: string | null;
+  /** Command arguments (for stdio type) */
+  args: string[];
+  /** URL endpoint (for http type) */
+  url: string | null;
+  /** Environment variables (values masked) */
+  env: Record<string, string>;
+  /** Which tools this MCP is configured in */
+  configuredIn: SourceTool[];
+  /** Scope (user or project level) */
+  scope: Scope;
+  /** Path to the config file */
+  path: string;
+  /** Health status (default: unknown) */
+  health: HealthStatus;
 }
 
 /**
