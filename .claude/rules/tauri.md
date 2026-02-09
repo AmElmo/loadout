@@ -15,6 +15,12 @@
 - Use `walkdir` crate for recursive directory scanning
 - Generate unique IDs by hashing item names with type prefix (e.g., `mcp_`, `skill_`)
 
+## File System Access
+
+- **`std::fs` vs Tauri FS plugin**: Tauri's `fs:scope` permissions only apply to the `@tauri-apps/plugin-fs` JavaScript API. Native Rust `std::fs` calls bypass these permissions and can access the entire file system — use this for broad discovery features (workspace scanning, config detection)
+- When using `walkdir`, prune common dev directories (`node_modules`, `.git`, `target`, `dist`, `build`, `.next`) for performance
+- Use `to_string_lossy().to_string()` for UI-friendly path display
+
 ## Rust Commands
 
 - Use `#[tauri::command]` to expose functions to frontend
