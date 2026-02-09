@@ -3,6 +3,7 @@
 use crate::converters::{
     to_claude_json_preview, to_codex_toml_preview, to_gemini_json_preview, MCPServerInput,
 };
+use crate::parsers::{parse_claude_config, parse_codex_config, parse_gemini_config};
 use crate::writers::{mcp_writer, skill_writer};
 use serde::{Deserialize, Serialize};
 use std::collections::HashMap;
@@ -27,6 +28,15 @@ pub struct AddMCPRequest {
 pub struct InstallSkillRequest {
     pub name: String,
     pub content: String,
+    pub target_tools: Vec<String>,
+}
+
+/// Request to sync an existing MCP to other tools
+#[derive(Debug, Clone, Deserialize)]
+#[serde(rename_all = "camelCase")]
+pub struct SyncMCPRequest {
+    pub name: String,
+    pub source_tool: String,
     pub target_tools: Vec<String>,
 }
 
@@ -130,6 +140,106 @@ pub fn add_mcp_to_tools(request: AddMCPRequest) -> Result<WriteResult, String> {
     }
 
     let mcp = request.to_server_input();
+    let mut modified_files = Vec::new();
+    let mut errors = Vec::new();
+
+    for tool in &request.target_tools {
+        let path = match mcp_config_path(tool) {
+            Ok(p) => p,
+            Err(e) => {
+                errors.push(e);
+                continue;
+            }
+        };
+
+        let result = match tool.as_str() {
+            "claude" => mcp_writer::write_mcp_to_claude(&request.name, &mcp, &path),
+            "codex" => mcp_writer::write_mcp_to_codex(&request.name, &mcp, &path),
+            "gemini" => mcp_writer::write_mcp_to_gemini(&request.name, &mcp, &path),
+            _ => Err(format!("Unknown tool: {}", tool)),
+        };
+
+        match result {
+            Ok(()) => modified_files.push(path.to_string_lossy().to_string()),
+            Err(e) => errors.push(format!("{}: {}", tool, e)),
+        }
+    }
+
+    Ok(WriteResult {
+        success: errors.is_empty(),
+        modified_files,
+        errors,
+    })
+}
+
+/// Read the real (unmasked) MCP config from a source tool
+fn read_mcp_from_source(name: &str, source_tool: &str) -> Result<MCPServerInput, String> {
+    let home = dirs::home_dir().ok_or("Could not determine home directory")?;
+
+    match source_tool {
+        "claude" => {
+            let path = home.join(".claude.json");
+            let config = parse_claude_config(&path)?;
+            let server = config
+                .mcp_servers
+                .get(name)
+                .ok_or(format!("MCP '{}' not found in Claude config", name))?;
+            Ok(MCPServerInput {
+                mcp_type: server.mcp_type.clone(),
+                command: server.command.clone(),
+                args: server.args.clone(),
+                url: server.url.clone(),
+                env: server.env.clone(),
+            })
+        }
+        "codex" => {
+            let path = home.join(".codex").join("config.toml");
+            let config = parse_codex_config(&path)?;
+            let server = config
+                .mcp_servers
+                .get(name)
+                .ok_or(format!("MCP '{}' not found in Codex config", name))?;
+            Ok(MCPServerInput {
+                mcp_type: "stdio".to_string(),
+                command: Some(server.command.clone()),
+                args: server.args.clone(),
+                url: None,
+                env: server.env.clone(),
+            })
+        }
+        "gemini" => {
+            let path = home.join(".gemini").join("settings.json");
+            let config = parse_gemini_config(&path)?;
+            let server = config
+                .mcp_servers
+                .get(name)
+                .ok_or(format!("MCP '{}' not found in Gemini config", name))?;
+            Ok(MCPServerInput {
+                mcp_type: server.mcp_type.clone(),
+                command: server.command.clone(),
+                args: server.args.clone(),
+                url: server.url.clone(),
+                env: server.env.clone(),
+            })
+        }
+        _ => Err(format!("Unknown source tool: {}", source_tool)),
+    }
+}
+
+/// Sync an existing MCP from one tool to other tools (reads real env values from source)
+#[tauri::command]
+pub fn sync_mcp_to_tools(request: SyncMCPRequest) -> Result<WriteResult, String> {
+    if request.name.trim().is_empty() {
+        return Err("MCP name is required".to_string());
+    }
+
+    if request.target_tools.is_empty() {
+        return Err("At least one target tool must be selected".to_string());
+    }
+
+    // Read the real config from the source tool (unmasked env values)
+    let mcp = read_mcp_from_source(&request.name, &request.source_tool)?;
+
     let mut modified_files = Vec::new();
     let mut errors = Vec::new();
 

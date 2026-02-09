@@ -1,10 +1,15 @@
-import { ChevronDown, ChevronUp } from "lucide-react";
+import { ChevronDown, ChevronUp, ArrowRightLeft } from "lucide-react";
 import { useState } from "react";
-import type { MCPItem } from "@/types";
+import type { MCPItem, SourceTool } from "@/types";
 import { cn } from "@/lib/utils";
+import { syncMCPToTools } from "@/lib/api/sync";
+import { SyncDialog } from "@/components/sync";
+import { Button } from "@/components/ui/button";
 import { HealthBadge } from "./HealthBadge";
 import { MCPIcon } from "./MCPIcon";
 import { ToolBadges } from "./ToolBadge";
+
+const ALL_TOOLS: SourceTool[] = ["claude", "codex", "gemini"];
 
 interface MCPCardProps {
   mcp: MCPItem;
@@ -12,6 +17,9 @@ interface MCPCardProps {
 
 export function MCPCard({ mcp }: MCPCardProps) {
   const [expanded, setExpanded] = useState(false);
+  const [showSync, setShowSync] = useState(false);
+
+  const missingTools = ALL_TOOLS.filter((t) => !mcp.configuredIn.includes(t));
 
   const envKeys = Object.keys(mcp.env);
   const hasEnv = envKeys.length > 0;
@@ -129,7 +137,41 @@ export function MCPCard({ mcp }: MCPCardProps) {
               </dd>
             </div>
           </dl>
+
+          {missingTools.length > 0 && (
+            <div className="mt-3 border-t border-border pt-3">
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={(e) => {
+                  e.stopPropagation();
+                  setShowSync(true);
+                }}
+              >
+                <ArrowRightLeft className="mr-2 h-3.5 w-3.5" />
+                Sync to {missingTools.length} Other Tool
+                {missingTools.length !== 1 ? "s" : ""}
+              </Button>
+            </div>
+          )}
         </div>
+      )}
+
+      {showSync && (
+        <SyncDialog
+          type="mcp"
+          name={mcp.name}
+          existingTools={mcp.configuredIn}
+          onSync={(targetTools) =>
+            syncMCPToTools({
+              name: mcp.name,
+              sourceTool: mcp.configuredIn[0],
+              targetTools,
+            })
+          }
+          onClose={() => setShowSync(false)}
+          queryKey="mcps"
+        />
       )}
     </div>
   );

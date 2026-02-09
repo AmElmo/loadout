@@ -249,6 +249,15 @@ export interface AddMCPRequest {
 }
 
 /**
+ * Request to sync an existing MCP from one tool to others
+ */
+export interface SyncMCPRequest {
+  name: string;
+  sourceTool: SourceTool;
+  targetTools: SourceTool[];
+}
+
+/**
  * Request to install a skill to one or more tools
  */
 export interface InstallSkillRequest {
