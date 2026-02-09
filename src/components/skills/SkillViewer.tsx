@@ -1,9 +1,13 @@
-import { X, Copy, Check, FolderOpen } from "lucide-react";
+import { X, Copy, Check, FolderOpen, Share2 } from "lucide-react";
 import { useState } from "react";
-import type { SkillItem } from "@/types";
+import type { SkillItem, SourceTool } from "@/types";
+import { installSkillToTools } from "@/lib/api/sync";
 import { ToolBadge } from "@/components/mcps/ToolBadge";
+import { SyncDialog } from "@/components/sync";
 import { MaturityBadge } from "./MaturityBadge";
 import { Button } from "@/components/ui/button";
+
+const ALL_TOOLS: SourceTool[] = ["claude", "codex", "gemini"];
 
 interface SkillViewerProps {
   skill: SkillItem;
@@ -12,6 +16,9 @@ interface SkillViewerProps {
 
 export function SkillViewer({ skill, onClose }: SkillViewerProps) {
   const [copied, setCopied] = useState(false);
+  const [showSync, setShowSync] = useState(false);
+
+  const missingTools = ALL_TOOLS.filter((t) => t !== skill.sourceTool);
 
   const handleCopy = async () => {
     await navigator.clipboard.writeText(skill.content);
@@ -69,13 +76,42 @@ export function SkillViewer({ skill, onClose }: SkillViewerProps) {
         </div>
 
         {/* Footer */}
-        <div className="flex items-center gap-2 border-t border-border px-4 py-2 text-xs text-muted-foreground">
-          <FolderOpen className="h-3.5 w-3.5 shrink-0" />
-          <span className="truncate font-mono" title={skill.path}>
-            {skill.path}
-          </span>
+        <div className="flex items-center justify-between border-t border-border px-4 py-2">
+          <div className="flex items-center gap-2 text-xs text-muted-foreground">
+            <FolderOpen className="h-3.5 w-3.5 shrink-0" />
+            <span className="truncate font-mono" title={skill.path}>
+              {skill.path}
+            </span>
+          </div>
+          {missingTools.length > 0 && (
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={() => setShowSync(true)}
+            >
+              <Share2 className="mr-1.5 h-3.5 w-3.5" />
+              Sync to Other Tools
+            </Button>
+          )}
         </div>
       </div>
+
+      {showSync && (
+        <SyncDialog
+          type="skill"
+          name={skill.name}
+          existingTools={[skill.sourceTool]}
+          onSync={(targetTools) =>
+            installSkillToTools({
+              name: skill.name,
+              content: skill.content,
+              targetTools,
+            })
+          }
+          onClose={() => setShowSync(false)}
+          queryKey="skills"
+        />
+      )}
     </div>
   );
 }

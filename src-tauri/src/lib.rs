@@ -3,11 +3,16 @@ use std::path::PathBuf;
 use thiserror::Error;
 
 mod commands;
+mod converters;
 mod parsers;
 mod scanners;
 mod workspace;
+mod writers;
 
-use commands::{scan_hooks, scan_mcps, scan_rules, scan_skills};
+use commands::{
+    add_mcp_to_tools, install_skill_to_tools, preview_mcp_configs, scan_hooks, scan_mcps,
+    scan_rules, scan_skills, sync_mcp_to_tools,
+};
 use scanners::workspaces::{discover_workspaces, DiscoveryResult};
 
 #[derive(Debug, Error)]
@@ -101,6 +106,10 @@ pub fn run() {
             scan_rules,
             scan_hooks,
             discover_ai_workspaces,
+            add_mcp_to_tools,
+            preview_mcp_configs,
+            install_skill_to_tools,
+            sync_mcp_to_tools,
         ])
         .run(tauri::generate_context!())
         .expect("error while running tauri application");

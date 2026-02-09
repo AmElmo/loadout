@@ -1,12 +1,15 @@
-import { RefreshCw, AlertCircle, FolderOpen } from "lucide-react";
+import { useState } from "react";
+import { RefreshCw, AlertCircle, FolderOpen, Plus } from "lucide-react";
 import { useQuery } from "@tanstack/react-query";
 import { useWorkspaceStore } from "@/stores/workspaceStore";
 import { scanSkills } from "@/lib/api/skills";
 import { SkillList, ConflictWarning } from "@/components/skills";
+import { InstallSkillDialog } from "@/components/sync";
 import { Button } from "@/components/ui/button";
 
 export function Skills() {
   const { current } = useWorkspaceStore();
+  const [showInstallDialog, setShowInstallDialog] = useState(false);
 
   const {
     data: result,
@@ -28,17 +31,23 @@ export function Skills() {
             View skills configured across Claude Code, Codex CLI, and Gemini CLI
           </p>
         </div>
-        <Button
-          variant="outline"
-          size="sm"
-          onClick={() => refetch()}
-          disabled={isLoading || isRefetching}
-        >
-          <RefreshCw
-            className={`mr-2 h-4 w-4 ${isRefetching ? "animate-spin" : ""}`}
-          />
-          Refresh
-        </Button>
+        <div className="flex gap-2">
+          <Button size="sm" onClick={() => setShowInstallDialog(true)}>
+            <Plus className="mr-2 h-4 w-4" />
+            Install Skill
+          </Button>
+          <Button
+            variant="outline"
+            size="sm"
+            onClick={() => refetch()}
+            disabled={isLoading || isRefetching}
+          >
+            <RefreshCw
+              className={`mr-2 h-4 w-4 ${isRefetching ? "animate-spin" : ""}`}
+            />
+            Refresh
+          </Button>
+        </div>
       </div>
 
       {!current && (
@@ -88,6 +97,9 @@ export function Skills() {
             </span>
           )}
         </p>
+      )}
+      {showInstallDialog && (
+        <InstallSkillDialog onClose={() => setShowInstallDialog(false)} />
       )}
     </div>
   );

@@ -1,7 +1,7 @@
 # Issue 5: Sync MCP + Skill to All Tools
 
 **Phase:** 2 (Write Capabilities)
-**Status:** Pending
+**Status:** Done
 
 ---
 

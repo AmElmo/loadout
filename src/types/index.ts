@@ -232,3 +232,61 @@ export interface DiscoveryResult {
   scanDepth: number;
   scanDurationMs: number;
 }
+
+// === Sync / Write Types ===
+
+/**
+ * Request to add an MCP to one or more tools
+ */
+export interface AddMCPRequest {
+  name: string;
+  mcpType: MCPType;
+  command: string | null;
+  args: string[];
+  url: string | null;
+  env: Record<string, string>;
+  targetTools: SourceTool[];
+}
+
+/**
+ * Request to sync an existing MCP from one tool to others
+ */
+export interface SyncMCPRequest {
+  name: string;
+  sourceTool: SourceTool;
+  targetTools: SourceTool[];
+}
+
+/**
+ * Request to install a skill to one or more tools
+ */
+export interface InstallSkillRequest {
+  name: string;
+  content: string;
+  targetTools: SourceTool[];
+}
+
+/**
+ * Result of a write operation
+ */
+export interface WriteResult {
+  success: boolean;
+  modifiedFiles: string[];
+  errors: string[];
+}
+
+/**
+ * Preview of a generated config for a single tool
+ */
+export interface PreviewConfig {
+  tool: SourceTool;
+  format: "json" | "toml";
+  content: string;
+}
+
+/**
+ * Result of preview generation
+ */
+export interface PreviewResult {
+  configs: PreviewConfig[];
+}
