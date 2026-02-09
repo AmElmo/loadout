@@ -7,7 +7,7 @@ mod parsers;
 mod scanners;
 mod workspace;
 
-use commands::scan_mcps;
+use commands::{scan_mcps, scan_skills};
 
 #[derive(Debug, Error)]
 pub enum LoadoutError {
@@ -90,6 +90,7 @@ pub fn run() {
             get_workspace_info,
             get_home_dir,
             scan_mcps,
+            scan_skills,
         ])
         .run(tauri::generate_context!())
         .expect("error while running tauri application");

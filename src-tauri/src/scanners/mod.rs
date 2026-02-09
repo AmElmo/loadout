@@ -1,3 +1,2 @@
 pub mod mcps;
-
-pub use mcps::*;
+pub mod skills;

@@ -1,4 +1,4 @@
-import { Server, RefreshCw, AlertCircle, FolderOpen } from "lucide-react";
+import { RefreshCw, AlertCircle, FolderOpen } from "lucide-react";
 import { useQuery } from "@tanstack/react-query";
 import { useWorkspaceStore } from "@/stores/workspaceStore";
 import { scanMCPs } from "@/lib/api/mcps";

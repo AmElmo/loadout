@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { Globe, Terminal } from "lucide-react";
+import { Globe } from "lucide-react";
 import { cn } from "@/lib/utils";
 
 interface MCPIconProps {
