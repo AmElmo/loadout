@@ -103,14 +103,55 @@ export interface MCPItem {
 }
 
 /**
- * Skill configuration (normalized)
+ * Skill scope (user or project level)
  */
-export interface Skill {
+export type SkillScope = "user" | "project";
+
+/**
+ * Skill item returned from the scanner
+ * Matches the Rust SkillItem struct
+ */
+export interface SkillItem {
+  /** Unique identifier */
+  id: string;
+  /** Skill name from frontmatter */
   name: string;
+  /** Skill description from frontmatter */
   description: string;
+  /** Full markdown content */
   content: string;
+  /** Which tool this skill is from */
   sourceTool: SourceTool;
-  scope: Scope;
-  path: string;
+  /** Scope level (user or project) */
+  scope: SkillScope;
+  /** Feature maturity (stable or experimental) */
   maturity: Maturity;
+  /** Absolute path to the SKILL.md file */
+  path: string;
+  /** True if this skill is shadowed by a higher-precedence skill */
+  isShadowed: boolean;
+  /** Path of the skill that shadows this one */
+  shadowedBy: string | null;
+}
+
+/**
+ * Conflict information when same skill name has different content
+ */
+export interface SkillConflict {
+  /** Skill name that has conflicts */
+  name: string;
+  /** Paths of skills with different content */
+  conflictingPaths: string[];
+  /** Tools that have this conflict */
+  tools: SourceTool[];
+}
+
+/**
+ * Result of scanning all skills
+ */
+export interface SkillScanResult {
+  /** All discovered skills */
+  skills: SkillItem[];
+  /** Detected conflicts (same name, different content) */
+  conflicts: SkillConflict[];
 }
