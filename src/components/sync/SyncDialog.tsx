@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { X, Loader2, ArrowRightLeft } from "lucide-react";
+import { X, Loader2, Share2 } from "lucide-react";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import type { SourceTool } from "@/types";
 import { Button } from "@/components/ui/button";
@@ -63,7 +63,7 @@ export function SyncDialog({
         {/* Header */}
         <div className="flex items-center justify-between border-b border-border px-4 py-3">
           <div className="flex items-center gap-2">
-            <ArrowRightLeft className="h-4 w-4" />
+            <Share2 className="h-4 w-4" />
             <h2 className="text-lg font-semibold">
               Sync {type === "mcp" ? "MCP" : "Skill"} to Other Tools
             </h2>

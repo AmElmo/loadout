@@ -1,4 +1,4 @@
-import { ChevronDown, ChevronUp, ArrowRightLeft } from "lucide-react";
+import { ChevronDown, ChevronUp, Share2 } from "lucide-react";
 import { useState } from "react";
 import type { MCPItem, SourceTool } from "@/types";
 import { cn } from "@/lib/utils";
@@ -148,7 +148,7 @@ export function MCPCard({ mcp }: MCPCardProps) {
                   setShowSync(true);
                 }}
               >
-                <ArrowRightLeft className="mr-2 h-3.5 w-3.5" />
+                <Share2 className="mr-2 h-3.5 w-3.5" />
                 Sync to {missingTools.length} Other Tool
                 {missingTools.length !== 1 ? "s" : ""}
               </Button>

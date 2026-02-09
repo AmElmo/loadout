@@ -1,4 +1,4 @@
-import { X, Copy, Check, FolderOpen, ArrowRightLeft } from "lucide-react";
+import { X, Copy, Check, FolderOpen, Share2 } from "lucide-react";
 import { useState } from "react";
 import type { SkillItem, SourceTool } from "@/types";
 import { installSkillToTools } from "@/lib/api/sync";
@@ -89,7 +89,7 @@ export function SkillViewer({ skill, onClose }: SkillViewerProps) {
               size="sm"
               onClick={() => setShowSync(true)}
             >
-              <ArrowRightLeft className="mr-1.5 h-3.5 w-3.5" />
+              <Share2 className="mr-1.5 h-3.5 w-3.5" />
               Sync to Other Tools
             </Button>
           )}
