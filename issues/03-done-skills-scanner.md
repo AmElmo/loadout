@@ -1,7 +1,7 @@
 # Issue 3: Skills Scanner
 
 **Phase:** 1 (Read-Only MVP)
-**Status:** Pending
+**Status:** Done
 
 ---
 

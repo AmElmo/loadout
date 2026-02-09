@@ -155,3 +155,80 @@ export interface SkillScanResult {
   /** Detected conflicts (same name, different content) */
   conflicts: SkillConflict[];
 }
+
+// === Rules & Hooks Types ===
+
+export type PromptScope = "global" | "project";
+
+/**
+ * A discovered system prompt file
+ */
+export interface PromptFile {
+  name: string;
+  sourceTool: SourceTool;
+  scope: PromptScope;
+  path: string;
+  exists: boolean;
+  content: string;
+  size: number;
+}
+
+export interface PromptScanResult {
+  prompts: PromptFile[];
+}
+
+export type HookSourceTool = "claude" | "gemini";
+
+/**
+ * A normalized hook configuration item
+ */
+export interface HookItem {
+  sourceTool: HookSourceTool;
+  event: string;
+  matcher: string | null;
+  command: string;
+  actionType: string;
+}
+
+export interface HookScanResult {
+  hooks: HookItem[];
+  geminiHooksEnabled: boolean;
+}
+
+// === Workspace Discovery Types ===
+
+/**
+ * Signals found in a discovered workspace
+ */
+export interface WorkspaceSignals {
+  hasClaudeConfig: boolean;
+  hasCodexConfig: boolean;
+  hasGeminiConfig: boolean;
+  hasMcpJson: boolean;
+  hasClaudePrompt: boolean;
+  hasCodexPrompt: boolean;
+  hasGeminiPrompt: boolean;
+  hasClaudeSkills: boolean;
+  hasCodexSkills: boolean;
+  hasGeminiSkills: boolean;
+}
+
+/**
+ * A workspace discovered by the scanner
+ */
+export interface DiscoveredWorkspace {
+  path: string;
+  name: string;
+  isGitRepo: boolean;
+  signals: WorkspaceSignals;
+  toolCount: number;
+}
+
+/**
+ * Result of workspace discovery scan
+ */
+export interface DiscoveryResult {
+  workspaces: DiscoveredWorkspace[];
+  scanDepth: number;
+  scanDurationMs: number;
+}

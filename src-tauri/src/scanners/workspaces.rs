@@ -1,0 +1,313 @@
+//! Workspace discovery scanner
+//!
+//! Scans the user's home directory for projects that have AI CLI config files
+//! (.claude/, .codex/, .gemini/, .mcp.json, CLAUDE.md, AGENTS.md, GEMINI.md).
+//! Uses walkdir with pruning to stay fast (~200ms for depth 4).
+
+use serde::{Deserialize, Serialize};
+use std::collections::{HashMap, HashSet};
+use std::path::PathBuf;
+use walkdir::WalkDir;
+
+/// What AI CLI artifacts were found in a workspace
+#[derive(Debug, Clone, Serialize, Deserialize, Default)]
+#[serde(rename_all = "camelCase")]
+pub struct WorkspaceSignals {
+    pub has_claude_config: bool,
+    pub has_codex_config: bool,
+    pub has_gemini_config: bool,
+    pub has_mcp_json: bool,
+    pub has_claude_prompt: bool,
+    pub has_codex_prompt: bool,
+    pub has_gemini_prompt: bool,
+    pub has_claude_skills: bool,
+    pub has_codex_skills: bool,
+    pub has_gemini_skills: bool,
+}
+
+impl WorkspaceSignals {
+    fn tool_count(&self) -> u8 {
+        let mut count = 0;
+        if self.has_claude_config || self.has_claude_prompt || self.has_claude_skills {
+            count += 1;
+        }
+        if self.has_codex_config || self.has_codex_prompt || self.has_codex_skills {
+            count += 1;
+        }
+        if self.has_gemini_config || self.has_gemini_prompt || self.has_gemini_skills {
+            count += 1;
+        }
+        count
+    }
+}
+
+/// A discovered workspace
+#[derive(Debug, Clone, Serialize, Deserialize)]
+#[serde(rename_all = "camelCase")]
+pub struct DiscoveredWorkspace {
+    /// Absolute path to the workspace root
+    pub path: String,
+    /// Short name (last path component)
+    pub name: String,
+    /// Whether this is a git repo
+    pub is_git_repo: bool,
+    /// What signals were found
+    pub signals: WorkspaceSignals,
+    /// How many distinct tools have configs here
+    pub tool_count: u8,
+}
+
+/// Result of workspace discovery
+#[derive(Debug, Clone, Serialize, Deserialize)]
+#[serde(rename_all = "camelCase")]
+pub struct DiscoveryResult {
+    pub workspaces: Vec<DiscoveredWorkspace>,
+    pub scan_depth: u32,
+    pub scan_duration_ms: u64,
+}
+
+/// Directories to prune during scanning (saves enormous time)
+const PRUNE_DIRS: &[&str] = &[
+    "node_modules",
+    ".git",
+    "Library",
+    ".Trash",
+    "Applications",
+    "target",
+    "build",
+    "dist",
+    ".cache",
+    ".npm",
+    ".cargo",
+    ".rustup",
+    ".local",
+    ".nvm",
+    ".pyenv",
+    ".rbenv",
+    ".pnpm-store",
+    "venv",
+    ".venv",
+    "__pycache__",
+    ".tox",
+    "Pictures",
+    "Music",
+    "Movies",
+    "Downloads",
+];
+
+/// Signal files/dirs we look for to identify AI CLI workspaces
+const SIGNAL_NAMES: &[&str] = &[
+    ".claude",
+    ".codex",
+    ".gemini",
+    ".mcp.json",
+    "CLAUDE.md",
+    "AGENTS.md",
+    "GEMINI.md",
+    ".agents",
+];
+
+/// Scan the home directory for workspaces with AI CLI configs
+pub fn discover_workspaces(max_depth: u32) -> Result<DiscoveryResult, String> {
+    let home_dir = dirs::home_dir().ok_or("Could not determine home directory")?;
+    let start = std::time::Instant::now();
+
+    let prune_set: HashSet<&str> = PRUNE_DIRS.iter().copied().collect();
+    let signal_set: HashSet<&str> = SIGNAL_NAMES.iter().copied().collect();
+
+    // Map: workspace_root -> signals found
+    let mut workspace_map: HashMap<PathBuf, WorkspaceSignals> = HashMap::new();
+
+    let walker = WalkDir::new(&home_dir)
+        .max_depth(max_depth as usize)
+        .into_iter()
+        .filter_entry(|entry| {
+            let name = entry.file_name().to_str().unwrap_or("");
+            // Don't descend into pruned dirs (but still yield the entry itself for signal checking)
+            if entry.depth() > 0 && prune_set.contains(name) {
+                return false;
+            }
+            true
+        });
+
+    for entry in walker.filter_map(|e| e.ok()) {
+        let name = entry.file_name().to_str().unwrap_or("");
+
+        // Skip home-level dirs themselves (.claude, .codex, .gemini at ~/ are user-level, not workspaces)
+        if entry.depth() <= 1 {
+            continue;
+        }
+
+        if !signal_set.contains(name) {
+            continue;
+        }
+
+        // The workspace root is the parent of this signal file/dir
+        let signal_path = entry.path();
+        let workspace_root = match signal_path.parent() {
+            Some(p) => p.to_path_buf(),
+            None => continue,
+        };
+
+        // Skip if the workspace root IS the home directory
+        if workspace_root == home_dir {
+            continue;
+        }
+
+        let signals = workspace_map.entry(workspace_root).or_default();
+
+        match name {
+            ".claude" if signal_path.is_dir() => {
+                signals.has_claude_config = true;
+                // Check for CLAUDE.md inside
+                if signal_path.join("CLAUDE.md").exists() {
+                    signals.has_claude_prompt = true;
+                }
+                // Check for skills
+                if signal_path.join("skills").is_dir() {
+                    signals.has_claude_skills = true;
+                }
+            }
+            ".codex" if signal_path.is_dir() => {
+                signals.has_codex_config = true;
+                // Check for skills
+                if signal_path.join("skills").is_dir() {
+                    signals.has_codex_skills = true;
+                }
+            }
+            ".gemini" if signal_path.is_dir() => {
+                signals.has_gemini_config = true;
+                // Check for GEMINI.md inside
+                if signal_path.join("GEMINI.md").exists() {
+                    signals.has_gemini_prompt = true;
+                }
+                // Check for skills
+                if signal_path.join("skills").is_dir() {
+                    signals.has_gemini_skills = true;
+                }
+            }
+            ".agents" if signal_path.is_dir() => {
+                // Codex stores user-level skills in ~/.agents/skills
+                // but project-level in .codex/skills - .agents at project level
+                // means codex skills
+                if signal_path.join("skills").is_dir() {
+                    signals.has_codex_skills = true;
+                }
+            }
+            ".mcp.json" if signal_path.is_file() => {
+                signals.has_mcp_json = true;
+                // .mcp.json is Claude Code's project-level MCP config
+                signals.has_claude_config = true;
+            }
+            "CLAUDE.md" if signal_path.is_file() => {
+                // Root-level CLAUDE.md (not inside .claude/)
+                signals.has_claude_prompt = true;
+                signals.has_claude_config = true;
+            }
+            "AGENTS.md" if signal_path.is_file() => {
+                signals.has_codex_prompt = true;
+                signals.has_codex_config = true;
+            }
+            "GEMINI.md" if signal_path.is_file() => {
+                // Root-level GEMINI.md (not inside .gemini/)
+                signals.has_gemini_prompt = true;
+                signals.has_gemini_config = true;
+            }
+            _ => {}
+        }
+    }
+
+    // Convert to sorted list
+    let mut workspaces: Vec<DiscoveredWorkspace> = workspace_map
+        .into_iter()
+        .map(|(path, signals)| {
+            let name = path
+                .file_name()
+                .map(|n| n.to_string_lossy().to_string())
+                .unwrap_or_else(|| "Unknown".to_string());
+            let is_git_repo = path.join(".git").exists();
+            let tool_count = signals.tool_count();
+
+            DiscoveredWorkspace {
+                path: path.to_string_lossy().to_string(),
+                name,
+                is_git_repo,
+                signals,
+                tool_count,
+            }
+        })
+        .collect();
+
+    // Sort: most tools first, then alphabetically
+    workspaces.sort_by(|a, b| {
+        b.tool_count
+            .cmp(&a.tool_count)
+            .then_with(|| a.name.to_lowercase().cmp(&b.name.to_lowercase()))
+    });
+
+    let duration = start.elapsed();
+
+    Ok(DiscoveryResult {
+        workspaces,
+        scan_depth: max_depth,
+        scan_duration_ms: duration.as_millis() as u64,
+    })
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn test_workspace_signals_tool_count() {
+        let mut signals = WorkspaceSignals::default();
+        assert_eq!(signals.tool_count(), 0);
+
+        signals.has_claude_config = true;
+        assert_eq!(signals.tool_count(), 1);
+
+        signals.has_codex_prompt = true;
+        assert_eq!(signals.tool_count(), 2);
+
+        signals.has_gemini_skills = true;
+        assert_eq!(signals.tool_count(), 3);
+    }
+
+    #[test]
+    fn test_prune_dirs_are_skipped() {
+        // Ensure node_modules is in the prune set
+        let prune_set: HashSet<&str> = PRUNE_DIRS.iter().copied().collect();
+        assert!(prune_set.contains("node_modules"));
+        assert!(prune_set.contains(".git"));
+        assert!(prune_set.contains("Library"));
+    }
+
+    #[test]
+    fn test_signal_names_present() {
+        let signal_set: HashSet<&str> = SIGNAL_NAMES.iter().copied().collect();
+        assert!(signal_set.contains(".claude"));
+        assert!(signal_set.contains(".mcp.json"));
+        assert!(signal_set.contains("CLAUDE.md"));
+        assert!(signal_set.contains("AGENTS.md"));
+    }
+
+    #[test]
+    fn test_discovered_workspace_serialization() {
+        let ws = DiscoveredWorkspace {
+            path: "/test/project".to_string(),
+            name: "project".to_string(),
+            is_git_repo: true,
+            signals: WorkspaceSignals {
+                has_claude_config: true,
+                has_mcp_json: true,
+                ..Default::default()
+            },
+            tool_count: 1,
+        };
+
+        let json = serde_json::to_string(&ws).unwrap();
+        assert!(json.contains("\"isGitRepo\":true"));
+        assert!(json.contains("\"toolCount\":1"));
+        assert!(json.contains("\"hasClaudeConfig\":true"));
+    }
+}

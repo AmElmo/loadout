@@ -2,7 +2,8 @@ import { Sidebar } from "@/components/Sidebar";
 import { Header } from "@/components/Header";
 import { MCPs } from "@/pages/MCPs";
 import { Skills } from "@/pages/Skills";
-import { Config } from "@/pages/Config";
+import { Rules } from "@/pages/Rules";
+import { Hooks } from "@/pages/Hooks";
 import { useWorkspaceStore } from "@/stores/workspaceStore";
 
 function App() {
@@ -14,8 +15,10 @@ function App() {
         return <MCPs />;
       case "skills":
         return <Skills />;
-      case "config":
-        return <Config />;
+      case "rules":
+        return <Rules />;
+      case "hooks":
+        return <Hooks />;
       default:
         return <MCPs />;
     }

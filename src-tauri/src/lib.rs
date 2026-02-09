@@ -7,7 +7,8 @@ mod parsers;
 mod scanners;
 mod workspace;
 
-use commands::{scan_mcps, scan_skills};
+use commands::{scan_hooks, scan_mcps, scan_rules, scan_skills};
+use scanners::workspaces::{discover_workspaces, DiscoveryResult};
 
 #[derive(Debug, Error)]
 pub enum LoadoutError {
@@ -69,6 +70,12 @@ fn get_home_dir() -> Option<String> {
     dirs::home_dir().map(|p| p.to_string_lossy().to_string())
 }
 
+/// Discover workspaces with AI CLI configs across the home directory
+#[tauri::command]
+fn discover_ai_workspaces(max_depth: Option<u32>) -> Result<DiscoveryResult, String> {
+    discover_workspaces(max_depth.unwrap_or(4))
+}
+
 #[cfg_attr(mobile, tauri::mobile_entry_point)]
 pub fn run() {
     tauri::Builder::default()
@@ -91,6 +98,9 @@ pub fn run() {
             get_home_dir,
             scan_mcps,
             scan_skills,
+            scan_rules,
+            scan_hooks,
+            discover_ai_workspaces,
         ])
         .run(tauri::generate_context!())
         .expect("error while running tauri application");
