@@ -7,6 +7,14 @@
 - `devUrl` must match Vite dev server port (default: `http://localhost:5173`)
 - `beforeDevCommand` and `beforeBuildCommand` integrate frontend builds
 
+## Rust Module Organization
+
+- `commands/`, `parsers/`, `scanners/` each have a `mod.rs` that re-exports with `pub use module_name::*`
+- `lib.rs` registers all Tauri commands in `tauri::generate_handler![]`
+- Use `dirs::home_dir()` for user-level config paths (e.g., `~/.claude.json`)
+- Use `walkdir` crate for recursive directory scanning
+- Generate unique IDs by hashing item names with type prefix (e.g., `mcp_`, `skill_`)
+
 ## Rust Commands
 
 - Use `#[tauri::command]` to expose functions to frontend

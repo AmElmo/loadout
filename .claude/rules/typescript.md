@@ -21,8 +21,11 @@
 ## Component Organization
 
 - UI components in `src/components/`
+- Organize by feature: `src/components/{feature}/` (e.g., `mcps/`, `skills/`)
+- Use `index.ts` barrel exports in each feature directory
 - Prefer composition over large monolithic components
 - Use `cn()` for conditional Tailwind classes
+- Follow consistent patterns across features (e.g., `Card`, `List` components)
 
 ## UX Principles
 
