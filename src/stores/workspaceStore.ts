@@ -5,10 +5,10 @@ import type { WorkspaceInfo } from "@/lib/api/workspace";
 interface WorkspaceState {
   current: WorkspaceInfo | null;
   recent: string[];
-  activeTab: "mcps" | "skills" | "config";
+  activeTab: "mcps" | "skills" | "rules" | "hooks";
   setCurrent: (workspace: WorkspaceInfo | null) => void;
   addRecent: (path: string) => void;
-  setActiveTab: (tab: "mcps" | "skills" | "config") => void;
+  setActiveTab: (tab: "mcps" | "skills" | "rules" | "hooks") => void;
 }
 
 const MAX_RECENT = 5;

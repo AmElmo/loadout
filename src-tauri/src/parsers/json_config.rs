@@ -46,6 +46,8 @@ pub struct GeminiConfig {
     pub mcp_servers: HashMap<String, JsonMCPServer>,
     #[serde(default)]
     pub experiments: GeminiExperiments,
+    #[serde(default)]
+    pub hooks: HashMap<String, Vec<HookMatcher>>,
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize, Default)]
@@ -55,6 +57,54 @@ pub struct GeminiExperiments {
     pub enable_hooks: bool,
     #[serde(default)]
     pub agent_skills: bool,
+}
+
+/// Hook matcher entry in settings.json (same structure for Claude and Gemini)
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct HookMatcher {
+    #[serde(default)]
+    pub matcher: Option<String>,
+    #[serde(default)]
+    pub hooks: Vec<HookAction>,
+}
+
+/// Hook action (command to run)
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct HookAction {
+    #[serde(rename = "type", default)]
+    pub action_type: Option<String>,
+    #[serde(default)]
+    pub command: Option<String>,
+}
+
+/// Claude Code settings.json structure (for hooks + permissions)
+#[derive(Debug, Clone, Serialize, Deserialize, Default)]
+pub struct ClaudeSettings {
+    #[serde(default)]
+    pub hooks: HashMap<String, Vec<HookMatcher>>,
+    #[serde(default)]
+    pub permissions: Option<ClaudePermissions>,
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize, Default)]
+pub struct ClaudePermissions {
+    #[serde(default)]
+    pub allow: Vec<String>,
+    #[serde(default)]
+    pub deny: Vec<String>,
+}
+
+/// Parse Claude Code settings.json (hooks and permissions)
+pub fn parse_claude_settings(path: &Path) -> Result<ClaudeSettings, String> {
+    if !path.exists() {
+        return Ok(ClaudeSettings::default());
+    }
+
+    let content = fs::read_to_string(path)
+        .map_err(|e| format!("Failed to read {}: {}", path.display(), e))?;
+
+    serde_json::from_str(&content)
+        .map_err(|e| format!("Failed to parse {}: {}", path.display(), e))
 }
 
 /// Parse Claude Code JSON config file

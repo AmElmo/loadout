@@ -1,11 +1,12 @@
-import { Server, Sparkles, Settings } from "lucide-react";
+import { Server, Sparkles, FileText, Anchor } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { useWorkspaceStore } from "@/stores/workspaceStore";
 
 const navItems = [
   { id: "mcps" as const, label: "MCPs", icon: Server },
   { id: "skills" as const, label: "Skills", icon: Sparkles },
-  { id: "config" as const, label: "Config", icon: Settings },
+  { id: "rules" as const, label: "Rules", icon: FileText },
+  { id: "hooks" as const, label: "Hooks", icon: Anchor },
 ];
 
 export function Sidebar() {
