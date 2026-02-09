@@ -1,12 +1,15 @@
-import { RefreshCw, AlertCircle, FolderOpen } from "lucide-react";
+import { useState } from "react";
+import { RefreshCw, AlertCircle, FolderOpen, Plus } from "lucide-react";
 import { useQuery } from "@tanstack/react-query";
 import { useWorkspaceStore } from "@/stores/workspaceStore";
 import { scanMCPs } from "@/lib/api/mcps";
 import { MCPList } from "@/components/mcps";
+import { AddMCPDialog } from "@/components/sync";
 import { Button } from "@/components/ui/button";
 
 export function MCPs() {
   const { current } = useWorkspaceStore();
+  const [showAddDialog, setShowAddDialog] = useState(false);
 
   const {
     data: mcps,
@@ -29,17 +32,23 @@ export function MCPs() {
             Gemini CLI
           </p>
         </div>
-        <Button
-          variant="outline"
-          size="sm"
-          onClick={() => refetch()}
-          disabled={isLoading || isRefetching}
-        >
-          <RefreshCw
-            className={`mr-2 h-4 w-4 ${isRefetching ? "animate-spin" : ""}`}
-          />
-          Refresh
-        </Button>
+        <div className="flex gap-2">
+          <Button size="sm" onClick={() => setShowAddDialog(true)}>
+            <Plus className="mr-2 h-4 w-4" />
+            Add MCP
+          </Button>
+          <Button
+            variant="outline"
+            size="sm"
+            onClick={() => refetch()}
+            disabled={isLoading || isRefetching}
+          >
+            <RefreshCw
+              className={`mr-2 h-4 w-4 ${isRefetching ? "animate-spin" : ""}`}
+            />
+            Refresh
+          </Button>
+        </div>
       </div>
 
       {!current && (
@@ -77,6 +86,10 @@ export function MCPs() {
           Found {mcps.length} MCP server{mcps.length !== 1 ? "s" : ""} across
           your configured tools
         </p>
+      )}
+
+      {showAddDialog && (
+        <AddMCPDialog onClose={() => setShowAddDialog(false)} />
       )}
     </div>
   );
