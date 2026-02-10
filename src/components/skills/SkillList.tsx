@@ -1,4 +1,4 @@
-import { Sparkles } from "lucide-react";
+import { Filter, Sparkles } from "lucide-react";
 import { useState } from "react";
 import type { SkillItem } from "@/types";
 import { SkillCard } from "./SkillCard";
@@ -6,12 +6,34 @@ import { SkillViewer } from "./SkillViewer";
 
 interface SkillListProps {
   skills: SkillItem[];
+  hasActiveFilters?: boolean;
+  onClearFilters?: () => void;
 }
 
-export function SkillList({ skills }: SkillListProps) {
+export function SkillList({ skills, hasActiveFilters, onClearFilters }: SkillListProps) {
   const [selectedSkill, setSelectedSkill] = useState<SkillItem | null>(null);
 
   if (skills.length === 0) {
+    if (hasActiveFilters) {
+      return (
+        <div className="rounded-lg border border-dashed border-border p-8 text-center">
+          <Filter className="mx-auto mb-3 h-10 w-10 text-muted-foreground" />
+          <h3 className="font-medium">No Matching Skills</h3>
+          <p className="mt-1 text-sm text-muted-foreground">
+            No skills match the current filters.
+          </p>
+          {onClearFilters && (
+            <button
+              onClick={onClearFilters}
+              className="mt-3 text-sm text-primary hover:underline"
+            >
+              Clear all filters
+            </button>
+          )}
+        </div>
+      );
+    }
+
     return (
       <div className="rounded-lg border border-dashed border-border p-8 text-center">
         <Sparkles className="mx-auto mb-3 h-10 w-10 text-muted-foreground" />

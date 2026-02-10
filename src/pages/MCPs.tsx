@@ -1,15 +1,23 @@
-import { useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { RefreshCw, AlertCircle, FolderOpen, Plus } from "lucide-react";
 import { useQuery } from "@tanstack/react-query";
 import { useWorkspaceStore } from "@/stores/workspaceStore";
 import { scanMCPs } from "@/lib/api/mcps";
 import { MCPList } from "@/components/mcps";
+import { FilterBar } from "@/components/filters";
 import { AddMCPDialog } from "@/components/sync";
 import { Button } from "@/components/ui/button";
+import type { SourceTool } from "@/types";
 
 export function MCPs() {
   const { current } = useWorkspaceStore();
   const [showAddDialog, setShowAddDialog] = useState(false);
+  const [activeTools, setActiveTools] = useState<SourceTool[]>([]);
+  const [activeScopes, setActiveScopes] = useState<string[]>([]);
+
+  useEffect(() => {
+    if (!current) setActiveScopes([]);
+  }, [current]);
 
   const {
     data: mcps,
@@ -21,6 +29,31 @@ export function MCPs() {
     queryKey: ["mcps", current?.repo_root ?? current?.path ?? null],
     queryFn: () => scanMCPs(current?.repo_root ?? current?.path),
   });
+
+  const filteredMcps = useMemo(() => {
+    if (!mcps) return [];
+    return mcps.filter((mcp) => {
+      if (
+        activeTools.length > 0 &&
+        !activeTools.some((t) => mcp.configuredIn.includes(t))
+      ) {
+        return false;
+      }
+      if (activeScopes.length > 0) {
+        const scopeValue =
+          mcp.scope === "project" || mcp.scope === "repo" ? "project" : "user";
+        if (!activeScopes.includes(scopeValue)) return false;
+      }
+      return true;
+    });
+  }, [mcps, activeTools, activeScopes]);
+
+  const hasActiveFilters = activeTools.length > 0 || activeScopes.length > 0;
+
+  function clearFilters() {
+    setActiveTools([]);
+    setActiveScopes([]);
+  }
 
   return (
     <div className="p-6">
@@ -61,6 +94,16 @@ export function MCPs() {
         </div>
       )}
 
+      {mcps && mcps.length > 0 && (
+        <FilterBar
+          activeTools={activeTools}
+          onToolsChange={setActiveTools}
+          activeScopes={activeScopes}
+          onScopesChange={setActiveScopes}
+          showScopeFilter={!!current}
+        />
+      )}
+
       {isLoading && (
         <div className="flex items-center justify-center py-12">
           <RefreshCw className="h-8 w-8 animate-spin text-muted-foreground" />
@@ -79,12 +122,19 @@ export function MCPs() {
         </div>
       )}
 
-      {mcps && <MCPList mcps={mcps} />}
+      {mcps && (
+        <MCPList
+          mcps={filteredMcps}
+          hasActiveFilters={hasActiveFilters}
+          onClearFilters={clearFilters}
+        />
+      )}
 
       {mcps && mcps.length > 0 && (
         <p className="mt-4 text-center text-xs text-muted-foreground">
-          Found {mcps.length} MCP server{mcps.length !== 1 ? "s" : ""} across
-          your configured tools
+          {filteredMcps.length === mcps.length
+            ? `Found ${mcps.length} MCP server${mcps.length !== 1 ? "s" : ""} across your configured tools`
+            : `Showing ${filteredMcps.length} of ${mcps.length} MCP server${mcps.length !== 1 ? "s" : ""}`}
         </p>
       )}
 

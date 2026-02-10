@@ -1,15 +1,23 @@
-import { useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { RefreshCw, AlertCircle, FolderOpen, Plus } from "lucide-react";
 import { useQuery } from "@tanstack/react-query";
 import { useWorkspaceStore } from "@/stores/workspaceStore";
 import { scanSkills } from "@/lib/api/skills";
 import { SkillList, ConflictWarning } from "@/components/skills";
+import { FilterBar } from "@/components/filters";
 import { InstallSkillDialog } from "@/components/sync";
 import { Button } from "@/components/ui/button";
+import type { SourceTool } from "@/types";
 
 export function Skills() {
   const { current } = useWorkspaceStore();
   const [showInstallDialog, setShowInstallDialog] = useState(false);
+  const [activeTools, setActiveTools] = useState<SourceTool[]>([]);
+  const [activeScopes, setActiveScopes] = useState<string[]>([]);
+
+  useEffect(() => {
+    if (!current) setActiveScopes([]);
+  }, [current]);
 
   const {
     data: result,
@@ -21,6 +29,26 @@ export function Skills() {
     queryKey: ["skills", current?.repo_root ?? current?.path ?? null],
     queryFn: () => scanSkills(current?.repo_root ?? current?.path),
   });
+
+  const filteredSkills = useMemo(() => {
+    if (!result) return [];
+    return result.skills.filter((skill) => {
+      if (activeTools.length > 0 && !activeTools.includes(skill.sourceTool)) {
+        return false;
+      }
+      if (activeScopes.length > 0 && !activeScopes.includes(skill.scope)) {
+        return false;
+      }
+      return true;
+    });
+  }, [result, activeTools, activeScopes]);
+
+  const hasActiveFilters = activeTools.length > 0 || activeScopes.length > 0;
+
+  function clearFilters() {
+    setActiveTools([]);
+    setActiveScopes([]);
+  }
 
   return (
     <div className="p-6">
@@ -60,6 +88,16 @@ export function Skills() {
         </div>
       )}
 
+      {result && result.skills.length > 0 && (
+        <FilterBar
+          activeTools={activeTools}
+          onToolsChange={setActiveTools}
+          activeScopes={activeScopes}
+          onScopesChange={setActiveScopes}
+          showScopeFilter={!!current}
+        />
+      )}
+
       {isLoading && (
         <div className="flex items-center justify-center py-12">
           <RefreshCw className="h-8 w-8 animate-spin text-muted-foreground" />
@@ -81,14 +119,19 @@ export function Skills() {
       {result && (
         <>
           <ConflictWarning conflicts={result.conflicts} />
-          <SkillList skills={result.skills} />
+          <SkillList
+            skills={filteredSkills}
+            hasActiveFilters={hasActiveFilters}
+            onClearFilters={clearFilters}
+          />
         </>
       )}
 
       {result && result.skills.length > 0 && (
         <p className="mt-4 text-center text-xs text-muted-foreground">
-          Found {result.skills.length} skill
-          {result.skills.length !== 1 ? "s" : ""} across your configured tools
+          {filteredSkills.length === result.skills.length
+            ? `Found ${result.skills.length} skill${result.skills.length !== 1 ? "s" : ""} across your configured tools`
+            : `Showing ${filteredSkills.length} of ${result.skills.length} skill${result.skills.length !== 1 ? "s" : ""}`}
           {result.conflicts.length > 0 && (
             <span className="text-yellow-600">
               {" "}

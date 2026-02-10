@@ -40,7 +40,7 @@ export function RuleViewer({ rule, onClose }: RuleViewerProps) {
         </div>
 
         {/* Content */}
-        <div className="relative flex-1 overflow-auto">
+        <div className="relative min-h-[4rem] flex-1 overflow-auto">
           <div className="absolute right-2 top-2 z-10">
             <Button
               variant="outline"
