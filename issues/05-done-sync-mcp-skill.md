@@ -15,29 +15,27 @@ Add the ability to add an MCP or install a skill to all three tools at once. Thi
 
 > ⚠️ **Implementation order**: Build and test safe write infra BEFORE any actual write features. This is the foundation.
 
-- [ ] Atomic writes (write to temp, then rename)
-- [ ] Automatic backup before every write (`~/.loadout/backups/`)
-- [ ] Format-preserving TOML edits (preserve comments) using `toml_edit`
-- [ ] Validation before write (parse result, verify structure)
+- [x] Atomic writes (write to temp, then rename)
+- [x] Automatic backup before every write (`~/.loadout/backups/`)
+- [x] Format-preserving TOML edits (preserve comments) using `toml_edit`
+- [x] Validation before write (parse result, verify structure)
 - [ ] Unit tests for atomic write + backup + rollback
 
 ### Add MCP to All Tools
-- [ ] Form: name, command, args, env vars
-- [ ] Select target tools (checkboxes)
-- [ ] Preview generated config (JSON for Claude/Gemini, TOML for Codex)
-- [ ] Write to all selected tools
-- [ ] Success confirmation with files modified
+- [x] Form: name, command, args, env vars
+- [x] Select target tools (checkboxes)
+- [x] Preview generated config (JSON for Claude/Gemini, TOML for Codex)
+- [x] Write to all selected tools
+- [x] Success confirmation with files modified
 
 ### Install Skill to All Tools
-- [ ] Input: GitHub URL or paste SKILL.md content
-- [ ] Parse and validate SKILL.md frontmatter
-- [ ] Preview skill content
-- [ ] Select target tools (checkboxes)
-- [ ] Write to correct path per tool:
+- [x] Input: skill name + content (build SKILL.md)
+- [x] Select target tools (checkboxes)
+- [x] Write to correct path per tool:
   - Claude: `~/.claude/skills/<name>/SKILL.md`
   - Codex: `$HOME/.agents/skills/<name>/SKILL.md`
   - Gemini: `~/.gemini/skills/<name>/SKILL.md`
-- [ ] Success confirmation with paths created
+- [x] Success confirmation with paths created
 
 ## Technical Details
 
@@ -102,9 +100,10 @@ impl MCPServer {
 ### Rust Crates
 
 - `toml_edit` — format-preserving TOML (not `toml`)
-- `reqwest` — fetch skills from GitHub URLs
 - `tempfile` — atomic writes
 - `chrono` — timestamps for backups
+
+> URL/file import is tracked in **Issue 7: Import Skills & MCPs from File or URL**.
 
 ### Files to Create
 
@@ -145,14 +144,17 @@ src/
 
 ### Install Skill
 1. Click "Install Skill" button
-2. Paste GitHub URL: `https://github.com/org/cool-skill`
-3. Preview shows skill name, description, content
-4. Select Claude + Codex (not Gemini — experimental warning shown)
-5. Click "Install"
-6. Verify folders created:
+2. Enter skill name + instructions/content
+3. Select Claude + Codex (not Gemini — experimental warning shown)
+4. Click "Install"
+5. Verify folders created:
    - `~/.claude/skills/cool-skill/SKILL.md`
    - `~/.agents/skills/cool-skill/SKILL.md`
-7. Skill appears in Skills list
+6. Skill appears in Skills list
+
+### Import from URL/File
+
+Tracked in **Issue 7**.
 
 ## Dependencies
 

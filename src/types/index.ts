@@ -254,6 +254,7 @@ export interface AddMCPRequest {
 export interface SyncMCPRequest {
   name: string;
   sourceTool: SourceTool;
+  sourcePath?: string | null;
   targetTools: SourceTool[];
 }
 

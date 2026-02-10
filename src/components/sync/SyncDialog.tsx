@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useMemo, useState } from "react";
 import { X, Loader2, Share2 } from "lucide-react";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import type { SourceTool } from "@/types";
@@ -11,6 +11,8 @@ interface SyncDialogProps {
   name: string;
   /** Tools that already have this item */
   existingTools: SourceTool[];
+  /** Restrict sync targets for compatibility (defaults to all tools) */
+  availableTools?: SourceTool[];
   /** Called with selected target tools to perform the sync */
   onSync: (targetTools: SourceTool[]) => Promise<{
     success: boolean;
@@ -28,16 +30,25 @@ export function SyncDialog({
   type,
   name,
   existingTools,
+  availableTools,
   onSync,
   onClose,
   queryKey,
 }: SyncDialogProps) {
   const queryClient = useQueryClient();
-  const missingTools = ALL_TOOLS.filter((t) => !existingTools.includes(t));
+  const allowedTools = useMemo(
+    () => availableTools ?? ALL_TOOLS,
+    [availableTools]
+  );
+  const disabledTools = ALL_TOOLS.filter((t) => !allowedTools.includes(t));
+  const missingTools = allowedTools.filter((t) => !existingTools.includes(t));
   const [targetTools, setTargetTools] = useState<SourceTool[]>(missingTools);
+  const effectiveTargetTools = targetTools.filter((tool) =>
+    allowedTools.includes(tool)
+  );
 
   const syncMutation = useMutation({
-    mutationFn: () => onSync(targetTools),
+    mutationFn: () => onSync(effectiveTargetTools),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: [queryKey] });
     },
@@ -93,9 +104,15 @@ export function SyncDialog({
           </p>
 
           <ToolSelector
-            selectedTools={targetTools}
+            selectedTools={effectiveTargetTools}
             onToolsChange={setTargetTools}
             type={type}
+            disabledTools={disabledTools}
+            disabledReason={
+              type === "mcp"
+                ? "This tool does not support this MCP type"
+                : undefined
+            }
           />
 
           {missingTools.length === 0 && (
@@ -114,7 +131,7 @@ export function SyncDialog({
           <Button
             onClick={() => syncMutation.mutate()}
             disabled={
-              targetTools.length === 0 ||
+              effectiveTargetTools.length === 0 ||
               syncMutation.isPending ||
               missingTools.length === 0
             }
@@ -122,8 +139,8 @@ export function SyncDialog({
             {syncMutation.isPending && (
               <Loader2 className="mr-2 h-4 w-4 animate-spin" />
             )}
-            Sync to {targetTools.length} Tool
-            {targetTools.length !== 1 ? "s" : ""}
+            Sync to {effectiveTargetTools.length} Tool
+            {effectiveTargetTools.length !== 1 ? "s" : ""}
           </Button>
         </div>
       </div>
