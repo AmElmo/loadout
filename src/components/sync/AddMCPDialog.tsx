@@ -31,19 +31,24 @@ export function AddMCPDialog({ onClose }: AddMCPDialogProps) {
 
   // Preview state
   const [previews, setPreviews] = useState<PreviewConfig[]>([]);
+  const isHttpMCP = mcpType === "http";
+  const disabledTools: SourceTool[] = isHttpMCP ? ["codex"] : [];
+  const effectiveTargetTools = isHttpMCP
+    ? targetTools.filter((tool) => tool !== "codex")
+    : targetTools;
 
   const buildRequest = (): AddMCPRequest => ({
     name: name.trim(),
     mcpType,
-    command: mcpType === "stdio" ? command.trim() || null : null,
-    args: mcpType === "stdio" ? args : [],
-    url: mcpType === "http" ? url.trim() || null : null,
+    command: !isHttpMCP ? command.trim() || null : null,
+    args: !isHttpMCP ? args : [],
+    url: isHttpMCP ? url.trim() || null : null,
     env: Object.fromEntries(
       envVars
         .filter((v) => v.key.trim())
         .map((v) => [v.key.trim(), v.value])
     ),
-    targetTools,
+    targetTools: effectiveTargetTools,
   });
 
   // Preview mutation
@@ -99,8 +104,8 @@ export function AddMCPDialog({ onClose }: AddMCPDialogProps) {
 
   const isValid =
     name.trim() &&
-    targetTools.length > 0 &&
-    (mcpType === "stdio" ? command.trim() : url.trim());
+    effectiveTargetTools.length > 0 &&
+    (!isHttpMCP ? command.trim() : url.trim());
 
   // Show success state
   if (writeMutation.isSuccess && writeMutation.data) {
@@ -183,7 +188,7 @@ export function AddMCPDialog({ onClose }: AddMCPDialogProps) {
           </div>
 
           {/* stdio fields */}
-          {mcpType === "stdio" && (
+          {!isHttpMCP && (
             <>
               <div className="space-y-2">
                 <label className="text-sm font-medium">Command</label>
@@ -239,7 +244,7 @@ export function AddMCPDialog({ onClose }: AddMCPDialogProps) {
           )}
 
           {/* http fields */}
-          {mcpType === "http" && (
+          {isHttpMCP && (
             <div className="space-y-2">
               <label className="text-sm font-medium">URL</label>
               <input
@@ -249,11 +254,15 @@ export function AddMCPDialog({ onClose }: AddMCPDialogProps) {
                 placeholder="e.g., https://mcp.linear.app/mcp"
                 className="w-full rounded-md border border-border bg-background px-3 py-2 text-sm focus:border-primary focus:outline-none focus:ring-1 focus:ring-primary"
               />
+              <p className="text-xs text-muted-foreground">
+                Codex CLI supports only stdio MCP servers, so it is disabled
+                for HTTP MCPs.
+              </p>
             </div>
           )}
 
           {/* Environment Variables */}
-          {mcpType === "stdio" && (
+          {!isHttpMCP && (
             <div className="space-y-2">
               <div className="flex items-center justify-between">
                 <label className="text-sm font-medium">
@@ -294,9 +303,15 @@ export function AddMCPDialog({ onClose }: AddMCPDialogProps) {
 
           {/* Tool Selector */}
           <ToolSelector
-            selectedTools={targetTools}
-            onToolsChange={setTargetTools}
+            selectedTools={effectiveTargetTools}
+            onToolsChange={(tools) =>
+              setTargetTools(
+                isHttpMCP ? tools.filter((tool) => tool !== "codex") : tools
+              )
+            }
             type="mcp"
+            disabledTools={disabledTools}
+            disabledReason="Codex CLI only supports stdio MCP servers"
           />
 
           {/* Preview */}

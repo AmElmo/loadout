@@ -37,6 +37,7 @@ pub struct InstallSkillRequest {
 pub struct SyncMCPRequest {
     pub name: String,
     pub source_tool: String,
+    pub source_path: Option<String>,
     pub target_tools: Vec<String>,
 }
 
@@ -88,13 +89,32 @@ fn mcp_config_path(tool: &str) -> Result<PathBuf, String> {
     }
 }
 
+fn is_supported_mcp_type(mcp_type: &str) -> bool {
+    matches!(mcp_type, "stdio" | "http")
+}
+
+fn ensure_tool_compatible_with_mcp(tool: &str, mcp_type: &str) -> Result<(), String> {
+    if tool == "codex" && mcp_type == "http" {
+        return Err("Codex CLI only supports stdio MCP servers".to_string());
+    }
+    Ok(())
+}
+
 /// Preview the generated config for each selected tool without writing
 #[tauri::command]
 pub fn preview_mcp_configs(request: AddMCPRequest) -> Result<PreviewResult, String> {
-    let mcp = request.to_server_input();
+    let normalized_mcp_type = request.mcp_type.trim().to_ascii_lowercase();
+    if !is_supported_mcp_type(&normalized_mcp_type) {
+        return Err("MCP type must be either 'stdio' or 'http'".to_string());
+    }
+
+    let mut mcp = request.to_server_input();
+    mcp.mcp_type = normalized_mcp_type;
     let mut configs = Vec::new();
 
     for tool in &request.target_tools {
+        ensure_tool_compatible_with_mcp(tool, &mcp.mcp_type)?;
+
         match tool.as_str() {
             "claude" => configs.push(PreviewConfig {
                 tool: "claude".to_string(),
@@ -121,17 +141,29 @@ pub fn preview_mcp_configs(request: AddMCPRequest) -> Result<PreviewResult, Stri
 /// Add an MCP to all selected tools
 #[tauri::command]
 pub fn add_mcp_to_tools(request: AddMCPRequest) -> Result<WriteResult, String> {
+    let normalized_mcp_type = request.mcp_type.trim().to_ascii_lowercase();
+
     // Validate input
     if request.name.trim().is_empty() {
         return Err("MCP name is required".to_string());
     }
 
-    if request.mcp_type == "stdio" && request.command.as_ref().map_or(true, |c| c.trim().is_empty())
+    if !is_supported_mcp_type(&normalized_mcp_type) {
+        return Err("MCP type must be either 'stdio' or 'http'".to_string());
+    }
+
+    if normalized_mcp_type == "stdio"
+        && request
+            .command
+            .as_ref()
+            .map_or(true, |c| c.trim().is_empty())
     {
         return Err("Command is required for stdio MCPs".to_string());
     }
 
-    if request.mcp_type == "http" && request.url.as_ref().map_or(true, |u| u.trim().is_empty()) {
+    if normalized_mcp_type == "http"
+        && request.url.as_ref().map_or(true, |u| u.trim().is_empty())
+    {
         return Err("URL is required for http MCPs".to_string());
     }
 
@@ -139,11 +171,17 @@ pub fn add_mcp_to_tools(request: AddMCPRequest) -> Result<WriteResult, String> {
         return Err("At least one target tool must be selected".to_string());
     }
 
-    let mcp = request.to_server_input();
+    let mut mcp = request.to_server_input();
+    mcp.mcp_type = normalized_mcp_type;
     let mut modified_files = Vec::new();
     let mut errors = Vec::new();
 
     for tool in &request.target_tools {
+        if let Err(e) = ensure_tool_compatible_with_mcp(tool, &mcp.mcp_type) {
+            errors.push(format!("{}: {}", tool, e));
+            continue;
+        }
+
         let path = match mcp_config_path(tool) {
             Ok(p) => p,
             Err(e) => {
@@ -173,54 +211,88 @@ pub fn add_mcp_to_tools(request: AddMCPRequest) -> Result<WriteResult, String> {
 }
 
 /// Read the real (unmasked) MCP config from a source tool
-fn read_mcp_from_source(name: &str, source_tool: &str) -> Result<MCPServerInput, String> {
+fn read_mcp_from_source(
+    name: &str,
+    source_tool: &str,
+    source_path: Option<&str>,
+) -> Result<MCPServerInput, String> {
     let home = dirs::home_dir().ok_or("Could not determine home directory")?;
 
     match source_tool {
         "claude" => {
-            let path = home.join(".claude.json");
-            let config = parse_claude_config(&path)?;
-            let server = config
-                .mcp_servers
-                .get(name)
-                .ok_or(format!("MCP '{}' not found in Claude config", name))?;
-            Ok(MCPServerInput {
-                mcp_type: server.mcp_type.clone(),
-                command: server.command.clone(),
-                args: server.args.clone(),
-                url: server.url.clone(),
-                env: server.env.clone(),
-            })
+            let default_path = home.join(".claude.json");
+            let mut candidate_paths = Vec::new();
+            if let Some(path) = source_path {
+                candidate_paths.push(PathBuf::from(path));
+            }
+            if !candidate_paths.iter().any(|path| path == &default_path) {
+                candidate_paths.push(default_path);
+            }
+
+            for path in candidate_paths {
+                let config = parse_claude_config(&path)?;
+                if let Some(server) = config.mcp_servers.get(name) {
+                    return Ok(MCPServerInput {
+                        mcp_type: server.mcp_type.clone(),
+                        command: server.command.clone(),
+                        args: server.args.clone(),
+                        url: server.url.clone(),
+                        env: server.env.clone(),
+                    });
+                }
+            }
+
+            Err(format!("MCP '{}' not found in Claude configs", name))
         }
         "codex" => {
-            let path = home.join(".codex").join("config.toml");
-            let config = parse_codex_config(&path)?;
-            let server = config
-                .mcp_servers
-                .get(name)
-                .ok_or(format!("MCP '{}' not found in Codex config", name))?;
-            Ok(MCPServerInput {
-                mcp_type: "stdio".to_string(),
-                command: Some(server.command.clone()),
-                args: server.args.clone(),
-                url: None,
-                env: server.env.clone(),
-            })
+            let default_path = home.join(".codex").join("config.toml");
+            let mut candidate_paths = Vec::new();
+            if let Some(path) = source_path {
+                candidate_paths.push(PathBuf::from(path));
+            }
+            if !candidate_paths.iter().any(|path| path == &default_path) {
+                candidate_paths.push(default_path);
+            }
+
+            for path in candidate_paths {
+                let config = parse_codex_config(&path)?;
+                if let Some(server) = config.mcp_servers.get(name) {
+                    return Ok(MCPServerInput {
+                        mcp_type: "stdio".to_string(),
+                        command: Some(server.command.clone()),
+                        args: server.args.clone(),
+                        url: None,
+                        env: server.env.clone(),
+                    });
+                }
+            }
+
+            Err(format!("MCP '{}' not found in Codex configs", name))
         }
         "gemini" => {
-            let path = home.join(".gemini").join("settings.json");
-            let config = parse_gemini_config(&path)?;
-            let server = config
-                .mcp_servers
-                .get(name)
-                .ok_or(format!("MCP '{}' not found in Gemini config", name))?;
-            Ok(MCPServerInput {
-                mcp_type: server.mcp_type.clone(),
-                command: server.command.clone(),
-                args: server.args.clone(),
-                url: server.url.clone(),
-                env: server.env.clone(),
-            })
+            let default_path = home.join(".gemini").join("settings.json");
+            let mut candidate_paths = Vec::new();
+            if let Some(path) = source_path {
+                candidate_paths.push(PathBuf::from(path));
+            }
+            if !candidate_paths.iter().any(|path| path == &default_path) {
+                candidate_paths.push(default_path);
+            }
+
+            for path in candidate_paths {
+                let config = parse_gemini_config(&path)?;
+                if let Some(server) = config.mcp_servers.get(name) {
+                    return Ok(MCPServerInput {
+                        mcp_type: server.mcp_type.clone(),
+                        command: server.command.clone(),
+                        args: server.args.clone(),
+                        url: server.url.clone(),
+                        env: server.env.clone(),
+                    });
+                }
+            }
+
+            Err(format!("MCP '{}' not found in Gemini configs", name))
         }
         _ => Err(format!("Unknown source tool: {}", source_tool)),
     }
@@ -238,12 +310,21 @@ pub fn sync_mcp_to_tools(request: SyncMCPRequest) -> Result<WriteResult, String>
     }
 
     // Read the real config from the source tool (unmasked env values)
-    let mcp = read_mcp_from_source(&request.name, &request.source_tool)?;
+    let mcp = read_mcp_from_source(
+        &request.name,
+        &request.source_tool,
+        request.source_path.as_deref(),
+    )?;
 
     let mut modified_files = Vec::new();
     let mut errors = Vec::new();
 
     for tool in &request.target_tools {
+        if let Err(e) = ensure_tool_compatible_with_mcp(tool, &mcp.mcp_type) {
+            errors.push(format!("{}: {}", tool, e));
+            continue;
+        }
+
         let path = match mcp_config_path(tool) {
             Ok(p) => p,
             Err(e) => {
@@ -288,11 +369,12 @@ pub fn install_skill_to_tools(request: InstallSkillRequest) -> Result<WriteResul
         return Err("At least one target tool must be selected".to_string());
     }
 
+    let validated_name = skill_writer::validate_skill_name(&request.name)?;
     let mut modified_files = Vec::new();
     let mut errors = Vec::new();
 
     for tool in &request.target_tools {
-        match skill_writer::write_skill(&request.name, &request.content, tool) {
+        match skill_writer::write_skill(&validated_name, &request.content, tool) {
             Ok(path) => modified_files.push(path),
             Err(e) => errors.push(format!("{}: {}", tool, e)),
         }
@@ -303,4 +385,71 @@ pub fn install_skill_to_tools(request: InstallSkillRequest) -> Result<WriteResul
         modified_files,
         errors,
     })
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use std::fs;
+    use tempfile::NamedTempFile;
+
+    #[test]
+    fn test_codex_rejects_http_mcp() {
+        assert!(ensure_tool_compatible_with_mcp("codex", "http").is_err());
+    }
+
+    #[test]
+    fn test_codex_accepts_stdio_mcp() {
+        assert!(ensure_tool_compatible_with_mcp("codex", "stdio").is_ok());
+    }
+
+    #[test]
+    fn test_claude_accepts_http_mcp() {
+        assert!(ensure_tool_compatible_with_mcp("claude", "http").is_ok());
+    }
+
+    #[test]
+    fn test_read_mcp_from_claude_source_path() {
+        let file = NamedTempFile::new().unwrap();
+        fs::write(
+            file.path(),
+            r#"{
+  "mcpServers": {
+    "project-server": {
+      "type": "stdio",
+      "command": "node",
+      "args": ["server.js"]
+    }
+  }
+}"#,
+        )
+        .unwrap();
+
+        let mcp = read_mcp_from_source(
+            "project-server",
+            "claude",
+            Some(file.path().to_string_lossy().as_ref()),
+        )
+        .unwrap();
+
+        assert_eq!(mcp.mcp_type, "stdio");
+        assert_eq!(mcp.command.as_deref(), Some("node"));
+        assert_eq!(mcp.args, vec!["server.js"]);
+    }
+
+    #[test]
+    fn test_preview_rejects_http_for_codex() {
+        let request = AddMCPRequest {
+            name: "http-server".to_string(),
+            mcp_type: "http".to_string(),
+            command: None,
+            args: vec![],
+            url: Some("https://example.com/mcp".to_string()),
+            env: HashMap::new(),
+            target_tools: vec!["codex".to_string()],
+        };
+
+        let err = preview_mcp_configs(request).unwrap_err();
+        assert!(err.contains("Codex CLI only supports stdio"));
+    }
 }

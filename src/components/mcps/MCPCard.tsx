@@ -19,11 +19,15 @@ export function MCPCard({ mcp }: MCPCardProps) {
   const [expanded, setExpanded] = useState(false);
   const [showSync, setShowSync] = useState(false);
 
-  const missingTools = ALL_TOOLS.filter((t) => !mcp.configuredIn.includes(t));
-
   const envKeys = Object.keys(mcp.env);
   const hasEnv = envKeys.length > 0;
   const isHttp = mcp.mcpType === "http";
+  const syncEligibleTools = isHttp
+    ? ALL_TOOLS.filter((tool) => tool !== "codex")
+    : ALL_TOOLS;
+  const missingTools = syncEligibleTools.filter(
+    (tool) => !mcp.configuredIn.includes(tool)
+  );
 
   // Display string for the card preview
   const displayString = isHttp
@@ -162,10 +166,12 @@ export function MCPCard({ mcp }: MCPCardProps) {
           type="mcp"
           name={mcp.name}
           existingTools={mcp.configuredIn}
+          availableTools={syncEligibleTools}
           onSync={(targetTools) =>
             syncMCPToTools({
               name: mcp.name,
               sourceTool: mcp.configuredIn[0],
+              sourcePath: mcp.path,
               targetTools,
             })
           }

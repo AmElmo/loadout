@@ -19,7 +19,7 @@ Scan and display all MCP servers configured across Claude Code, Codex CLI, and G
 > **Project root**: Use repo root (`.git` parent) when found, otherwise use selected folder.
 - [x] Tauri command `scan_mcps()` returns unified list
 - [x] MCP list displays: name, source tool badge, command, args, scope (user/project)
-- [x] Health indicator: ✓ healthy / ? unknown (default) / ✗ failed
+- [x] Health indicator shown (default: ? unknown)
 - [x] Click MCP to see full config details
 - [x] "In Claude, Codex, Gemini" badges showing where each MCP is configured
 - [x] Empty state when no MCPs configured
@@ -59,18 +59,12 @@ args = ["-y", "@github/mcp-server"]
 GITHUB_TOKEN = "..."
 ```
 
-### Health Check (Opt-In)
+### Health Status Scope
 
-**Default state: "unknown"** — guessing ports from command/args produces false negatives.
+This issue only covers MCP status display with default `unknown`.
 
-Health check is opt-in via manual "Test" button per MCP:
-1. User clicks "Test" on an MCP
-2. Show warning: "This will run: `npx -y @org/mcp-server`"
-3. If confirmed, spawn command with 5s timeout
-4. Check if MCP responds to protocol handshake
-5. Show: ✓ healthy / ✗ failed / ? unknown (default)
-
-**No auto-testing** — executing commands from config is a security risk without explicit consent.
+Active health testing (manual "Test" button, confirmation dialog, protocol handshake, timeouts)
+is tracked separately in **Issue 6: MCP Health Testing**.
 
 ### LoadoutItem Shape
 
@@ -120,9 +114,8 @@ src/
 4. Launch Loadout → MCPs tab
 5. See unified list with all MCPs
 6. Each shows correct source badges
-7. Health shows "?" (unknown) by default — no auto-testing
-8. Click "Test" on an MCP → confirmation dialog shows command
-9. Confirm → MCP tested → status updates to ✓ or ✗
+7. Health shows "?" (unknown) by default
+8. No command execution occurs in MCP registry scan flow
 10. API keys/secrets are masked (show `***`)
 11. Click MCP → see full details
 
