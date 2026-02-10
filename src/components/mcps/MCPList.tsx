@@ -1,13 +1,35 @@
-import { Server } from "lucide-react";
+import { Filter, Server } from "lucide-react";
 import type { MCPItem } from "@/types";
 import { MCPCard } from "./MCPCard";
 
 interface MCPListProps {
   mcps: MCPItem[];
+  hasActiveFilters?: boolean;
+  onClearFilters?: () => void;
 }
 
-export function MCPList({ mcps }: MCPListProps) {
+export function MCPList({ mcps, hasActiveFilters, onClearFilters }: MCPListProps) {
   if (mcps.length === 0) {
+    if (hasActiveFilters) {
+      return (
+        <div className="rounded-lg border border-dashed border-border p-8 text-center">
+          <Filter className="mx-auto mb-3 h-10 w-10 text-muted-foreground" />
+          <h3 className="font-medium">No Matching MCPs</h3>
+          <p className="mt-1 text-sm text-muted-foreground">
+            No MCP servers match the current filters.
+          </p>
+          {onClearFilters && (
+            <button
+              onClick={onClearFilters}
+              className="mt-3 text-sm text-primary hover:underline"
+            >
+              Clear all filters
+            </button>
+          )}
+        </div>
+      );
+    }
+
     return (
       <div className="rounded-lg border border-dashed border-border p-8 text-center">
         <Server className="mx-auto mb-3 h-10 w-10 text-muted-foreground" />
