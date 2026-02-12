@@ -31,5 +31,6 @@ toml_edit = "0.22"
 serde_yaml = "0.9"
 walkdir = "2"
 tokio = { version = "1", features = ["fs", "process", "time"] }
+reqwest = { version = "0.12", features = ["json"] }
 tempfile = "3"
 chrono = "0.4"

@@ -47,6 +47,10 @@ export function SkillList({ skills, hasActiveFilters, onClearFilters }: SkillLis
             <code className="rounded bg-muted px-1">
               ~/.claude/skills/&lt;name&gt;/SKILL.md
             </code>{" "}
+            or{" "}
+            <code className="rounded bg-muted px-1">
+              ~/.claude/commands/&lt;name&gt;.md
+            </code>{" "}
             for Claude Code
           </li>
           <li>

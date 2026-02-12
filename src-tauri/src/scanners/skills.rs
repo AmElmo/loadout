@@ -112,6 +112,17 @@ pub fn scan_all_skills(workspace_path: Option<&str>) -> Result<SkillScanResult, 
         scan_skill_directory(&claude_project_path, SkillSourceTool::Claude, SkillScope::Project, &mut entries);
     }
 
+    // Scan Claude Code legacy commands (merged with skills)
+    // User-level: ~/.claude/commands/<name>.md
+    let claude_user_commands = home_dir.join(".claude").join("commands");
+    scan_command_directory(&claude_user_commands, SkillSourceTool::Claude, SkillScope::User, &mut entries);
+
+    // Project-level: $PROJECT_ROOT/.claude/commands/<name>.md
+    if let Some(ws_path) = workspace_path {
+        let claude_project_commands = PathBuf::from(ws_path).join(".claude").join("commands");
+        scan_command_directory(&claude_project_commands, SkillSourceTool::Claude, SkillScope::Project, &mut entries);
+    }
+
     // Scan Codex CLI skills
     // User-level: $HOME/.agents/skills/<name>/SKILL.md
     let codex_user_path = home_dir.join(".agents").join("skills");
@@ -171,6 +182,51 @@ fn scan_skill_directory(
                     scope,
                     path: path.to_string_lossy().to_string(),
                 });
+            }
+        }
+    }
+}
+
+/// Scan a directory for legacy command .md files (Claude Code only)
+/// Commands are plain .md files at depth 1: commands/review.md → name "review"
+fn scan_command_directory(
+    base_path: &PathBuf,
+    source_tool: SkillSourceTool,
+    scope: SkillScope,
+    entries: &mut Vec<RawSkillEntry>,
+) {
+    if !base_path.exists() {
+        return;
+    }
+
+    // Walk the directory looking for .md files at depth 1
+    for entry in WalkDir::new(base_path)
+        .min_depth(1)
+        .max_depth(1)
+        .into_iter()
+        .filter_map(|e| e.ok())
+    {
+        let path = entry.path();
+        if path.extension().map(|ext| ext == "md").unwrap_or(false) {
+            // Derive name from filename (e.g., "review.md" → "review")
+            let fallback_name = path
+                .file_stem()
+                .map(|n| n.to_string_lossy().to_string())
+                .unwrap_or_else(|| "unknown".to_string());
+
+            if let Ok(content) = std::fs::read_to_string(path) {
+                if let Ok(skill) = crate::parsers::parse_skill_content(&content, &fallback_name) {
+                    let content_hash = hash_content(&skill.content);
+                    entries.push(RawSkillEntry {
+                        name: skill.name,
+                        description: skill.description,
+                        content: skill.content,
+                        content_hash,
+                        source_tool,
+                        scope,
+                        path: path.to_string_lossy().to_string(),
+                    });
+                }
             }
         }
     }

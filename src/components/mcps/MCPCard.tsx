@@ -1,4 +1,4 @@
-import { ChevronDown, ChevronUp, Share2 } from "lucide-react";
+import { ChevronDown, ChevronUp, Share2, Activity } from "lucide-react";
 import { useState } from "react";
 import type { MCPItem, SourceTool } from "@/types";
 import { cn } from "@/lib/utils";
@@ -7,6 +7,7 @@ import { SyncDialog } from "@/components/sync";
 import { Button } from "@/components/ui/button";
 import { HealthBadge } from "./HealthBadge";
 import { MCPIcon } from "./MCPIcon";
+import { TestHealthDialog } from "./TestHealthDialog";
 import { ToolBadges } from "./ToolBadge";
 
 const ALL_TOOLS: SourceTool[] = ["claude", "codex", "gemini"];
@@ -18,6 +19,7 @@ interface MCPCardProps {
 export function MCPCard({ mcp }: MCPCardProps) {
   const [expanded, setExpanded] = useState(false);
   const [showSync, setShowSync] = useState(false);
+  const [showTest, setShowTest] = useState(false);
 
   const envKeys = Object.keys(mcp.env);
   const hasEnv = envKeys.length > 0;
@@ -142,8 +144,20 @@ export function MCPCard({ mcp }: MCPCardProps) {
             </div>
           </dl>
 
-          {missingTools.length > 0 && (
-            <div className="mt-3 border-t border-border pt-3">
+          <div className="mt-3 flex items-center gap-2 border-t border-border pt-3">
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={(e) => {
+                e.stopPropagation();
+                setShowTest(true);
+              }}
+            >
+              <Activity className="mr-2 h-3.5 w-3.5" />
+              Test
+            </Button>
+
+            {missingTools.length > 0 && (
               <Button
                 variant="outline"
                 size="sm"
@@ -156,9 +170,13 @@ export function MCPCard({ mcp }: MCPCardProps) {
                 Sync to {missingTools.length} Other Tool
                 {missingTools.length !== 1 ? "s" : ""}
               </Button>
-            </div>
-          )}
+            )}
+          </div>
         </div>
+      )}
+
+      {showTest && (
+        <TestHealthDialog mcp={mcp} onClose={() => setShowTest(false)} />
       )}
 
       {showSync && (

@@ -156,6 +156,14 @@ export interface SkillScanResult {
   conflicts: SkillConflict[];
 }
 
+/**
+ * Result of an MCP health test
+ */
+export interface HealthTestResult {
+  status: HealthStatus;
+  message: string;
+}
+
 // === Rules & Hooks Types ===
 
 export type PromptScope = "global" | "project";
