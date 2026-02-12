@@ -203,7 +203,8 @@ async fn test_stdio_mcp(
     }
 }
 
-/// Test an HTTP MCP by sending a request to the URL
+/// Test an HTTP MCP by sending a JSON-RPC initialize request via POST.
+/// Per the MCP Streamable HTTP spec, all client messages MUST use POST.
 async fn test_http_mcp(url: Option<String>) -> Result<HealthTestResult, String> {
     let endpoint = url.ok_or("No URL specified for HTTP MCP")?;
 
@@ -212,10 +213,32 @@ async fn test_http_mcp(url: Option<String>) -> Result<HealthTestResult, String> 
         .build()
         .map_err(|e| format!("Failed to create HTTP client: {}", e))?;
 
-    match client.get(&endpoint).send().await {
+    // Send a proper MCP initialize request per the Streamable HTTP transport spec
+    let request = serde_json::json!({
+        "jsonrpc": "2.0",
+        "id": 1,
+        "method": "initialize",
+        "params": {
+            "protocolVersion": "2024-11-05",
+            "capabilities": {},
+            "clientInfo": {
+                "name": "loadout-health-check",
+                "version": "0.1.0"
+            }
+        }
+    });
+
+    match client
+        .post(&endpoint)
+        .header("Content-Type", "application/json")
+        .header("Accept", "application/json, text/event-stream")
+        .json(&request)
+        .send()
+        .await
+    {
         Ok(response) => {
-            // Any HTTP response (even 401/403) means the server is reachable.
-            // Auth errors are expected since we don't send credentials.
+            // Any HTTP response means the server is reachable.
+            // Auth errors (401/403) are expected since we don't send credentials.
             let status = response.status();
             Ok(HealthTestResult {
                 status: HealthStatus::Healthy,

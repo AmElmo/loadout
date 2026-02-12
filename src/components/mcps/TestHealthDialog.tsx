@@ -22,7 +22,7 @@ export function TestHealthDialog({ mcp, onClose }: TestHealthDialogProps) {
 
   const isHttp = mcp.mcpType === "http";
   const commandDisplay = isHttp
-    ? `GET ${mcp.url}`
+    ? `POST ${mcp.url}`
     : `${mcp.command ?? ""} ${mcp.args.join(" ")}`.trim();
 
   const testMutation = useMutation({
