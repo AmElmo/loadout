@@ -1,4 +1,4 @@
-import { X, Copy, Check, FolderOpen } from "lucide-react";
+import { X, Copy, Check, FolderOpen, Crosshair } from "lucide-react";
 import { useState } from "react";
 import type { PromptFile } from "@/types";
 import { ToolBadge } from "@/components/mcps/ToolBadge";
@@ -29,6 +29,12 @@ export function RuleViewer({ rule, onClose }: RuleViewerProps) {
             <span className="rounded bg-muted px-1.5 py-0.5 text-[10px] font-medium uppercase text-muted-foreground">
               {rule.scope}
             </span>
+            {rule.isScoped && (
+              <span className="inline-flex items-center gap-1 rounded-md border border-teal-500/20 bg-teal-500/10 px-1.5 py-0.5 text-[10px] font-medium text-teal-600 dark:text-teal-400">
+                <Crosshair className="h-2.5 w-2.5" />
+                scoped
+              </span>
+            )}
           </div>
           <button
             onClick={onClose}
@@ -38,6 +44,26 @@ export function RuleViewer({ rule, onClose }: RuleViewerProps) {
             <X className="h-5 w-5" />
           </button>
         </div>
+
+        {/* Scoping info */}
+        {rule.isScoped && rule.scopedPaths && rule.scopedPaths.length > 0 && (
+          <div className="border-b border-border bg-muted/30 px-4 py-2">
+            <div className="mb-1 flex items-center gap-1.5 text-xs font-medium text-muted-foreground">
+              <Crosshair className="h-3 w-3" />
+              Applies when working on:
+            </div>
+            <div className="flex flex-wrap gap-1.5">
+              {rule.scopedPaths.map((pattern) => (
+                <code
+                  key={pattern}
+                  className="rounded border border-teal-500/20 bg-teal-500/10 px-1.5 py-0.5 text-xs font-mono text-teal-600 dark:text-teal-400"
+                >
+                  {pattern}
+                </code>
+              ))}
+            </div>
+          </div>
+        )}
 
         {/* Content */}
         <div className="relative min-h-[4rem] flex-1 overflow-auto">

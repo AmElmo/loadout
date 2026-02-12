@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { FileText, Globe, FolderOpen } from "lucide-react";
+import { FileText, Globe, FolderOpen, Crosshair } from "lucide-react";
 import type { PromptFile } from "@/types";
 import { RuleCard } from "./RuleCard";
 import { RuleViewer } from "./RuleViewer";
@@ -14,6 +14,9 @@ export function PromptsSection({ prompts, workspaceName }: PromptsSectionProps) 
 
   const globalRules = prompts.filter((p) => p.scope === "global");
   const projectRules = prompts.filter((p) => p.scope === "project");
+  const alwaysLoadedProjectRules = projectRules.filter((p) => !p.isScoped);
+  const scopedProjectRules = projectRules.filter((p) => p.isScoped);
+  const hasBothTypes = alwaysLoadedProjectRules.length > 0 && scopedProjectRules.length > 0;
 
   if (prompts.length === 0) {
     return (
@@ -72,15 +75,45 @@ export function PromptsSection({ prompts, workspaceName }: PromptsSectionProps) 
               <FolderOpen className="h-3.5 w-3.5" />
               Project{workspaceName ? ` — ${workspaceName}` : ""}
             </h4>
-            <div className="space-y-2">
-              {projectRules.map((rule) => (
-                <RuleCard
-                  key={rule.path}
-                  rule={rule}
-                  onClick={() => rule.exists && setSelectedRule(rule)}
-                />
-              ))}
-            </div>
+
+            {/* Always loaded */}
+            {alwaysLoadedProjectRules.length > 0 && (
+              <div className={scopedProjectRules.length > 0 ? "mb-4" : ""}>
+                {hasBothTypes && (
+                  <p className="mb-2 text-xs text-muted-foreground">
+                    Always loaded
+                  </p>
+                )}
+                <div className="space-y-2">
+                  {alwaysLoadedProjectRules.map((rule) => (
+                    <RuleCard
+                      key={rule.path}
+                      rule={rule}
+                      onClick={() => rule.exists && setSelectedRule(rule)}
+                    />
+                  ))}
+                </div>
+              </div>
+            )}
+
+            {/* Scoped */}
+            {scopedProjectRules.length > 0 && (
+              <div>
+                <p className="mb-2 flex items-center gap-1 text-xs text-muted-foreground">
+                  <Crosshair className="h-3 w-3" />
+                  Scoped — loaded when working on matching files
+                </p>
+                <div className="space-y-2">
+                  {scopedProjectRules.map((rule) => (
+                    <RuleCard
+                      key={rule.path}
+                      rule={rule}
+                      onClick={() => rule.exists && setSelectedRule(rule)}
+                    />
+                  ))}
+                </div>
+              </div>
+            )}
           </div>
         )}
       </div>

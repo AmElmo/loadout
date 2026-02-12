@@ -171,6 +171,10 @@ export interface PromptFile {
   exists: boolean;
   content: string;
   size: number;
+  /** Glob patterns that scope this rule. Undefined = always loaded. */
+  scopedPaths?: string[];
+  /** Whether this rule is conditionally scoped (true) or always loaded (false). */
+  isScoped: boolean;
 }
 
 export interface PromptScanResult {
