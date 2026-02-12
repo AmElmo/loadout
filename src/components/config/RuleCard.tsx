@@ -1,4 +1,4 @@
-import { FileText, ChevronRight } from "lucide-react";
+import { FileText, ChevronRight, Crosshair } from "lucide-react";
 import type { PromptFile } from "@/types";
 import { cn } from "@/lib/utils";
 import { ToolBadge } from "@/components/mcps/ToolBadge";
@@ -11,6 +11,11 @@ interface RuleCardProps {
 function formatSize(bytes: number): string {
   if (bytes < 1024) return `${bytes} B`;
   return `${(bytes / 1024).toFixed(1)} KB`;
+}
+
+function formatScopedPaths(paths: string[]): string {
+  if (paths.length === 1) return paths[0];
+  return `${paths[0]} +${paths.length - 1} more`;
 }
 
 export function RuleCard({ rule, onClick }: RuleCardProps) {
@@ -36,9 +41,19 @@ export function RuleCard({ rule, onClick }: RuleCardProps) {
           <span className="rounded bg-muted px-1.5 py-0.5 text-[10px] font-medium uppercase text-muted-foreground">
             {rule.scope}
           </span>
+          {rule.isScoped && (
+            <span className="inline-flex items-center gap-1 rounded-md border border-teal-500/20 bg-teal-500/10 px-1.5 py-0.5 text-[10px] font-medium text-teal-600 dark:text-teal-400">
+              <Crosshair className="h-2.5 w-2.5" />
+              scoped
+            </span>
+          )}
         </div>
         <p className="mt-0.5 truncate text-sm text-muted-foreground">
-          {rule.exists ? formatSize(rule.size) : "Not found"}
+          {rule.exists
+            ? rule.isScoped && rule.scopedPaths?.length
+              ? formatScopedPaths(rule.scopedPaths)
+              : formatSize(rule.size)
+            : "Not found"}
         </p>
       </div>
 

@@ -44,6 +44,12 @@ pub struct PromptFile {
     pub content: String,
     /// File size in bytes
     pub size: u64,
+    /// Glob patterns that scope this rule (from frontmatter or directory path).
+    /// None means "always loaded" (unconditional).
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub scoped_paths: Option<Vec<String>>,
+    /// Whether this rule is always loaded or conditionally scoped.
+    pub is_scoped: bool,
 }
 
 /// Result of scanning all system prompts
@@ -212,7 +218,16 @@ fn scan_rules_directory(
             .to_string_lossy()
             .to_string();
 
-        prompts.push(scan_prompt_file(&name, tool, scope, &path));
+        let mut prompt = scan_prompt_file(&name, tool, scope, &path);
+
+        // Parse frontmatter for scoping (Claude rules only — Gemini has no frontmatter support)
+        if tool == PromptSourceTool::Claude && prompt.exists && !prompt.content.is_empty() {
+            let scoping = crate::parsers::parse_rule_frontmatter(&prompt.content);
+            prompt.is_scoped = scoping.paths.is_some();
+            prompt.scoped_paths = scoping.paths;
+        }
+
+        prompts.push(prompt);
     }
 }
 
@@ -268,6 +283,8 @@ const PRUNE_DIRS: &[&str] = &[
 
 /// Target filenames to look for in subdirectories
 const SUBDIR_TARGETS: &[(&str, PromptSourceTool)] = &[
+    ("CLAUDE.md", PromptSourceTool::Claude),
+    ("CLAUDE.local.md", PromptSourceTool::Claude),
     ("AGENTS.md", PromptSourceTool::Codex),
     ("AGENTS.override.md", PromptSourceTool::Codex),
     ("GEMINI.md", PromptSourceTool::Gemini),
@@ -322,7 +339,23 @@ fn scan_subdirectory_rules(prompts: &mut Vec<PromptFile>, project_root: &Path) {
             .to_string_lossy()
             .to_string();
 
-        prompts.push(scan_prompt_file(&display_name, tool, PromptScope::Project, &path));
+        let mut prompt = scan_prompt_file(&display_name, tool, PromptScope::Project, &path);
+
+        // Derive directory-based scoping for all subdirectory rule files
+        if let Some(parent) = path.parent() {
+            let relative_dir = parent
+                .strip_prefix(project_root)
+                .unwrap_or(parent)
+                .to_string_lossy()
+                .to_string();
+            if !relative_dir.is_empty() {
+                let scope_glob = format!("{}/**", relative_dir);
+                prompt.scoped_paths = Some(vec![scope_glob]);
+                prompt.is_scoped = true;
+            }
+        }
+
+        prompts.push(prompt);
     }
 }
 
@@ -349,6 +382,8 @@ fn scan_prompt_file(name: &str, tool: PromptSourceTool, scope: PromptScope, path
         exists,
         content,
         size,
+        scoped_paths: None,
+        is_scoped: false,
     }
 }
 
@@ -370,6 +405,8 @@ mod tests {
         assert_eq!(result.name, "CLAUDE.md");
         assert!(result.content.contains("Be helpful"));
         assert!(result.size > 0);
+        assert!(!result.is_scoped);
+        assert!(result.scoped_paths.is_none());
     }
 
     #[test]
@@ -379,6 +416,7 @@ mod tests {
         assert!(!result.exists);
         assert!(result.content.is_empty());
         assert_eq!(result.size, 0);
+        assert!(!result.is_scoped);
     }
 
     #[test]
@@ -451,5 +489,106 @@ mod tests {
         assert!(names
             .iter()
             .any(|n| n.ends_with("payments/AGENTS.override.md")));
+    }
+
+    #[test]
+    fn test_frontmatter_scoped_rule() {
+        let dir = TempDir::new().unwrap();
+        let rules_dir = dir.path().join("rules");
+        fs::create_dir(&rules_dir).unwrap();
+
+        let scoped_content = "---\npaths:\n  - \"src/domain/ai/**\"\n  - \"src/lib/openai.ts\"\n---\n# AI Rules\nContent here.";
+        fs::write(rules_dir.join("ai-features.md"), scoped_content).unwrap();
+
+        let mut prompts = Vec::new();
+        scan_rules_directory(
+            &mut prompts,
+            PromptSourceTool::Claude,
+            PromptScope::Project,
+            &rules_dir,
+        );
+
+        assert_eq!(prompts.len(), 1);
+        let rule = &prompts[0];
+        assert!(rule.is_scoped);
+        assert!(rule.scoped_paths.is_some());
+        let paths = rule.scoped_paths.as_ref().unwrap();
+        assert_eq!(paths.len(), 2);
+        assert_eq!(paths[0], "src/domain/ai/**");
+        assert_eq!(paths[1], "src/lib/openai.ts");
+    }
+
+    #[test]
+    fn test_no_frontmatter_rule_is_not_scoped() {
+        let dir = TempDir::new().unwrap();
+        let rules_dir = dir.path().join("rules");
+        fs::create_dir(&rules_dir).unwrap();
+
+        fs::write(rules_dir.join("general.md"), "# General rules\nAlways applies.").unwrap();
+
+        let mut prompts = Vec::new();
+        scan_rules_directory(
+            &mut prompts,
+            PromptSourceTool::Claude,
+            PromptScope::Project,
+            &rules_dir,
+        );
+
+        assert_eq!(prompts.len(), 1);
+        assert!(!prompts[0].is_scoped);
+        assert!(prompts[0].scoped_paths.is_none());
+    }
+
+    #[test]
+    fn test_gemini_rules_dir_no_frontmatter_parsing() {
+        let dir = TempDir::new().unwrap();
+        let rules_dir = dir.path().join("rules");
+        fs::create_dir(&rules_dir).unwrap();
+
+        // Gemini rules with paths: frontmatter should NOT be parsed
+        let content = "---\npaths:\n  - \"src/**\"\n---\n# Gemini rule";
+        fs::write(rules_dir.join("test.md"), content).unwrap();
+
+        let mut prompts = Vec::new();
+        scan_rules_directory(
+            &mut prompts,
+            PromptSourceTool::Gemini,
+            PromptScope::Project,
+            &rules_dir,
+        );
+
+        assert_eq!(prompts.len(), 1);
+        assert!(!prompts[0].is_scoped);
+        assert!(prompts[0].scoped_paths.is_none());
+    }
+
+    #[test]
+    fn test_subdirectory_scoping_derived() {
+        let dir = TempDir::new().unwrap();
+        let root = dir.path();
+
+        // Create subdirectory with AGENTS.md
+        let api_dir = root.join("src").join("api");
+        fs::create_dir_all(&api_dir).unwrap();
+        fs::write(api_dir.join("AGENTS.md"), "# API rules").unwrap();
+
+        // Create subdirectory with CLAUDE.md
+        let backend_dir = root.join("src").join("backend");
+        fs::create_dir_all(&backend_dir).unwrap();
+        fs::write(backend_dir.join("CLAUDE.md"), "# Backend rules").unwrap();
+
+        let mut prompts = Vec::new();
+        scan_subdirectory_rules(&mut prompts, root);
+
+        // Both should be scoped
+        assert!(prompts.len() >= 2);
+
+        let agents = prompts.iter().find(|p| p.name.ends_with("api/AGENTS.md")).unwrap();
+        assert!(agents.is_scoped);
+        assert_eq!(agents.scoped_paths.as_ref().unwrap(), &vec!["src/api/**"]);
+
+        let claude = prompts.iter().find(|p| p.name.ends_with("backend/CLAUDE.md")).unwrap();
+        assert!(claude.is_scoped);
+        assert_eq!(claude.scoped_paths.as_ref().unwrap(), &vec!["src/backend/**"]);
     }
 }
