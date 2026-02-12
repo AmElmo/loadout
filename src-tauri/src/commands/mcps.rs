@@ -214,22 +214,13 @@ async fn test_http_mcp(url: Option<String>) -> Result<HealthTestResult, String> 
 
     match client.get(&endpoint).send().await {
         Ok(response) => {
+            // Any HTTP response (even 401/403) means the server is reachable.
+            // Auth errors are expected since we don't send credentials.
             let status = response.status();
-            if status.is_success() || status.is_redirection() {
-                Ok(HealthTestResult {
-                    status: HealthStatus::Healthy,
-                    message: format!("HTTP {} — server is reachable", status.as_u16()),
-                })
-            } else {
-                Ok(HealthTestResult {
-                    status: HealthStatus::Failed,
-                    message: format!(
-                        "HTTP {} — {}",
-                        status.as_u16(),
-                        status.canonical_reason().unwrap_or("Unknown")
-                    ),
-                })
-            }
+            Ok(HealthTestResult {
+                status: HealthStatus::Healthy,
+                message: format!("HTTP {} — server is reachable", status.as_u16()),
+            })
         }
         Err(e) => {
             if e.is_timeout() {
