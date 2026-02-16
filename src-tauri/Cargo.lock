@@ -1856,6 +1856,7 @@ dependencies = [
  "dirs",
  "log",
  "reqwest 0.12.28",
+ "security-framework",
  "serde",
  "serde_json",
  "serde_yaml",

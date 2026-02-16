@@ -10,8 +10,8 @@ mod workspace;
 mod writers;
 
 use commands::{
-    add_mcp_to_tools, install_skill_to_tools, preview_mcp_configs, scan_hooks, scan_mcps,
-    scan_rules, scan_skills, sync_mcp_to_tools, test_mcp_health,
+    add_mcp_to_tools, fetch_mcp_tools, install_skill_to_tools, preview_mcp_configs, scan_hooks,
+    scan_mcps, scan_rules, scan_skills, sync_mcp_to_tools, test_mcp_health,
 };
 use scanners::workspaces::{discover_workspaces, DiscoveryResult};
 
@@ -111,6 +111,7 @@ pub fn run() {
             install_skill_to_tools,
             sync_mcp_to_tools,
             test_mcp_health,
+            fetch_mcp_tools,
         ])
         .run(tauri::generate_context!())
         .expect("error while running tauri application");

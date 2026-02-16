@@ -3,6 +3,7 @@
 //! Scans all skill paths and returns a unified list with maturity badges,
 //! conflict detection, and shadowing information.
 
+use super::tokens::estimate_tokens;
 use crate::parsers::parse_skill_md;
 use serde::{Deserialize, Serialize};
 use std::collections::hash_map::DefaultHasher;
@@ -56,6 +57,10 @@ pub struct SkillItem {
     pub maturity: SkillMaturity,
     /// Absolute path to the SKILL.md file
     pub path: String,
+    /// Estimated tokens when idle (just name + description in skill listing)
+    pub idle_tokens: u32,
+    /// Estimated tokens when actively invoked (full content)
+    pub active_tokens: u32,
     /// True if this skill is shadowed by a higher-precedence skill
     pub is_shadowed: bool,
     /// Path of the skill that shadows this one
@@ -320,6 +325,12 @@ fn process_skill_entries(entries: Vec<RawSkillEntry>) -> (Vec<SkillItem>, Vec<Sk
 
         let id = generate_skill_id(&entry.name, entry.source_tool, entry.scope);
 
+        // Estimate tokens: idle = name + description (as listed in skill menu),
+        // active = full content (loaded when skill is invoked)
+        let idle_text = format!("{}: {}", &entry.name, &entry.description);
+        let idle_tokens = estimate_tokens(&idle_text);
+        let active_tokens = estimate_tokens(&entry.content);
+
         skills.push(SkillItem {
             id,
             name: entry.name,
@@ -329,6 +340,8 @@ fn process_skill_entries(entries: Vec<RawSkillEntry>) -> (Vec<SkillItem>, Vec<Sk
             scope: entry.scope,
             maturity,
             path: entry.path,
+            idle_tokens,
+            active_tokens,
             is_shadowed,
             shadowed_by,
         });

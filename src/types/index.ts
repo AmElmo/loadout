@@ -92,6 +92,8 @@ export interface MCPItem {
   url: string | null;
   /** Environment variables (values masked) */
   env: Record<string, string>;
+  /** HTTP headers (for http type, values masked) */
+  headers: Record<string, string>;
   /** Which tools this MCP is configured in */
   configuredIn: SourceTool[];
   /** Scope (user or project level) */
@@ -128,6 +130,10 @@ export interface SkillItem {
   maturity: Maturity;
   /** Absolute path to the SKILL.md file */
   path: string;
+  /** Estimated tokens when idle (just name + description in skill listing) */
+  idleTokens: number;
+  /** Estimated tokens when actively invoked (full content) */
+  activeTokens: number;
   /** True if this skill is shadowed by a higher-precedence skill */
   isShadowed: boolean;
   /** Path of the skill that shadows this one */
@@ -179,6 +185,8 @@ export interface PromptFile {
   exists: boolean;
   content: string;
   size: number;
+  /** Estimated token count for context window usage */
+  tokens: number;
   /** Glob patterns that scope this rule. Undefined = always loaded. */
   scopedPaths?: string[];
   /** Whether this rule is conditionally scoped (true) or always loaded (false). */
@@ -302,4 +310,26 @@ export interface PreviewConfig {
  */
 export interface PreviewResult {
   configs: PreviewConfig[];
+}
+
+// === Context Window / Token Types ===
+
+/**
+ * Information about a single MCP tool definition
+ */
+export interface MCPToolInfo {
+  name: string;
+  description: string | null;
+  /** Estimated tokens for this tool's definition */
+  tokens: number;
+}
+
+/**
+ * Result of fetching MCP tool definitions via tools/list
+ */
+export interface MCPToolsResult {
+  toolCount: number;
+  /** Total estimated idle tokens (all tool definitions) */
+  idleTokens: number;
+  tools: MCPToolInfo[];
 }

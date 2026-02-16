@@ -57,6 +57,8 @@ pub struct MCPItem {
     pub url: Option<String>,
     /// Environment variables (values masked)
     pub env: HashMap<String, String>,
+    /// HTTP headers (for http type, values masked)
+    pub headers: HashMap<String, String>,
     /// Which tools this MCP is configured in
     pub configured_in: Vec<SourceTool>,
     /// Scope (user or project level)
@@ -76,6 +78,7 @@ struct RawMCPEntry {
     args: Vec<String>,
     url: Option<String>,
     env: HashMap<String, String>,
+    headers: HashMap<String, String>,
     source_tool: SourceTool,
     scope: Scope,
     path: String,
@@ -103,6 +106,7 @@ pub fn scan_all_mcps(workspace_path: Option<&str>) -> Result<Vec<MCPItem>, Strin
                 args: server.args,
                 url: server.url,
                 env: server.env,
+                headers: server.headers,
                 source_tool: SourceTool::Claude,
                 scope: Scope::User,
                 path: claude_user_path.to_string_lossy().to_string(),
@@ -127,6 +131,7 @@ pub fn scan_all_mcps(workspace_path: Option<&str>) -> Result<Vec<MCPItem>, Strin
                     args: server.args,
                     url: server.url,
                     env: server.env,
+                    headers: server.headers,
                     source_tool: SourceTool::Claude,
                     scope: Scope::Project,
                     path: project_mcp_path.to_string_lossy().to_string(),
@@ -147,6 +152,7 @@ pub fn scan_all_mcps(workspace_path: Option<&str>) -> Result<Vec<MCPItem>, Strin
                 args: server.args,
                 url: None,
                 env: server.env,
+                headers: HashMap::new(),
                 source_tool: SourceTool::Codex,
                 scope: Scope::User,
                 path: codex_config_path.to_string_lossy().to_string(),
@@ -171,6 +177,7 @@ pub fn scan_all_mcps(workspace_path: Option<&str>) -> Result<Vec<MCPItem>, Strin
                 args: server.args,
                 url: server.url,
                 env: server.env,
+                headers: server.headers,
                 source_tool: SourceTool::Gemini,
                 scope: Scope::User,
                 path: gemini_config_path.to_string_lossy().to_string(),
@@ -190,6 +197,7 @@ fn merge_mcp_entries(entries: Vec<RawMCPEntry>) -> Vec<MCPItem> {
 
     for entry in entries {
         let masked_env = mask_env_values(&entry.env);
+        let masked_headers = mask_env_values(&entry.headers);
 
         if let Some(existing) = by_name.get_mut(&entry.name) {
             // Add this tool to the list if not already present
@@ -214,6 +222,7 @@ fn merge_mcp_entries(entries: Vec<RawMCPEntry>) -> Vec<MCPItem> {
                     args: entry.args,
                     url: entry.url,
                     env: masked_env,
+                    headers: masked_headers,
                     configured_in: vec![entry.source_tool],
                     scope: entry.scope,
                     path: entry.path,
@@ -259,6 +268,7 @@ mod tests {
                 args: vec!["-y".to_string(), "@github/mcp-server".to_string()],
                 url: None,
                 env: HashMap::new(),
+                headers: HashMap::new(),
                 source_tool: SourceTool::Claude,
                 scope: Scope::User,
                 path: "/path/to/claude.json".to_string(),
@@ -270,6 +280,7 @@ mod tests {
                 args: vec!["-y".to_string(), "@github/mcp-server".to_string()],
                 url: None,
                 env: HashMap::new(),
+                headers: HashMap::new(),
                 source_tool: SourceTool::Codex,
                 scope: Scope::User,
                 path: "/path/to/config.toml".to_string(),
@@ -292,6 +303,7 @@ mod tests {
             args: vec![],
             url: Some("https://mcp.linear.app/mcp".to_string()),
             env: HashMap::new(),
+            headers: HashMap::new(),
             source_tool: SourceTool::Claude,
             scope: Scope::User,
             path: "/path/to/claude.json".to_string(),
