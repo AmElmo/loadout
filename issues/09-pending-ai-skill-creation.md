@@ -1,4 +1,4 @@
-# Issue 8: AI-Assisted Skill Creation
+# Issue 9: AI-Assisted Skill Creation
 
 **Phase:** 3 (AI Integration)
 **Status:** Pending

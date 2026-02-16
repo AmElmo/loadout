@@ -1,4 +1,4 @@
-# Issue 10: Subagents Scanner + Sync
+# Issue 11: Subagents Scanner + Sync
 
 **Phase:** 2 (Write Capabilities)
 **Status:** Pending
@@ -322,4 +322,4 @@ src/App.tsx                     # Add /agents route + sidebar nav item
 - **Format compatibility**: Claude Code and Gemini CLI use the same file format (Markdown + YAML frontmatter), so syncing is a direct file copy — no format conversion needed (unlike MCPs which need JSON ↔ TOML conversion).
 - **Gemini experimental flag**: Scanner should check `~/.gemini/settings.json` for `enableAgents: true`. If absent, show a warning on Gemini agents that they may not be active.
 - **Reuse patterns**: Follow the exact same component patterns as Skills (SkillCard → AgentCard, SkillList → AgentList, SkillViewer → AgentViewer). The sync logic mirrors InstallSkillDialog/SyncDialog.
-- **Future**: Agent marketplaces are emerging (buildwithclaude.com, VoltAgent/awesome-claude-code-subagents). A future issue could add browsing/importing from these sources — similar to how Issue 7 handles importing MCPs/Skills from URL.
+- **Future**: Agent marketplaces are emerging (buildwithclaude.com, VoltAgent/awesome-claude-code-subagents). A future issue could add browsing/importing from these sources — similar to how Issue 8 handles importing MCPs/Skills from URL.

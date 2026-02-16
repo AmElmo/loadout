@@ -1,4 +1,4 @@
-# Issue 9: Browse & Install from Skill Registry
+# Issue 10: Browse & Install from Skill Registry
 
 **Phase:** 3 (Discovery)
 **Status:** Pending
@@ -92,7 +92,7 @@ src/pages/Skills.tsx                   # Add "Browse Registry" option
 ## Dependencies
 
 - Issue 5: Sync MCP + Skill (write infrastructure)
-- Issue 7: Import from URL (for fetching skill content)
+- Issue 8: Import from URL (for fetching skill content)
 - External: agentskills.io API availability
 
 ## Notes

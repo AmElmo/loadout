@@ -64,7 +64,7 @@ GITHUB_TOKEN = "..."
 This issue only covers MCP status display with default `unknown`.
 
 Active health testing (manual "Test" button, confirmation dialog, protocol handshake, timeouts)
-is tracked separately in **Issue 6: MCP Health Testing**.
+is tracked separately in **Issue 7: MCP Health Testing**.
 
 ### LoadoutItem Shape
 

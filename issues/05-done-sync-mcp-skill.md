@@ -103,7 +103,7 @@ impl MCPServer {
 - `tempfile` — atomic writes
 - `chrono` — timestamps for backups
 
-> URL/file import is tracked in **Issue 7: Import Skills & MCPs from File or URL**.
+> URL/file import is tracked in **Issue 8: Import Skills & MCPs from File or URL**.
 
 ### Files to Create
 
@@ -154,7 +154,7 @@ src/
 
 ### Import from URL/File
 
-Tracked in **Issue 7**.
+Tracked in **Issue 8**.
 
 ## Dependencies
 

@@ -1,4 +1,4 @@
-# Issue 7: Import Skills & MCPs from File or URL
+# Issue 8: Import Skills & MCPs from File or URL
 
 **Phase:** 2 (Write Capabilities)
 **Status:** Pending
