@@ -1,10 +1,15 @@
+import { useMemo, useState } from "react";
 import { RefreshCw, AlertCircle } from "lucide-react";
 import { useQuery } from "@tanstack/react-query";
 import { scanHooks } from "@/lib/api/config";
 import { HooksSection } from "@/components/config";
+import { SearchBar } from "@/components/filters";
 import { Button } from "@/components/ui/button";
+import { useInfiniteList } from "@/hooks/useInfiniteList";
 
 export function Hooks() {
+  const [searchQuery, setSearchQuery] = useState("");
+
   const {
     data: result,
     isLoading,
@@ -15,6 +20,20 @@ export function Hooks() {
     queryKey: ["hooks"],
     queryFn: () => scanHooks(),
   });
+
+  const filteredHooks = useMemo(() => {
+    if (!result) return [];
+    const query = searchQuery.toLowerCase();
+    if (!query) return result.hooks;
+    return result.hooks.filter(
+      (h) =>
+        h.event.toLowerCase().includes(query) ||
+        h.command.toLowerCase().includes(query) ||
+        (h.matcher && h.matcher.toLowerCase().includes(query))
+    );
+  }, [result, searchQuery]);
+
+  const { visibleItems, hasMore, sentinelRef } = useInfiniteList(filteredHooks);
 
   return (
     <div className="p-6">
@@ -38,6 +57,16 @@ export function Hooks() {
         </Button>
       </div>
 
+      {result && result.hooks.length > 0 && (
+        <div className="mb-4">
+          <SearchBar
+            value={searchQuery}
+            onChange={setSearchQuery}
+            placeholder="Search hooks..."
+          />
+        </div>
+      )}
+
       {isLoading && (
         <div className="flex items-center justify-center py-12">
           <RefreshCw className="h-8 w-8 animate-spin text-muted-foreground" />
@@ -57,10 +86,13 @@ export function Hooks() {
       )}
 
       {result && (
-        <HooksSection
-          hooks={result.hooks}
-          geminiHooksEnabled={result.geminiHooksEnabled}
-        />
+        <>
+          <HooksSection
+            hooks={visibleItems}
+            geminiHooksEnabled={result.geminiHooksEnabled}
+          />
+          {hasMore && <div ref={sentinelRef} className="h-4" />}
+        </>
       )}
     </div>
   );

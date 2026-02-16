@@ -4,9 +4,10 @@ import { useQuery } from "@tanstack/react-query";
 import { useWorkspaceStore } from "@/stores/workspaceStore";
 import { scanMCPs } from "@/lib/api/mcps";
 import { MCPList } from "@/components/mcps";
-import { FilterBar } from "@/components/filters";
+import { FilterBar, SearchBar } from "@/components/filters";
 import { AddMCPDialog } from "@/components/sync";
 import { Button } from "@/components/ui/button";
+import { useInfiniteList } from "@/hooks/useInfiniteList";
 import type { SourceTool } from "@/types";
 
 export function MCPs() {
@@ -14,6 +15,7 @@ export function MCPs() {
   const [showAddDialog, setShowAddDialog] = useState(false);
   const [activeTools, setActiveTools] = useState<SourceTool[]>([]);
   const [activeScopes, setActiveScopes] = useState<string[]>([]);
+  const [searchQuery, setSearchQuery] = useState("");
 
   useEffect(() => {
     if (!current) setActiveScopes([]);
@@ -32,6 +34,7 @@ export function MCPs() {
 
   const filteredMcps = useMemo(() => {
     if (!mcps) return [];
+    const query = searchQuery.toLowerCase();
     return mcps.filter((mcp) => {
       if (
         activeTools.length > 0 &&
@@ -44,15 +47,21 @@ export function MCPs() {
           mcp.scope === "project" || mcp.scope === "repo" ? "project" : "user";
         if (!activeScopes.includes(scopeValue)) return false;
       }
+      if (query && !mcp.name.toLowerCase().includes(query)) {
+        return false;
+      }
       return true;
     });
-  }, [mcps, activeTools, activeScopes]);
+  }, [mcps, activeTools, activeScopes, searchQuery]);
 
-  const hasActiveFilters = activeTools.length > 0 || activeScopes.length > 0;
+  const { visibleItems, hasMore, sentinelRef } = useInfiniteList(filteredMcps);
+
+  const hasActiveFilters = activeTools.length > 0 || activeScopes.length > 0 || searchQuery.length > 0;
 
   function clearFilters() {
     setActiveTools([]);
     setActiveScopes([]);
+    setSearchQuery("");
   }
 
   return (
@@ -95,13 +104,20 @@ export function MCPs() {
       )}
 
       {mcps && mcps.length > 0 && (
-        <FilterBar
-          activeTools={activeTools}
-          onToolsChange={setActiveTools}
-          activeScopes={activeScopes}
-          onScopesChange={setActiveScopes}
-          showScopeFilter={!!current}
-        />
+        <div className="mb-4 flex items-center gap-4">
+          <SearchBar
+            value={searchQuery}
+            onChange={setSearchQuery}
+            placeholder="Search MCPs..."
+          />
+          <FilterBar
+            activeTools={activeTools}
+            onToolsChange={setActiveTools}
+            activeScopes={activeScopes}
+            onScopesChange={setActiveScopes}
+            showScopeFilter={!!current}
+          />
+        </div>
       )}
 
       {isLoading && (
@@ -123,11 +139,14 @@ export function MCPs() {
       )}
 
       {mcps && (
-        <MCPList
-          mcps={filteredMcps}
-          hasActiveFilters={hasActiveFilters}
-          onClearFilters={clearFilters}
-        />
+        <>
+          <MCPList
+            mcps={visibleItems}
+            hasActiveFilters={hasActiveFilters}
+            onClearFilters={clearFilters}
+          />
+          {hasMore && <div ref={sentinelRef} className="h-4" />}
+        </>
       )}
 
       {mcps && mcps.length > 0 && (

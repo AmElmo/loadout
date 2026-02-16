@@ -1,12 +1,16 @@
+import { useMemo, useState } from "react";
 import { RefreshCw, AlertCircle, FolderOpen } from "lucide-react";
 import { useQuery } from "@tanstack/react-query";
 import { useWorkspaceStore } from "@/stores/workspaceStore";
 import { scanRules } from "@/lib/api/config";
 import { PromptsSection } from "@/components/config";
+import { SearchBar } from "@/components/filters";
 import { Button } from "@/components/ui/button";
+import { useInfiniteList } from "@/hooks/useInfiniteList";
 
 export function Rules() {
   const { current } = useWorkspaceStore();
+  const [searchQuery, setSearchQuery] = useState("");
 
   const {
     data: result,
@@ -18,6 +22,17 @@ export function Rules() {
     queryKey: ["rules", current?.repo_root ?? current?.path ?? null],
     queryFn: () => scanRules(current?.repo_root ?? current?.path),
   });
+
+  const filteredPrompts = useMemo(() => {
+    if (!result) return [];
+    const query = searchQuery.toLowerCase();
+    if (!query) return result.prompts;
+    return result.prompts.filter(
+      (p) => p.name.toLowerCase().includes(query) || p.path.toLowerCase().includes(query)
+    );
+  }, [result, searchQuery]);
+
+  const { visibleItems, hasMore, sentinelRef } = useInfiniteList(filteredPrompts);
 
   return (
     <div className="p-6">
@@ -51,6 +66,16 @@ export function Rules() {
         </div>
       )}
 
+      {result && result.prompts.length > 0 && (
+        <div className="mb-4">
+          <SearchBar
+            value={searchQuery}
+            onChange={setSearchQuery}
+            placeholder="Search rules..."
+          />
+        </div>
+      )}
+
       {isLoading && (
         <div className="flex items-center justify-center py-12">
           <RefreshCw className="h-8 w-8 animate-spin text-muted-foreground" />
@@ -70,10 +95,13 @@ export function Rules() {
       )}
 
       {result && (
-        <PromptsSection
-          prompts={result.prompts}
-          workspaceName={current?.name}
-        />
+        <>
+          <PromptsSection
+            prompts={visibleItems}
+            workspaceName={current?.name}
+          />
+          {hasMore && <div ref={sentinelRef} className="h-4" />}
+        </>
       )}
     </div>
   );
