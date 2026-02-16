@@ -45,7 +45,7 @@ export function Rules() {
         <div className="mb-4 flex items-center gap-2 rounded-lg border border-border bg-muted/50 px-3 py-2 text-sm text-muted-foreground">
           <FolderOpen className="h-4 w-4 shrink-0" />
           <span>
-            Showing global rules only. Select a workspace to also see
+            Showing user-level rules only. Select a workspace to also see
             project-level rules.
           </span>
         </div>

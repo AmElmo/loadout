@@ -172,7 +172,7 @@ export interface HealthTestResult {
 
 // === Rules & Hooks Types ===
 
-export type PromptScope = "global" | "project";
+export type PromptScope = "user" | "project";
 
 /**
  * A discovered system prompt file
