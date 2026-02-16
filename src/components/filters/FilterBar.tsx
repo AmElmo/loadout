@@ -46,7 +46,7 @@ export function FilterBar({
   ],
 }: FilterBarProps) {
   return (
-    <div className="mb-4 flex items-center gap-6">
+    <div className="flex items-center gap-6">
       <div className="flex items-center gap-2">
         <span className="text-xs font-medium uppercase tracking-wider text-muted-foreground">
           Tool

@@ -4,9 +4,10 @@ import { useQuery } from "@tanstack/react-query";
 import { useWorkspaceStore } from "@/stores/workspaceStore";
 import { scanSkills } from "@/lib/api/skills";
 import { SkillList, ConflictWarning } from "@/components/skills";
-import { FilterBar } from "@/components/filters";
+import { FilterBar, SearchBar } from "@/components/filters";
 import { InstallSkillDialog } from "@/components/sync";
 import { Button } from "@/components/ui/button";
+import { useInfiniteList } from "@/hooks/useInfiniteList";
 import type { SourceTool } from "@/types";
 
 export function Skills() {
@@ -14,6 +15,7 @@ export function Skills() {
   const [showInstallDialog, setShowInstallDialog] = useState(false);
   const [activeTools, setActiveTools] = useState<SourceTool[]>([]);
   const [activeScopes, setActiveScopes] = useState<string[]>([]);
+  const [searchQuery, setSearchQuery] = useState("");
 
   useEffect(() => {
     if (!current) setActiveScopes([]);
@@ -32,6 +34,7 @@ export function Skills() {
 
   const filteredSkills = useMemo(() => {
     if (!result) return [];
+    const query = searchQuery.toLowerCase();
     return result.skills.filter((skill) => {
       if (activeTools.length > 0 && !activeTools.includes(skill.sourceTool)) {
         return false;
@@ -39,15 +42,21 @@ export function Skills() {
       if (activeScopes.length > 0 && !activeScopes.includes(skill.scope)) {
         return false;
       }
+      if (query && !skill.name.toLowerCase().includes(query) && !skill.description?.toLowerCase().includes(query)) {
+        return false;
+      }
       return true;
     });
-  }, [result, activeTools, activeScopes]);
+  }, [result, activeTools, activeScopes, searchQuery]);
 
-  const hasActiveFilters = activeTools.length > 0 || activeScopes.length > 0;
+  const { visibleItems, hasMore, sentinelRef } = useInfiniteList(filteredSkills);
+
+  const hasActiveFilters = activeTools.length > 0 || activeScopes.length > 0 || searchQuery.length > 0;
 
   function clearFilters() {
     setActiveTools([]);
     setActiveScopes([]);
+    setSearchQuery("");
   }
 
   return (
@@ -89,13 +98,20 @@ export function Skills() {
       )}
 
       {result && result.skills.length > 0 && (
-        <FilterBar
-          activeTools={activeTools}
-          onToolsChange={setActiveTools}
-          activeScopes={activeScopes}
-          onScopesChange={setActiveScopes}
-          showScopeFilter={!!current}
-        />
+        <div className="mb-4 flex items-center gap-4">
+          <SearchBar
+            value={searchQuery}
+            onChange={setSearchQuery}
+            placeholder="Search skills..."
+          />
+          <FilterBar
+            activeTools={activeTools}
+            onToolsChange={setActiveTools}
+            activeScopes={activeScopes}
+            onScopesChange={setActiveScopes}
+            showScopeFilter={!!current}
+          />
+        </div>
       )}
 
       {isLoading && (
@@ -120,10 +136,11 @@ export function Skills() {
         <>
           <ConflictWarning conflicts={result.conflicts} />
           <SkillList
-            skills={filteredSkills}
+            skills={visibleItems}
             hasActiveFilters={hasActiveFilters}
             onClearFilters={clearFilters}
           />
+          {hasMore && <div ref={sentinelRef} className="h-4" />}
         </>
       )}
 
