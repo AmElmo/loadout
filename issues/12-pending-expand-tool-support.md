@@ -1,4 +1,4 @@
-# Issue 11: Expand Tool Support — Cursor, Copilot, Windsurf, Amp, Roo Code, Cline, Kilo Code, OpenCode, Trae
+# Issue 12: Expand Tool Support — Cursor, Copilot, Windsurf, Amp, Roo Code, Cline, Kilo Code, OpenCode, Trae
 
 **Phase:** 3 (Ecosystem Expansion)
 **Status:** Pending

@@ -1,4 +1,4 @@
-# Issue 6: MCP Health Testing
+# Issue 7: MCP Health Testing
 
 **Phase:** 2 (Interactive Features)
 **Status:** Pending
