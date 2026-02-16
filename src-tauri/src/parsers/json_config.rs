@@ -24,6 +24,9 @@ pub struct JsonMCPServer {
     /// Environment variables
     #[serde(default)]
     pub env: HashMap<String, String>,
+    /// HTTP headers (for http type, supports ${VAR} interpolation)
+    #[serde(default)]
+    pub headers: HashMap<String, String>,
 }
 
 fn default_mcp_type() -> String {

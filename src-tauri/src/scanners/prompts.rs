@@ -3,6 +3,7 @@
 //! Scans main prompt files (CLAUDE.md, AGENTS.md, GEMINI.md) and rules directories
 //! at both global and project levels.
 
+use super::tokens::estimate_tokens;
 use serde::{Deserialize, Serialize};
 use std::collections::HashSet;
 use std::fs;
@@ -44,6 +45,8 @@ pub struct PromptFile {
     pub content: String,
     /// File size in bytes
     pub size: u64,
+    /// Estimated token count for context window usage
+    pub tokens: u32,
     /// Glob patterns that scope this rule (from frontmatter or directory path).
     /// None means "always loaded" (unconditional).
     #[serde(skip_serializing_if = "Option::is_none")]
@@ -374,6 +377,8 @@ fn scan_prompt_file(name: &str, tool: PromptSourceTool, scope: PromptScope, path
         (String::new(), 0)
     };
 
+    let tokens = estimate_tokens(&content);
+
     PromptFile {
         name: name.to_string(),
         source_tool: tool,
@@ -382,6 +387,7 @@ fn scan_prompt_file(name: &str, tool: PromptSourceTool, scope: PromptScope, path
         exists,
         content,
         size,
+        tokens,
         scoped_paths: None,
         is_scoped: false,
     }
