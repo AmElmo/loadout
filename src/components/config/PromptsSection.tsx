@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { FileText, Globe, FolderOpen, Crosshair } from "lucide-react";
+import { FileText, User, FolderOpen, Crosshair } from "lucide-react";
 import type { PromptFile } from "@/types";
 import { RuleCard } from "./RuleCard";
 import { RuleViewer } from "./RuleViewer";
@@ -12,7 +12,7 @@ interface PromptsSectionProps {
 export function PromptsSection({ prompts, workspaceName }: PromptsSectionProps) {
   const [selectedRule, setSelectedRule] = useState<PromptFile | null>(null);
 
-  const globalRules = prompts.filter((p) => p.scope === "global");
+  const userRules = prompts.filter((p) => p.scope === "user");
   const projectRules = prompts.filter((p) => p.scope === "project");
   const alwaysLoadedProjectRules = projectRules.filter((p) => !p.isScoped);
   const scopedProjectRules = projectRules.filter((p) => p.isScoped);
@@ -49,15 +49,15 @@ export function PromptsSection({ prompts, workspaceName }: PromptsSectionProps) 
   return (
     <>
       <div className="space-y-6">
-        {/* Global rules */}
-        {globalRules.length > 0 && (
+        {/* User rules */}
+        {userRules.length > 0 && (
           <div>
             <h4 className="mb-3 flex items-center gap-1.5 text-sm font-medium text-muted-foreground">
-              <Globe className="h-3.5 w-3.5" />
-              Global — applies to all projects
+              <User className="h-3.5 w-3.5" />
+              User — applies to all projects
             </h4>
             <div className="space-y-2">
-              {globalRules.map((rule) => (
+              {userRules.map((rule) => (
                 <RuleCard
                   key={rule.path}
                   rule={rule}

@@ -23,7 +23,7 @@ pub enum PromptSourceTool {
 #[derive(Debug, Clone, Copy, Serialize, Deserialize, PartialEq, Eq)]
 #[serde(rename_all = "lowercase")]
 pub enum PromptScope {
-    Global,
+    User,
     Project,
 }
 
@@ -76,7 +76,7 @@ pub fn scan_all_prompts(workspace_path: Option<&str>) -> Result<PromptScanResult
 
     for (tool, path) in global_paths {
         let name = path.file_name().unwrap_or_default().to_string_lossy().to_string();
-        prompts.push(scan_prompt_file(&name, tool, PromptScope::Global, &path));
+        prompts.push(scan_prompt_file(&name, tool, PromptScope::User, &path));
     }
 
     // === Global rules directories ===
@@ -84,7 +84,7 @@ pub fn scan_all_prompts(workspace_path: Option<&str>) -> Result<PromptScanResult
     scan_rules_directory(
         &mut prompts,
         PromptSourceTool::Claude,
-        PromptScope::Global,
+        PromptScope::User,
         &home_dir.join(".claude").join("rules"),
     );
 
@@ -406,7 +406,7 @@ mod tests {
         let mut file = fs::File::create(&path).unwrap();
         writeln!(file, "# System Prompt\nBe helpful.").unwrap();
 
-        let result = scan_prompt_file("CLAUDE.md", PromptSourceTool::Claude, PromptScope::Global, &path);
+        let result = scan_prompt_file("CLAUDE.md", PromptSourceTool::Claude, PromptScope::User, &path);
         assert!(result.exists);
         assert_eq!(result.name, "CLAUDE.md");
         assert!(result.content.contains("Be helpful"));
@@ -418,7 +418,7 @@ mod tests {
     #[test]
     fn test_scan_prompt_file_missing() {
         let path = PathBuf::from("/nonexistent/CLAUDE.md");
-        let result = scan_prompt_file("CLAUDE.md", PromptSourceTool::Claude, PromptScope::Global, &path);
+        let result = scan_prompt_file("CLAUDE.md", PromptSourceTool::Claude, PromptScope::User, &path);
         assert!(!result.exists);
         assert!(result.content.is_empty());
         assert_eq!(result.size, 0);
