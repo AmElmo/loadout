@@ -2,6 +2,7 @@ import { useWorkspaceStore } from "@/stores/workspaceStore";
 import { FolderOpen, GitBranch } from "lucide-react";
 
 const tabLabels: Record<string, string> = {
+  home: "Home",
   mcps: "MCPs",
   skills: "Skills",
   rules: "Rules",

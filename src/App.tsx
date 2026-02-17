@@ -1,5 +1,6 @@
 import { Sidebar } from "@/components/Sidebar";
 import { Header } from "@/components/Header";
+import { Home } from "@/pages/Home";
 import { MCPs } from "@/pages/MCPs";
 import { Skills } from "@/pages/Skills";
 import { Rules } from "@/pages/Rules";
@@ -13,6 +14,8 @@ function App() {
 
   const renderPage = () => {
     switch (activeTab) {
+      case "home":
+        return <Home />;
       case "mcps":
         return <MCPs />;
       case "skills":
@@ -26,7 +29,7 @@ function App() {
       case "learn":
         return <Learn />;
       default:
-        return <MCPs />;
+        return <Home />;
     }
   };
 

@@ -11,8 +11,12 @@ export async function scanRules(
 }
 
 /**
- * Scan hook configurations from Claude and Gemini settings
+ * Scan hook configurations from Claude and Gemini settings.
+ * Pass workspacePath to include project-level hooks from
+ * <workspace>/.claude/settings.json and <workspace>/.gemini/settings.json.
  */
-export async function scanHooks(): Promise<HookScanResult> {
-  return invoke<HookScanResult>("scan_hooks");
+export async function scanHooks(
+  workspacePath?: string
+): Promise<HookScanResult> {
+  return invoke<HookScanResult>("scan_hooks", { workspacePath });
 }

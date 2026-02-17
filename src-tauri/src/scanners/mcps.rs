@@ -114,9 +114,11 @@ pub fn scan_all_mcps(workspace_path: Option<&str>) -> Result<Vec<MCPItem>, Strin
         }
     }
 
-    // Project-level: $PROJECT_ROOT/.mcp.json
+    // Project-level: $PROJECT_ROOT/.mcp.json (Claude Code)
     if let Some(ws_path) = workspace_path {
-        let project_mcp_path = PathBuf::from(ws_path).join(".mcp.json");
+        let ws = PathBuf::from(ws_path);
+
+        let project_mcp_path = ws.join(".mcp.json");
         if let Ok(config) = parse_claude_config(&project_mcp_path) {
             for (name, server) in config.mcp_servers {
                 let mcp_type = if server.mcp_type == "http" {
@@ -136,6 +138,53 @@ pub fn scan_all_mcps(workspace_path: Option<&str>) -> Result<Vec<MCPItem>, Strin
                     scope: Scope::Project,
                     path: project_mcp_path.to_string_lossy().to_string(),
                 });
+            }
+        }
+
+        // Project-level: $PROJECT_ROOT/.codex/config.toml (Codex CLI)
+        let codex_project_path = ws.join(".codex").join("config.toml");
+        if codex_project_path.exists() {
+            if let Ok(config) = parse_codex_config(&codex_project_path) {
+                for (name, server) in config.mcp_servers {
+                    entries.push(RawMCPEntry {
+                        name,
+                        mcp_type: MCPType::Stdio, // Codex only supports stdio
+                        command: Some(server.command),
+                        args: server.args,
+                        url: None,
+                        env: server.env,
+                        headers: HashMap::new(),
+                        source_tool: SourceTool::Codex,
+                        scope: Scope::Project,
+                        path: codex_project_path.to_string_lossy().to_string(),
+                    });
+                }
+            }
+        }
+
+        // Project-level: $PROJECT_ROOT/.gemini/settings.json (Gemini CLI)
+        let gemini_project_path = ws.join(".gemini").join("settings.json");
+        if gemini_project_path.exists() {
+            if let Ok(config) = parse_gemini_config(&gemini_project_path) {
+                for (name, server) in config.mcp_servers {
+                    let mcp_type = if server.mcp_type == "http" {
+                        MCPType::Http
+                    } else {
+                        MCPType::Stdio
+                    };
+                    entries.push(RawMCPEntry {
+                        name,
+                        mcp_type,
+                        command: server.command,
+                        args: server.args,
+                        url: server.url,
+                        env: server.env,
+                        headers: server.headers,
+                        source_tool: SourceTool::Gemini,
+                        scope: Scope::Project,
+                        path: gemini_project_path.to_string_lossy().to_string(),
+                    });
+                }
             }
         }
     }

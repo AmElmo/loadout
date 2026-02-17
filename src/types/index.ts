@@ -199,11 +199,14 @@ export interface PromptScanResult {
 
 export type HookSourceTool = "claude" | "gemini";
 
+export type HookScope = "user" | "project";
+
 /**
  * A normalized hook configuration item
  */
 export interface HookItem {
   sourceTool: HookSourceTool;
+  scope: HookScope;
   event: string;
   matcher: string | null;
   command: string;
