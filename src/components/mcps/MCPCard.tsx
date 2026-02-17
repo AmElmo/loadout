@@ -5,6 +5,7 @@ import { cn } from "@/lib/utils";
 import { syncMCPToTools } from "@/lib/api/sync";
 import { SyncDialog } from "@/components/sync";
 import { Button } from "@/components/ui/button";
+import { OpenPathButton } from "@/components/ui/open-path-button";
 import { HealthBadge } from "./HealthBadge";
 import { MCPIcon } from "./MCPIcon";
 import { TestHealthDialog } from "./TestHealthDialog";
@@ -156,6 +157,12 @@ export function MCPCard({ mcp }: MCPCardProps) {
               <Activity className="mr-2 h-3.5 w-3.5" />
               Test
             </Button>
+            <OpenPathButton
+              path={mcp.path}
+              variant="outline"
+              size="sm"
+              label="Open Config"
+            />
 
             {missingTools.length > 0 && (
               <Button

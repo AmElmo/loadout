@@ -7,6 +7,7 @@ import { TokenBadge } from "@/components/context";
 import { SyncDialog } from "@/components/sync";
 import { MaturityBadge } from "./MaturityBadge";
 import { Button } from "@/components/ui/button";
+import { OpenPathButton } from "@/components/ui/open-path-button";
 
 const ALL_TOOLS: SourceTool[] = ["claude", "codex", "gemini"];
 
@@ -87,22 +88,29 @@ export function SkillViewer({ skill, onClose }: SkillViewerProps) {
 
         {/* Footer */}
         <div className="flex items-center justify-between border-t border-border px-4 py-2">
-          <div className="flex items-center gap-2 text-xs text-muted-foreground">
+          <div className="flex min-w-0 items-center gap-2 text-xs text-muted-foreground">
             <FolderOpen className="h-3.5 w-3.5 shrink-0" />
             <span className="truncate font-mono" title={skill.path}>
               {skill.path}
             </span>
           </div>
-          {missingTools.length > 0 && (
-            <Button
+          <div className="flex items-center gap-2">
+            <OpenPathButton
+              path={skill.path}
               variant="outline"
               size="sm"
-              onClick={() => setShowSync(true)}
-            >
-              <Share2 className="mr-1.5 h-3.5 w-3.5" />
-              Sync to Other Tools
-            </Button>
-          )}
+            />
+            {missingTools.length > 0 && (
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={() => setShowSync(true)}
+              >
+                <Share2 className="mr-1.5 h-3.5 w-3.5" />
+                Sync to Other Tools
+              </Button>
+            )}
+          </div>
         </div>
       </div>
 

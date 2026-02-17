@@ -1,6 +1,7 @@
 import { Anchor, AlertTriangle } from "lucide-react";
 import type { HookItem } from "@/types";
 import { cn } from "@/lib/utils";
+import { OpenPathButton } from "@/components/ui/open-path-button";
 
 interface HooksSectionProps {
   hooks: HookItem[];
@@ -80,6 +81,9 @@ export function HooksSection({ hooks, geminiHooksEnabled }: HooksSectionProps) {
                   <th className="px-3 py-2 text-left font-medium text-muted-foreground">
                     Command
                   </th>
+                  <th className="px-3 py-2 text-left font-medium text-muted-foreground">
+                    Config
+                  </th>
                 </tr>
               </thead>
               <tbody>
@@ -114,6 +118,15 @@ export function HooksSection({ hooks, geminiHooksEnabled }: HooksSectionProps) {
                       title={hook.command}
                     >
                       {hook.command}
+                    </td>
+                    <td className="px-3 py-2">
+                      <OpenPathButton
+                        path={hook.path}
+                        variant="ghost"
+                        size="sm"
+                        label="Open Config"
+                        className="h-7 px-2 text-xs"
+                      />
                     </td>
                   </tr>
                 ))}

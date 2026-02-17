@@ -4,6 +4,7 @@ import type { PromptFile } from "@/types";
 import { ToolBadge } from "@/components/mcps/ToolBadge";
 import { TokenBadge } from "@/components/context";
 import { Button } from "@/components/ui/button";
+import { OpenPathButton } from "@/components/ui/open-path-button";
 
 interface RuleViewerProps {
   rule: PromptFile;
@@ -102,11 +103,18 @@ export function RuleViewer({ rule, onClose }: RuleViewerProps) {
         </div>
 
         {/* Footer */}
-        <div className="flex items-center gap-2 border-t border-border px-4 py-2 text-xs text-muted-foreground">
-          <FolderOpen className="h-3.5 w-3.5 shrink-0" />
-          <span className="truncate font-mono" title={rule.path}>
-            {rule.path}
-          </span>
+        <div className="flex items-center justify-between gap-4 border-t border-border px-4 py-2 text-xs text-muted-foreground">
+          <div className="flex min-w-0 items-center gap-2">
+            <FolderOpen className="h-3.5 w-3.5 shrink-0" />
+            <span className="truncate font-mono" title={rule.path}>
+              {rule.path}
+            </span>
+          </div>
+          <OpenPathButton
+            path={rule.path}
+            variant="outline"
+            size="sm"
+          />
         </div>
       </div>
     </div>
