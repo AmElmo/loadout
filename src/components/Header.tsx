@@ -7,6 +7,7 @@ const tabLabels: Record<string, string> = {
   rules: "Rules",
   hooks: "Hooks",
   context: "Context",
+  learn: "Learn",
 };
 
 export function Header() {

@@ -5,6 +5,7 @@ import { Skills } from "@/pages/Skills";
 import { Rules } from "@/pages/Rules";
 import { Hooks } from "@/pages/Hooks";
 import { Context } from "@/pages/Context";
+import { Learn } from "@/pages/Learn";
 import { useWorkspaceStore } from "@/stores/workspaceStore";
 
 function App() {
@@ -22,6 +23,8 @@ function App() {
         return <Hooks />;
       case "context":
         return <Context />;
+      case "learn":
+        return <Learn />;
       default:
         return <MCPs />;
     }
