@@ -272,7 +272,7 @@ export function Context() {
               <div className="space-y-2 text-xs text-muted-foreground">
                 <div>
                   <span className="font-medium text-amber-500">Rules</span>{" "}
-                  — Full content loaded on every message. Always-on cost.
+                  — Full content loaded on every message. Always-on cost. Scoped rules only load when the agent works on a matching file.
                 </div>
                 <div>
                   <span className="font-medium text-purple-500">Skills</span>{" "}
@@ -297,7 +297,7 @@ export function Context() {
                 <div>
                   <span className="font-medium text-foreground">Idle tokens</span>{" "}
                   — Consumed on every single message you send, even when the item is not being used.
-                  Rules and MCP tool definitions are always idle cost.
+                  User and project rules are always idle cost. Scoped rules only apply when a matching file is active. MCP tool definitions are always idle cost.
                 </div>
                 <div>
                   <span className="font-medium text-foreground">Active tokens</span>{" "}

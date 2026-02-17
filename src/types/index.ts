@@ -208,6 +208,7 @@ export interface HookItem {
   matcher: string | null;
   command: string;
   actionType: string;
+  path: string;
 }
 
 export interface HookScanResult {

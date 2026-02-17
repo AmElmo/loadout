@@ -28,6 +28,8 @@ pub struct HookItem {
     pub command: String,
     /// Action type (e.g., "command")
     pub action_type: String,
+    /// Path to the source config file
+    pub path: String,
 }
 
 /// Result of scanning all hooks
@@ -56,7 +58,11 @@ pub fn scan_all_hooks() -> Result<HookScanResult, String> {
                             event: event.clone(),
                             matcher: matcher_entry.matcher.clone(),
                             command: cmd.clone(),
-                            action_type: action.action_type.clone().unwrap_or_else(|| "command".to_string()),
+                            action_type: action
+                                .action_type
+                                .clone()
+                                .unwrap_or_else(|| "command".to_string()),
+                            path: claude_settings_path.to_string_lossy().to_string(),
                         });
                     }
                 }
@@ -78,7 +84,11 @@ pub fn scan_all_hooks() -> Result<HookScanResult, String> {
                         event: event.clone(),
                         matcher: matcher_entry.matcher.clone(),
                         command: cmd.clone(),
-                        action_type: action.action_type.clone().unwrap_or_else(|| "command".to_string()),
+                        action_type: action
+                            .action_type
+                            .clone()
+                            .unwrap_or_else(|| "command".to_string()),
+                        path: gemini_settings_path.to_string_lossy().to_string(),
                     });
                 }
             }
@@ -110,6 +120,7 @@ mod tests {
             matcher: Some("Bash|Write".to_string()),
             command: "/path/to/script.sh".to_string(),
             action_type: "command".to_string(),
+            path: "/Users/test/.claude/settings.json".to_string(),
         };
 
         let json = serde_json::to_string(&hook).unwrap();
