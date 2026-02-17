@@ -4,6 +4,7 @@ import {
   FileText,
   Anchor,
   BarChart3,
+  BookOpen,
   FolderOpen,
   ChevronDown,
   GitBranch,
@@ -295,6 +296,21 @@ export function Sidebar() {
             );
           })}
         </ul>
+
+        <div className="my-2 border-t border-sidebar-border" />
+
+        <button
+          onClick={() => setActiveTab("learn")}
+          className={cn(
+            "flex w-full items-center gap-3 rounded-md px-3 py-2 text-sm transition-colors",
+            activeTab === "learn"
+              ? "bg-sidebar-accent text-sidebar-accent-foreground"
+              : "text-muted-foreground hover:bg-sidebar-accent/50 hover:text-sidebar-foreground"
+          )}
+        >
+          <BookOpen className="h-4 w-4" />
+          Learn
+        </button>
       </nav>
 
       {/* Version */}
