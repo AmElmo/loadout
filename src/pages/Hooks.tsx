@@ -6,9 +6,12 @@ import { HooksSection } from "@/components/config";
 import { SearchBar } from "@/components/filters";
 import { Button } from "@/components/ui/button";
 import { useInfiniteList } from "@/hooks/useInfiniteList";
+import { useWorkspaceStore } from "@/stores/workspaceStore";
 
 export function Hooks() {
   const [searchQuery, setSearchQuery] = useState("");
+  const workspace = useWorkspaceStore((s) => s.current);
+  const workspacePath = workspace?.path ?? undefined;
 
   const {
     data: result,
@@ -17,8 +20,8 @@ export function Hooks() {
     refetch,
     isRefetching,
   } = useQuery({
-    queryKey: ["hooks"],
-    queryFn: () => scanHooks(),
+    queryKey: ["hooks", workspacePath ?? null],
+    queryFn: () => scanHooks(workspacePath),
   });
 
   const filteredHooks = useMemo(() => {

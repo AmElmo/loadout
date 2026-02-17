@@ -1,4 +1,5 @@
 import {
+  Home,
   Server,
   Sparkles,
   FileText,
@@ -13,7 +14,7 @@ import {
   X,
 } from "lucide-react";
 import { open } from "@tauri-apps/plugin-dialog";
-import { cn } from "@/lib/utils";
+import { cn, isRealWorkspace } from "@/lib/utils";
 import { useWorkspaceStore } from "@/stores/workspaceStore";
 import { getWorkspaceInfo, discoverWorkspaces } from "@/lib/api/workspace";
 import { useState, useEffect, useRef } from "react";
@@ -21,6 +22,7 @@ import { useQuery } from "@tanstack/react-query";
 import type { DiscoveredWorkspace } from "@/types";
 
 const navItems = [
+  { id: "home" as const, label: "Home", icon: Home },
   { id: "mcps" as const, label: "MCPs", icon: Server },
   { id: "skills" as const, label: "Skills", icon: Sparkles },
   { id: "rules" as const, label: "Rules", icon: FileText },
@@ -136,12 +138,14 @@ export function Sidebar() {
   };
 
   const filteredWorkspaces =
-    discovery?.workspaces.filter(
-      (ws) =>
-        !filter ||
-        ws.name.toLowerCase().includes(filter.toLowerCase()) ||
-        ws.path.toLowerCase().includes(filter.toLowerCase())
-    ) ?? [];
+    discovery?.workspaces
+      .filter(isRealWorkspace)
+      .filter(
+        (ws) =>
+          !filter ||
+          ws.name.toLowerCase().includes(filter.toLowerCase()) ||
+          ws.path.toLowerCase().includes(filter.toLowerCase())
+      ) ?? [];
 
   return (
     <aside className="flex h-full w-[200px] flex-col border-r border-sidebar-border bg-sidebar">

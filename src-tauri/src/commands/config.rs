@@ -11,6 +11,6 @@ pub fn scan_rules(workspace_path: Option<String>) -> Result<PromptScanResult, St
 
 /// Scan hook configurations from Claude and Gemini settings
 #[tauri::command]
-pub fn scan_hooks() -> Result<HookScanResult, String> {
-    scan_all_hooks()
+pub fn scan_hooks(workspace_path: Option<String>) -> Result<HookScanResult, String> {
+    scan_all_hooks(workspace_path.as_deref())
 }

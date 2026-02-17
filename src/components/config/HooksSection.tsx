@@ -73,6 +73,9 @@ export function HooksSection({ hooks, geminiHooksEnabled }: HooksSectionProps) {
                     Tool
                   </th>
                   <th className="px-3 py-2 text-left font-medium text-muted-foreground">
+                    Scope
+                  </th>
+                  <th className="px-3 py-2 text-left font-medium text-muted-foreground">
                     Event
                   </th>
                   <th className="px-3 py-2 text-left font-medium text-muted-foreground">
@@ -105,6 +108,18 @@ export function HooksSection({ hooks, geminiHooksEnabled }: HooksSectionProps) {
                         )}
                       >
                         {hook.sourceTool}
+                      </span>
+                    </td>
+                    <td className="px-3 py-2">
+                      <span
+                        className={cn(
+                          "inline-flex rounded-md border px-1.5 py-0.5 text-[10px] font-medium",
+                          hook.scope === "project"
+                            ? "border-purple-500/20 bg-purple-500/10 text-purple-600"
+                            : "border-border bg-muted/50 text-muted-foreground"
+                        )}
+                      >
+                        {hook.scope}
                       </span>
                     </td>
                     <td className="px-3 py-2 font-mono text-xs">
@@ -189,7 +204,11 @@ export function HooksSection({ hooks, geminiHooksEnabled }: HooksSectionProps) {
           <p className="text-xs text-muted-foreground">
             {claudeHooks.length} Claude hook
             {claudeHooks.length !== 1 ? "s" : ""}, {geminiHooks.length} Gemini
-            hook{geminiHooks.length !== 1 ? "s" : ""}. Codex only supports{" "}
+            hook{geminiHooks.length !== 1 ? "s" : ""}
+            {hooks.some((h) => h.scope === "project") && (
+              <> ({hooks.filter((h) => h.scope === "project").length} project-level)</>
+            )}
+            . Codex only supports{" "}
             <code className="rounded bg-muted px-1">notify</code> (limited).
           </p>
         </>
