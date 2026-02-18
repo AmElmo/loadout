@@ -12,6 +12,7 @@ import { ContextBar } from "@/components/context/ContextBar";
 import { ContextTable } from "@/components/context/ContextTable";
 import { Button } from "@/components/ui/button";
 import type { MCPItem, MCPToolsResult, SourceTool } from "@/types";
+import { ToolLogo } from "@/components/ToolLogo";
 
 const TOOL_FILTERS: { label: string; value: SourceTool }[] = [
   { label: "Claude", value: "claude" },
@@ -186,12 +187,13 @@ export function Context() {
               key={filter.label}
               onClick={() => setActiveTool(filter.value)}
               className={cn(
-                "rounded-md px-3 py-1 text-xs font-medium transition-colors",
+                "inline-flex items-center gap-1 rounded-md px-3 py-1 text-xs font-medium transition-colors",
                 activeTool === filter.value
                   ? "bg-background text-foreground shadow-sm"
                   : "text-muted-foreground hover:text-foreground"
               )}
             >
+              <ToolLogo tool={filter.value} size={12} />
               {filter.label}
             </button>
           ))}

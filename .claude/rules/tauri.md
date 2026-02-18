@@ -1,3 +1,11 @@
+---
+paths:
+  - "src-tauri/**/*.rs"
+  - "src-tauri/tauri.conf.json"
+  - "src-tauri/capabilities/**"
+  - "src-tauri/Cargo.toml"
+---
+
 # Tauri 2.x Rules
 
 ## Configuration

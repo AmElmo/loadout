@@ -1,3 +1,11 @@
+---
+paths:
+  - "vite.config.*"
+  - "tsconfig*"
+  - "eslint.config.*"
+  - "index.html"
+---
+
 # Vite Configuration Rules
 
 ## Tauri Integration

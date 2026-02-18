@@ -1,5 +1,6 @@
 import type { SourceTool } from "@/types";
 import { cn } from "@/lib/utils";
+import { ToolLogo } from "@/components/ToolLogo";
 
 interface ToolBadgeProps {
   tool: SourceTool;
@@ -22,11 +23,12 @@ export function ToolBadge({ tool, className }: ToolBadgeProps) {
   return (
     <span
       className={cn(
-        "inline-flex items-center rounded-md border px-1.5 py-0.5 text-[10px] font-medium uppercase tracking-wider",
+        "inline-flex items-center gap-1 rounded-md border px-1.5 py-0.5 text-[10px] font-medium uppercase tracking-wider",
         toolColors[tool],
         className
       )}
     >
+      <ToolLogo tool={tool} size={10} />
       {toolLabels[tool]}
     </span>
   );

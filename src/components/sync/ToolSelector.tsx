@@ -1,6 +1,7 @@
 import { AlertTriangle } from "lucide-react";
 import type { SourceTool } from "@/types";
 import { cn } from "@/lib/utils";
+import { ToolLogo } from "@/components/ToolLogo";
 
 interface ToolSelectorProps {
   selectedTools: SourceTool[];
@@ -74,6 +75,7 @@ export function ToolSelector({
                 disabled={isDisabled}
                 className={cn("h-4 w-4 rounded", color)}
               />
+              <ToolLogo tool={id} size={14} />
               {label}
             </label>
           );

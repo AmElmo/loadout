@@ -1,3 +1,13 @@
+---
+paths:
+  - "src/components/mcps/**"
+  - "src/lib/api/mcps*"
+  - "src/pages/MCPs*"
+  - "src-tauri/src/**/mcp*"
+  - "src-tauri/src/parsers/json_config*"
+  - "src-tauri/src/parsers/toml_config*"
+---
+
 # MCP Configuration Rules
 
 ## Configuration Sources
