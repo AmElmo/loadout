@@ -6,7 +6,7 @@ use std::path::{Path, PathBuf};
 
 /// Ensure the backup directory exists and return its path
 fn ensure_backup_dir() -> Result<PathBuf, String> {
-    let home = dirs::home_dir().ok_or("Could not determine home directory")?;
+    let home = crate::helpers::effective_home().ok_or("Could not determine home directory")?;
     let backup_dir = home.join(".loadout").join("backups");
     fs::create_dir_all(&backup_dir)
         .map_err(|e| format!("Failed to create backup directory: {}", e))?;

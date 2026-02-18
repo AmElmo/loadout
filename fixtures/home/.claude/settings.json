@@ -1,0 +1,28 @@
+{
+  "hooks": {
+    "PreToolUse": [
+      {
+        "matcher": "Bash|Write",
+        "hooks": [{ "type": "command", "command": "echo '[guard] Reviewing tool use...'" }]
+      },
+      {
+        "matcher": "Edit",
+        "hooks": [{ "type": "command", "command": "/usr/local/bin/pre-edit-check" }]
+      }
+    ],
+    "PostToolUse": [
+      {
+        "hooks": [{ "type": "command", "command": "/usr/local/bin/notify-done --sound subtle" }]
+      }
+    ],
+    "Notification": [
+      {
+        "hooks": [{ "type": "command", "command": "osascript -e 'display notification \"$CLAUDE_NOTIFICATION\" with title \"Claude Code\"'" }]
+      }
+    ]
+  },
+  "permissions": {
+    "allow": ["Read", "Glob", "Grep", "WebFetch"],
+    "deny": ["Bash(rm -rf *)"]
+  }
+}

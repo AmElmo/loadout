@@ -1,0 +1,45 @@
+{
+  "mcpServers": {
+    "sentry": {
+      "type": "stdio",
+      "command": "npx",
+      "args": ["-y", "@sentry/mcp-server"],
+      "env": { "SENTRY_AUTH_TOKEN": "sntrys_Pm7Kx2vQ9wR4" }
+    },
+    "datadog": {
+      "type": "stdio",
+      "command": "npx",
+      "args": ["-y", "@datadog/mcp-server"],
+      "env": {
+        "DD_API_KEY": "dd_api_8f3k9m2p7v",
+        "DD_APP_KEY": "dd_app_Rx4Wn6Lq1T"
+      }
+    },
+    "jira": {
+      "type": "http",
+      "url": "https://mcp.atlassian.com/jira/sse",
+      "headers": { "Authorization": "Bearer atlassian_Yq8Pm3Kx7v" }
+    },
+    "github": {
+      "type": "stdio",
+      "command": "npx",
+      "args": ["-y", "@modelcontextprotocol/server-github"],
+      "env": { "GITHUB_TOKEN": "ghp_A1b2C3d4E5f6G7h8I9j0" }
+    }
+  },
+  "experiments": { "enableHooks": true },
+  "hooks": {
+    "BeforeTool": [
+      {
+        "matcher": "shell",
+        "hooks": [{ "type": "command", "command": "echo '[gemini] Running shell command'" }]
+      }
+    ],
+    "AfterTool": [
+      {
+        "matcher": "edit_file",
+        "hooks": [{ "type": "command", "command": "pnpm lint --fix --quiet" }]
+      }
+    ]
+  }
+}

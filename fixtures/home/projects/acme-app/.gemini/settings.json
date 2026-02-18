@@ -1,0 +1,10 @@
+{
+  "mcpServers": {
+    "vercel": {
+      "type": "stdio",
+      "command": "npx",
+      "args": ["-y", "@vercel/mcp-server"],
+      "env": { "VERCEL_TOKEN": "vrcl_Pm7Kx2vQ9wR4nL5" }
+    }
+  }
+}

@@ -1,0 +1,20 @@
+{
+  "hooks": {
+    "PreToolUse": [
+      {
+        "matcher": "Bash",
+        "hooks": [{ "type": "command", "command": "echo '[acme] Checking sandbox...'" }]
+      }
+    ],
+    "PostToolUse": [
+      {
+        "matcher": "Write|Edit",
+        "hooks": [{ "type": "command", "command": "pnpm lint --fix --quiet 2>/dev/null || true" }]
+      }
+    ]
+  },
+  "permissions": {
+    "allow": ["Read", "Glob", "Grep", "Bash(pnpm test)", "Bash(pnpm lint)"],
+    "deny": ["Bash(rm -rf *)", "Bash(DROP TABLE)"]
+  }
+}

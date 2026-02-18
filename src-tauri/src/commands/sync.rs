@@ -80,7 +80,7 @@ impl AddMCPRequest {
 
 /// Get the config file path for each tool's MCP config
 fn mcp_config_path(tool: &str) -> Result<PathBuf, String> {
-    let home = dirs::home_dir().ok_or("Could not determine home directory")?;
+    let home = crate::helpers::effective_home().ok_or("Could not determine home directory")?;
     match tool {
         "claude" => Ok(home.join(".claude.json")),
         "codex" => Ok(home.join(".codex").join("config.toml")),
@@ -216,7 +216,7 @@ fn read_mcp_from_source(
     source_tool: &str,
     source_path: Option<&str>,
 ) -> Result<MCPServerInput, String> {
-    let home = dirs::home_dir().ok_or("Could not determine home directory")?;
+    let home = crate::helpers::effective_home().ok_or("Could not determine home directory")?;
 
     match source_tool {
         "claude" => {

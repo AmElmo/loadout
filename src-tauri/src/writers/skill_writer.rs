@@ -36,7 +36,7 @@ pub fn validate_skill_name(name: &str) -> Result<String, String> {
 
 /// Tool-specific user-level skill directories
 fn skill_dir_for_tool(tool: &str) -> Result<PathBuf, String> {
-    let home = dirs::home_dir().ok_or("Could not determine home directory")?;
+    let home = crate::helpers::effective_home().ok_or("Could not determine home directory")?;
     match tool {
         "claude" => Ok(home.join(".claude").join("skills")),
         "codex" => Ok(home.join(".agents").join("skills")),

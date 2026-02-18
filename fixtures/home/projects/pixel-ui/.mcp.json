@@ -1,0 +1,15 @@
+{
+  "mcpServers": {
+    "figma": {
+      "type": "stdio",
+      "command": "npx",
+      "args": ["-y", "@anthropic/mcp-server-figma"],
+      "env": { "FIGMA_ACCESS_TOKEN": "figd_Pm7Kx2vQ9wR4nL5xK9" }
+    },
+    "chromatic": {
+      "type": "http",
+      "url": "https://mcp.chromatic.com/sse",
+      "headers": { "Authorization": "Bearer chr_8f3k9m2p7v" }
+    }
+  }
+}
