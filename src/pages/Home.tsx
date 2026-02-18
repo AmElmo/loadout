@@ -374,6 +374,39 @@ export function Home() {
         </div>
       )}
 
+      {/* Detected tools */}
+      {allItemsLoaded && (
+        <div className="mb-6">
+          <h3 className="mb-3 text-sm font-medium text-muted-foreground">
+            Tools on this computer
+          </h3>
+          <div className="flex items-center gap-3">
+            {TOOLS.map((tool) => {
+              const bd = computeToolBreakdown(mcpsList, skills, rules, hooks, tool);
+              const total = bd.mcpCount + bd.skillCount + bd.ruleCount + bd.hookCount;
+              if (total === 0) return null;
+              return (
+                <div
+                  key={tool}
+                  className={cn(
+                    "flex items-center gap-2.5 rounded-lg border border-border bg-card px-4 py-3",
+                    toolTextColors[tool]
+                  )}
+                >
+                  <ToolLogo tool={tool} size={20} />
+                  <span className="text-sm font-medium">{toolLabels[tool]}</span>
+                </div>
+              );
+            })}
+            {!hasAnyData && (
+              <p className="text-sm text-muted-foreground">
+                No AI tools detected yet
+              </p>
+            )}
+          </div>
+        </div>
+      )}
+
       {/* Stat cards — user-level counts */}
       <div className="grid grid-cols-2 gap-4 lg:grid-cols-4">
         <StatCard
