@@ -32,10 +32,8 @@ export function AddMCPDialog({ onClose }: AddMCPDialogProps) {
   // Preview state
   const [previews, setPreviews] = useState<PreviewConfig[]>([]);
   const isHttpMCP = mcpType === "http";
-  const disabledTools: SourceTool[] = isHttpMCP ? ["codex"] : [];
-  const effectiveTargetTools = isHttpMCP
-    ? targetTools.filter((tool) => tool !== "codex")
-    : targetTools;
+  const disabledTools: SourceTool[] = [];
+  const effectiveTargetTools = targetTools;
 
   const buildRequest = (): AddMCPRequest => ({
     name: name.trim(),
@@ -254,10 +252,6 @@ export function AddMCPDialog({ onClose }: AddMCPDialogProps) {
                 placeholder="e.g., https://mcp.linear.app/mcp"
                 className="w-full rounded-md border border-border bg-background px-3 py-2 text-sm focus:border-primary focus:outline-none focus:ring-1 focus:ring-primary"
               />
-              <p className="text-xs text-muted-foreground">
-                Codex CLI supports only stdio MCP servers, so it is disabled
-                for HTTP MCPs.
-              </p>
             </div>
           )}
 
@@ -304,11 +298,7 @@ export function AddMCPDialog({ onClose }: AddMCPDialogProps) {
           {/* Tool Selector */}
           <ToolSelector
             selectedTools={effectiveTargetTools}
-            onToolsChange={(tools) =>
-              setTargetTools(
-                isHttpMCP ? tools.filter((tool) => tool !== "codex") : tools
-              )
-            }
+            onToolsChange={setTargetTools}
             type="mcp"
             disabledTools={disabledTools}
             disabledReason="Codex CLI only supports stdio MCP servers"
