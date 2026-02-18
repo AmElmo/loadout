@@ -19,7 +19,8 @@ import { useWorkspaceStore } from "@/stores/workspaceStore";
 import { getWorkspaceInfo, discoverWorkspaces } from "@/lib/api/workspace";
 import { useState, useEffect, useRef } from "react";
 import { useQuery } from "@tanstack/react-query";
-import type { DiscoveredWorkspace } from "@/types";
+import type { DiscoveredWorkspace, SourceTool } from "@/types";
+import { ToolLogo } from "@/components/ToolLogo";
 
 const navItems = [
   { id: "home" as const, label: "Home", icon: Home },
@@ -30,14 +31,14 @@ const navItems = [
   { id: "context" as const, label: "Context", icon: BarChart3 },
 ];
 
-const toolColors: Record<string, string> = {
-  claude: "bg-orange-500",
-  codex: "bg-green-500",
-  gemini: "bg-blue-500",
+const toolTextColors: Record<string, string> = {
+  claude: "text-orange-500",
+  codex: "text-green-500",
+  gemini: "text-blue-500",
 };
 
 function ToolDots({ workspace }: { workspace: DiscoveredWorkspace }) {
-  const tools: { name: string; active: boolean }[] = [
+  const tools: { name: SourceTool; active: boolean }[] = [
     {
       name: "claude",
       active:
@@ -62,15 +63,17 @@ function ToolDots({ workspace }: { workspace: DiscoveredWorkspace }) {
   ];
 
   return (
-    <div className="flex items-center gap-1">
+    <div className="flex items-center gap-0.5">
       {tools
         .filter((t) => t.active)
         .map((t) => (
           <span
             key={t.name}
-            className={cn("h-2 w-2 rounded-full", toolColors[t.name])}
+            className={toolTextColors[t.name]}
             title={t.name}
-          />
+          >
+            <ToolLogo tool={t.name} size={9} />
+          </span>
         ))}
     </div>
   );

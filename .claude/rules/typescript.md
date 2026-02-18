@@ -1,3 +1,8 @@
+---
+paths:
+  - "src/**/*.{ts,tsx}"
+---
+
 # TypeScript & Frontend Rules
 
 ## Type Definitions

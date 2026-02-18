@@ -39,3 +39,4 @@ pnpm tauri build  # Build full application
 - Use `camelCase` for JSON/TypeScript, `snake_case` for Rust with `#[serde(rename_all = "camelCase")]`
 - Mask sensitive environment variables with `***` in UI
 - Use Conventional Commits (`feat:`, `fix:`, `chore:`)
+- Always include `<ToolLogo>` from `src/components/ToolLogo.tsx` next to AI tool names (Claude, Codex, Gemini) in the UI — in badges, filters, selectors, and tables. Keep logos small (10-14px) and use alongside text, never as sole identifier.

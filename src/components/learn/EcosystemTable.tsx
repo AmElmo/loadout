@@ -1,5 +1,17 @@
-const tools = [
+import type { SourceTool } from "@/types";
+import { ToolLogo } from "@/components/ToolLogo";
+
+const tools: {
+  id: SourceTool;
+  name: string;
+  color: string;
+  format: string;
+  mcpConfig: string;
+  skillsDir: string;
+  rulesFile: string;
+}[] = [
   {
+    id: "claude",
     name: "Claude Code",
     color: "text-orange-500",
     format: "JSON",
@@ -8,6 +20,7 @@ const tools = [
     rulesFile: "CLAUDE.md",
   },
   {
+    id: "codex",
     name: "Codex CLI",
     color: "text-green-500",
     format: "TOML",
@@ -16,6 +29,7 @@ const tools = [
     rulesFile: "AGENTS.md",
   },
   {
+    id: "gemini",
     name: "Gemini CLI",
     color: "text-blue-500",
     format: "JSON",
@@ -49,7 +63,10 @@ export function EcosystemTable() {
             {tools.map((tool) => (
               <tr key={tool.name}>
                 <td className={`py-2.5 pr-4 font-medium ${tool.color}`}>
-                  {tool.name}
+                  <span className="inline-flex items-center gap-1.5">
+                    <ToolLogo tool={tool.id} size={13} />
+                    {tool.name}
+                  </span>
                 </td>
                 <td className="py-2.5 pr-4 text-muted-foreground">
                   {tool.format}

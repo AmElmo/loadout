@@ -1,5 +1,6 @@
 import { cn } from "@/lib/utils";
 import type { SourceTool } from "@/types";
+import { ToolLogo } from "@/components/ToolLogo";
 
 interface FilterBarProps {
   activeTools: SourceTool[];
@@ -61,12 +62,13 @@ export function FilterBar({
                 aria-checked={isActive}
                 onClick={() => onToolsChange(toggleValue(activeTools, id))}
                 className={cn(
-                  "rounded-md border px-2 py-0.5 text-xs font-medium transition-colors",
+                  "inline-flex items-center gap-1 rounded-md border px-2 py-0.5 text-xs font-medium transition-colors",
                   isActive
                     ? activeClass
                     : "border-border text-muted-foreground hover:bg-muted/50"
                 )}
               >
+                <ToolLogo tool={id} size={12} />
                 {label}
               </button>
             );

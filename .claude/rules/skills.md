@@ -1,3 +1,11 @@
+---
+paths:
+  - "src/components/skills/**"
+  - "src/lib/api/skills*"
+  - "src/pages/Skills*"
+  - "src-tauri/src/**/skill*"
+---
+
 # Skills Configuration Rules
 
 ## Skill File Format

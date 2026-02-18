@@ -25,14 +25,9 @@ import type {
   HookItem,
   DiscoveredWorkspace,
 } from "@/types";
+import { ToolLogo } from "@/components/ToolLogo";
 
 const TOOLS: SourceTool[] = ["claude", "codex", "gemini"];
-
-const toolDotColors: Record<SourceTool, string> = {
-  claude: "bg-orange-500",
-  codex: "bg-green-500",
-  gemini: "bg-blue-500",
-};
 
 const toolTextColors: Record<SourceTool, string> = {
   claude: "text-orange-500",
@@ -101,12 +96,10 @@ function StatCard({
           {nonZeroTools.map(({ tool, count: toolCount }) => (
             <span
               key={tool}
-              className="flex items-center gap-1.5 text-xs text-muted-foreground"
+              className={cn("flex items-center gap-1 text-xs", toolTextColors[tool])}
             >
-              <span
-                className={cn("h-2 w-2 rounded-full", toolDotColors[tool])}
-              />
-              {toolCount}
+              <ToolLogo tool={tool} size={10} />
+              <span className="text-muted-foreground">{toolCount}</span>
             </span>
           ))}
         </div>
@@ -146,12 +139,9 @@ function ToolRow({
 
   return (
     <div className="flex items-center gap-3 rounded-md px-3 py-2.5 transition-colors hover:bg-muted/50">
-      <span
-        className={cn(
-          "h-2.5 w-2.5 shrink-0 rounded-full",
-          toolDotColors[tool]
-        )}
-      />
+      <span className={cn("shrink-0", toolTextColors[tool])}>
+        <ToolLogo tool={tool} size={14} />
+      </span>
       <span className={cn("w-16 text-sm font-medium", toolTextColors[tool])}>
         {toolLabels[tool]}
       </span>
@@ -540,17 +530,23 @@ export function Home() {
                   {(ws.signals.hasClaudeConfig ||
                     ws.signals.hasClaudePrompt ||
                     ws.signals.hasClaudeSkills) && (
-                    <span className="h-2 w-2 rounded-full bg-orange-500" title="Claude" />
+                    <span className="text-orange-500" title="Claude">
+                      <ToolLogo tool="claude" size={10} />
+                    </span>
                   )}
                   {(ws.signals.hasCodexConfig ||
                     ws.signals.hasCodexPrompt ||
                     ws.signals.hasCodexSkills) && (
-                    <span className="h-2 w-2 rounded-full bg-green-500" title="Codex" />
+                    <span className="text-green-500" title="Codex">
+                      <ToolLogo tool="codex" size={10} />
+                    </span>
                   )}
                   {(ws.signals.hasGeminiConfig ||
                     ws.signals.hasGeminiPrompt ||
                     ws.signals.hasGeminiSkills) && (
-                    <span className="h-2 w-2 rounded-full bg-blue-500" title="Gemini" />
+                    <span className="text-blue-500" title="Gemini">
+                      <ToolLogo tool="gemini" size={10} />
+                    </span>
                   )}
                 </div>
               </div>
