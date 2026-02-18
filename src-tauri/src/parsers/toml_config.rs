@@ -7,11 +7,15 @@ use std::path::Path;
 
 /// MCP server configuration from TOML (Codex format)
 /// Note: Codex uses `mcp_servers` (underscore) not `mcpServers` (camelCase)
+/// Supports both stdio (command + args) and HTTP (url) transports.
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct TomlMCPServer {
-    pub command: String,
+    /// Command to run (required for stdio, absent for HTTP)
+    pub command: Option<String>,
     #[serde(default)]
     pub args: Vec<String>,
+    /// URL endpoint (required for HTTP, absent for stdio)
+    pub url: Option<String>,
     #[serde(default)]
     pub env: HashMap<String, String>,
 }
@@ -78,7 +82,7 @@ GITHUB_TOKEN = "test"
         let config = parse_codex_config(file.path()).unwrap();
         assert!(config.mcp_servers.contains_key("github"));
         let github = config.mcp_servers.get("github").unwrap();
-        assert_eq!(github.command, "npx");
+        assert_eq!(github.command.as_deref(), Some("npx"));
         assert_eq!(github.args, vec!["-y", "@github/mcp-server"]);
     }
 

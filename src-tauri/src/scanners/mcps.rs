@@ -146,12 +146,17 @@ pub fn scan_all_mcps(workspace_path: Option<&str>) -> Result<Vec<MCPItem>, Strin
         if codex_project_path.exists() {
             if let Ok(config) = parse_codex_config(&codex_project_path) {
                 for (name, server) in config.mcp_servers {
+                    let mcp_type = if server.url.is_some() {
+                        MCPType::Http
+                    } else {
+                        MCPType::Stdio
+                    };
                     entries.push(RawMCPEntry {
                         name,
-                        mcp_type: MCPType::Stdio, // Codex only supports stdio
-                        command: Some(server.command),
+                        mcp_type,
+                        command: server.command,
                         args: server.args,
-                        url: None,
+                        url: server.url,
                         env: server.env,
                         headers: HashMap::new(),
                         source_tool: SourceTool::Codex,
@@ -194,12 +199,17 @@ pub fn scan_all_mcps(workspace_path: Option<&str>) -> Result<Vec<MCPItem>, Strin
     let codex_config_path = home_dir.join(".codex").join("config.toml");
     if let Ok(config) = parse_codex_config(&codex_config_path) {
         for (name, server) in config.mcp_servers {
+            let mcp_type = if server.url.is_some() {
+                MCPType::Http
+            } else {
+                MCPType::Stdio
+            };
             entries.push(RawMCPEntry {
                 name,
-                mcp_type: MCPType::Stdio, // Codex only supports stdio
-                command: Some(server.command),
+                mcp_type,
+                command: server.command,
                 args: server.args,
-                url: None,
+                url: server.url,
                 env: server.env,
                 headers: HashMap::new(),
                 source_tool: SourceTool::Codex,

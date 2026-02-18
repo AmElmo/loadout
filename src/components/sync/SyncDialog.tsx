@@ -99,18 +99,18 @@ export function SyncDialog({
           )}
 
           <p className="text-sm">
-            Sync <span className="font-semibold">{name}</span> to additional
-            tools:
+            Sync <span className="font-semibold">{name}</span> to other tools:
           </p>
 
           <ToolSelector
             selectedTools={effectiveTargetTools}
             onToolsChange={setTargetTools}
             type={type}
+            existingTools={existingTools}
             disabledTools={disabledTools}
             disabledReason={
               type === "mcp"
-                ? "This tool does not support this MCP type"
+                ? "stdio only"
                 : undefined
             }
           />

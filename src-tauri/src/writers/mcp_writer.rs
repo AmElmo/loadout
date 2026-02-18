@@ -44,17 +44,6 @@ pub fn write_mcp_to_claude(name: &str, mcp: &MCPServerInput, path: &Path) -> Res
 /// Uses toml_edit to preserve comments and formatting.
 /// Creates the file with a minimal structure if it doesn't exist.
 pub fn write_mcp_to_codex(name: &str, mcp: &MCPServerInput, path: &Path) -> Result<(), String> {
-    if mcp.mcp_type == "http" {
-        return Err("Codex CLI does not support HTTP MCP servers".to_string());
-    }
-
-    let command = mcp
-        .command
-        .as_deref()
-        .map(str::trim)
-        .filter(|cmd| !cmd.is_empty())
-        .ok_or_else(|| "Codex MCP entries require a command".to_string())?;
-
     let mut doc: DocumentMut = if path.exists() {
         let content = fs::read_to_string(path)
             .map_err(|e| format!("Failed to read {}: {}", path.display(), e))?;
@@ -72,14 +61,33 @@ pub fn write_mcp_to_codex(name: &str, mcp: &MCPServerInput, path: &Path) -> Resu
 
     // Create the server entry as a table
     let mut server_table = toml_edit::Table::new();
-    server_table["command"] = toml_edit::value(command);
 
-    if !mcp.args.is_empty() {
-        let mut args_array = toml_edit::Array::new();
-        for arg in &mcp.args {
-            args_array.push(arg.as_str());
+    if mcp.mcp_type == "http" {
+        // HTTP MCP: use url field
+        let url = mcp
+            .url
+            .as_deref()
+            .map(str::trim)
+            .filter(|u| !u.is_empty())
+            .ok_or_else(|| "HTTP MCP entries require a URL".to_string())?;
+        server_table["url"] = toml_edit::value(url);
+    } else {
+        // stdio MCP: use command + args
+        let command = mcp
+            .command
+            .as_deref()
+            .map(str::trim)
+            .filter(|cmd| !cmd.is_empty())
+            .ok_or_else(|| "Codex MCP entries require a command".to_string())?;
+        server_table["command"] = toml_edit::value(command);
+
+        if !mcp.args.is_empty() {
+            let mut args_array = toml_edit::Array::new();
+            for arg in &mcp.args {
+                args_array.push(arg.as_str());
+            }
+            server_table["args"] = toml_edit::value(args_array);
         }
-        server_table["args"] = toml_edit::value(args_array);
     }
 
     if !mcp.env.is_empty() {
@@ -249,12 +257,17 @@ mod tests {
     }
 
     #[test]
-    fn test_write_http_mcp_to_codex_is_rejected() {
+    fn test_write_http_mcp_to_codex() {
         let dir = TempDir::new().unwrap();
         let path = dir.path().join("config.toml");
 
-        let err = write_mcp_to_codex("linear", &http_mcp(), &path).unwrap_err();
-        assert!(err.contains("does not support HTTP"));
+        write_mcp_to_codex("linear", &http_mcp(), &path).unwrap();
+
+        let content = fs::read_to_string(&path).unwrap();
+        assert!(content.contains("[mcp_servers.linear]"));
+        assert!(content.contains("url = \"https://mcp.linear.app/mcp\""));
+        // HTTP MCPs should not have command/args
+        assert!(!content.contains("command"));
     }
 
     #[test]

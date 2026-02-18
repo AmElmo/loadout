@@ -93,12 +93,6 @@ fn is_supported_mcp_type(mcp_type: &str) -> bool {
     matches!(mcp_type, "stdio" | "http")
 }
 
-fn ensure_tool_compatible_with_mcp(tool: &str, mcp_type: &str) -> Result<(), String> {
-    if tool == "codex" && mcp_type == "http" {
-        return Err("Codex CLI only supports stdio MCP servers".to_string());
-    }
-    Ok(())
-}
 
 /// Preview the generated config for each selected tool without writing
 #[tauri::command]
@@ -113,8 +107,6 @@ pub fn preview_mcp_configs(request: AddMCPRequest) -> Result<PreviewResult, Stri
     let mut configs = Vec::new();
 
     for tool in &request.target_tools {
-        ensure_tool_compatible_with_mcp(tool, &mcp.mcp_type)?;
-
         match tool.as_str() {
             "claude" => configs.push(PreviewConfig {
                 tool: "claude".to_string(),
@@ -177,11 +169,6 @@ pub fn add_mcp_to_tools(request: AddMCPRequest) -> Result<WriteResult, String> {
     let mut errors = Vec::new();
 
     for tool in &request.target_tools {
-        if let Err(e) = ensure_tool_compatible_with_mcp(tool, &mcp.mcp_type) {
-            errors.push(format!("{}: {}", tool, e));
-            continue;
-        }
-
         let path = match mcp_config_path(tool) {
             Ok(p) => p,
             Err(e) => {
@@ -257,11 +244,16 @@ fn read_mcp_from_source(
             for path in candidate_paths {
                 let config = parse_codex_config(&path)?;
                 if let Some(server) = config.mcp_servers.get(name) {
+                    let mcp_type = if server.url.is_some() {
+                        "http"
+                    } else {
+                        "stdio"
+                    };
                     return Ok(MCPServerInput {
-                        mcp_type: "stdio".to_string(),
-                        command: Some(server.command.clone()),
+                        mcp_type: mcp_type.to_string(),
+                        command: server.command.clone(),
                         args: server.args.clone(),
-                        url: None,
+                        url: server.url.clone(),
                         env: server.env.clone(),
                     });
                 }
@@ -320,11 +312,6 @@ pub fn sync_mcp_to_tools(request: SyncMCPRequest) -> Result<WriteResult, String>
     let mut errors = Vec::new();
 
     for tool in &request.target_tools {
-        if let Err(e) = ensure_tool_compatible_with_mcp(tool, &mcp.mcp_type) {
-            errors.push(format!("{}: {}", tool, e));
-            continue;
-        }
-
         let path = match mcp_config_path(tool) {
             Ok(p) => p,
             Err(e) => {
@@ -394,21 +381,6 @@ mod tests {
     use tempfile::NamedTempFile;
 
     #[test]
-    fn test_codex_rejects_http_mcp() {
-        assert!(ensure_tool_compatible_with_mcp("codex", "http").is_err());
-    }
-
-    #[test]
-    fn test_codex_accepts_stdio_mcp() {
-        assert!(ensure_tool_compatible_with_mcp("codex", "stdio").is_ok());
-    }
-
-    #[test]
-    fn test_claude_accepts_http_mcp() {
-        assert!(ensure_tool_compatible_with_mcp("claude", "http").is_ok());
-    }
-
-    #[test]
     fn test_read_mcp_from_claude_source_path() {
         let file = NamedTempFile::new().unwrap();
         fs::write(
@@ -438,7 +410,7 @@ mod tests {
     }
 
     #[test]
-    fn test_preview_rejects_http_for_codex() {
+    fn test_preview_http_for_codex() {
         let request = AddMCPRequest {
             name: "http-server".to_string(),
             mcp_type: "http".to_string(),
@@ -449,7 +421,9 @@ mod tests {
             target_tools: vec!["codex".to_string()],
         };
 
-        let err = preview_mcp_configs(request).unwrap_err();
-        assert!(err.contains("Codex CLI only supports stdio"));
+        let result = preview_mcp_configs(request).unwrap();
+        assert_eq!(result.configs.len(), 1);
+        assert_eq!(result.configs[0].tool, "codex");
+        assert!(result.configs[0].content.contains("url"));
     }
 }

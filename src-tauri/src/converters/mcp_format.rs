@@ -54,12 +54,18 @@ pub fn to_codex_toml_preview(name: &str, mcp: &MCPServerInput) -> String {
     let mut lines = Vec::new();
     lines.push(format!("[mcp_servers.{}]", name));
 
-    if let Some(cmd) = &mcp.command {
-        lines.push(format!("command = \"{}\"", cmd));
-    }
-    if !mcp.args.is_empty() {
-        let args: Vec<String> = mcp.args.iter().map(|a| format!("\"{}\"", a)).collect();
-        lines.push(format!("args = [{}]", args.join(", ")));
+    if mcp.mcp_type == "http" {
+        if let Some(url) = &mcp.url {
+            lines.push(format!("url = \"{}\"", url));
+        }
+    } else {
+        if let Some(cmd) = &mcp.command {
+            lines.push(format!("command = \"{}\"", cmd));
+        }
+        if !mcp.args.is_empty() {
+            let args: Vec<String> = mcp.args.iter().map(|a| format!("\"{}\"", a)).collect();
+            lines.push(format!("args = [{}]", args.join(", ")));
+        }
     }
 
     if !mcp.env.is_empty() {
