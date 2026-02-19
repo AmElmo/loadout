@@ -12,7 +12,17 @@ export type LoadoutItemType =
   | "prompt"
   | "plugin";
 
-export type SourceTool = "claude" | "codex" | "gemini";
+export type SourceTool =
+  | "claude"
+  | "codex"
+  | "gemini"
+  | "cursor"
+  | "copilot"
+  | "windsurf"
+  | "roo"
+  | "cline"
+  | "kilo"
+  | "opencode";
 
 export type Scope = "user" | "repo" | "admin" | "system" | "project";
 
@@ -197,7 +207,7 @@ export interface PromptScanResult {
   prompts: PromptFile[];
 }
 
-export type HookSourceTool = "claude" | "gemini";
+export type HookSourceTool = "claude" | "gemini" | "cursor" | "copilot" | "windsurf" | "cline";
 
 export type HookScope = "user" | "project";
 
@@ -235,6 +245,13 @@ export interface WorkspaceSignals {
   hasClaudeSkills: boolean;
   hasCodexSkills: boolean;
   hasGeminiSkills: boolean;
+  hasCursorConfig: boolean;
+  hasCopilotConfig: boolean;
+  hasWindsurfConfig: boolean;
+  hasRooConfig: boolean;
+  hasClineConfig: boolean;
+  hasKiloConfig: boolean;
+  hasOpenCodeConfig: boolean;
 }
 
 /**

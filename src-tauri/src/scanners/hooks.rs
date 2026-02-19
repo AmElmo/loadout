@@ -12,6 +12,7 @@
 
 use crate::parsers::{parse_claude_settings, parse_gemini_config, ClaudeSettings, GeminiConfig};
 use serde::{Deserialize, Serialize};
+use std::collections::HashMap;
 use std::path::Path;
 
 /// Source tool for a hook
@@ -20,6 +21,10 @@ use std::path::Path;
 pub enum HookSourceTool {
     Claude,
     Gemini,
+    Cursor,
+    Copilot,
+    Windsurf,
+    Cline,
 }
 
 /// Scope level for a hook
@@ -157,6 +162,55 @@ pub fn scan_all_hooks(workspace_path: Option<&str>) -> Result<HookScanResult, St
         }
     }
 
+    // === Cursor hooks (read-only) ===
+    // User-level: ~/.cursor/hooks.json
+    let cursor_user_hooks = home_dir.join(".cursor").join("hooks.json");
+    collect_generic_hooks_json(&cursor_user_hooks, HookSourceTool::Cursor, HookScope::User, &mut hooks);
+
+    // Project-level: .cursor/hooks.json
+    if let Some(ws_path) = workspace_path {
+        let ws = std::path::Path::new(ws_path);
+        let cursor_project_hooks = ws.join(".cursor").join("hooks.json");
+        collect_generic_hooks_json(&cursor_project_hooks, HookSourceTool::Cursor, HookScope::Project, &mut hooks);
+    }
+
+    // === Copilot hooks (read-only) ===
+    // .github/hooks/*.json
+    if let Some(ws_path) = workspace_path {
+        let ws = std::path::Path::new(ws_path);
+        let github_hooks_dir = ws.join(".github").join("hooks");
+        if github_hooks_dir.is_dir() {
+            if let Ok(read_dir) = std::fs::read_dir(&github_hooks_dir) {
+                for entry in read_dir.flatten() {
+                    let path = entry.path();
+                    if path.extension().and_then(|e| e.to_str()) == Some("json") {
+                        collect_generic_hooks_json(&path, HookSourceTool::Copilot, HookScope::Project, &mut hooks);
+                    }
+                }
+            }
+        }
+    }
+
+    // === Windsurf hooks (read-only) ===
+    // User-level: ~/.codeium/windsurf/hooks.json
+    let windsurf_user_hooks = home_dir.join(".codeium").join("windsurf").join("hooks.json");
+    collect_generic_hooks_json(&windsurf_user_hooks, HookSourceTool::Windsurf, HookScope::User, &mut hooks);
+
+    // Project-level: .windsurf/hooks.json
+    if let Some(ws_path) = workspace_path {
+        let ws = std::path::Path::new(ws_path);
+        let windsurf_project_hooks = ws.join(".windsurf").join("hooks.json");
+        collect_generic_hooks_json(&windsurf_project_hooks, HookSourceTool::Windsurf, HookScope::Project, &mut hooks);
+    }
+
+    // === Cline hooks (read-only) ===
+    // Project-level: .cline/hooks.json
+    if let Some(ws_path) = workspace_path {
+        let ws = std::path::Path::new(ws_path);
+        let cline_project_hooks = ws.join(".cline").join("hooks.json");
+        collect_generic_hooks_json(&cline_project_hooks, HookSourceTool::Cline, HookScope::Project, &mut hooks);
+    }
+
     // Sort by scope (user first), then tool, then event
     hooks.sort_by(|a, b| {
         format!("{:?}", a.scope)
@@ -169,6 +223,71 @@ pub fn scan_all_hooks(workspace_path: Option<&str>) -> Result<HookScanResult, St
         hooks,
         gemini_hooks_enabled,
     })
+}
+
+/// Parse a generic hooks.json file that uses a Claude/Gemini-compatible format
+/// Many tools (Cursor, Copilot, Windsurf, Cline) use similar JSON hook schemas
+fn collect_generic_hooks_json(
+    path: &std::path::Path,
+    tool: HookSourceTool,
+    scope: HookScope,
+    hooks: &mut Vec<HookItem>,
+) {
+    if !path.exists() {
+        return;
+    }
+
+    // Try to parse as a JSON file with hook events
+    let content = match std::fs::read_to_string(path) {
+        Ok(c) => c,
+        Err(_) => return,
+    };
+
+    // Try parsing as { "event_name": [...matchers] } format
+    if let Ok(parsed) = serde_json::from_str::<HashMap<String, Vec<crate::parsers::HookMatcher>>>(&content) {
+        for (event, matchers) in parsed {
+            for matcher_entry in matchers {
+                for action in &matcher_entry.hooks {
+                    if let Some(cmd) = &action.command {
+                        hooks.push(HookItem {
+                            source_tool: tool,
+                            scope,
+                            event: event.clone(),
+                            matcher: matcher_entry.matcher.clone(),
+                            command: cmd.clone(),
+                            action_type: action.action_type.clone().unwrap_or_else(|| "command".to_string()),
+                            path: path.to_string_lossy().to_string(),
+                        });
+                    }
+                }
+            }
+        }
+        return;
+    }
+
+    // Try parsing as an array of hook objects [{ "event": "...", "command": "..." }]
+    #[derive(serde::Deserialize)]
+    struct SimpleHook {
+        event: Option<String>,
+        command: Option<String>,
+        matcher: Option<String>,
+    }
+
+    if let Ok(hook_list) = serde_json::from_str::<Vec<SimpleHook>>(&content) {
+        for hook in hook_list {
+            if let (Some(event), Some(cmd)) = (hook.event, hook.command) {
+                hooks.push(HookItem {
+                    source_tool: tool,
+                    scope,
+                    event,
+                    matcher: hook.matcher,
+                    command: cmd,
+                    action_type: "command".to_string(),
+                    path: path.to_string_lossy().to_string(),
+                });
+            }
+        }
+    }
 }
 
 #[cfg(test)]

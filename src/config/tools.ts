@@ -1,0 +1,99 @@
+/**
+ * Central tool configuration — single source of truth for all tool metadata.
+ * Used by ToolLogo, ToolBadge, FilterBar, Home, sync dialogs, etc.
+ */
+import type { SourceTool } from "@/types";
+
+export interface ToolConfig {
+  label: string;
+  color: string;        // Tailwind color name (e.g., "orange", "green")
+  textClass: string;     // text-{color}-500 etc.
+  badgeClass: string;    // bg-{color}/10 text-{color} border-{color}/20
+  filterActiveClass: string;
+}
+
+export const TOOL_CONFIG: Record<SourceTool, ToolConfig> = {
+  claude: {
+    label: "Claude",
+    color: "orange",
+    textClass: "text-orange-500",
+    badgeClass: "bg-orange-500/10 text-orange-600 border-orange-500/20",
+    filterActiveClass: "bg-orange-500/15 text-orange-600 border-orange-500/30",
+  },
+  codex: {
+    label: "Codex",
+    color: "green",
+    textClass: "text-green-500",
+    badgeClass: "bg-green-500/10 text-green-600 border-green-500/20",
+    filterActiveClass: "bg-green-500/15 text-green-600 border-green-500/30",
+  },
+  gemini: {
+    label: "Gemini",
+    color: "blue",
+    textClass: "text-blue-500",
+    badgeClass: "bg-blue-500/10 text-blue-600 border-blue-500/20",
+    filterActiveClass: "bg-blue-500/15 text-blue-600 border-blue-500/30",
+  },
+  cursor: {
+    label: "Cursor",
+    color: "purple",
+    textClass: "text-purple-500",
+    badgeClass: "bg-purple-500/10 text-purple-600 border-purple-500/20",
+    filterActiveClass: "bg-purple-500/15 text-purple-600 border-purple-500/30",
+  },
+  copilot: {
+    label: "Copilot",
+    color: "sky",
+    textClass: "text-sky-500",
+    badgeClass: "bg-sky-500/10 text-sky-600 border-sky-500/20",
+    filterActiveClass: "bg-sky-500/15 text-sky-600 border-sky-500/30",
+  },
+  windsurf: {
+    label: "Windsurf",
+    color: "teal",
+    textClass: "text-teal-500",
+    badgeClass: "bg-teal-500/10 text-teal-600 border-teal-500/20",
+    filterActiveClass: "bg-teal-500/15 text-teal-600 border-teal-500/30",
+  },
+  roo: {
+    label: "Roo",
+    color: "rose",
+    textClass: "text-rose-500",
+    badgeClass: "bg-rose-500/10 text-rose-600 border-rose-500/20",
+    filterActiveClass: "bg-rose-500/15 text-rose-600 border-rose-500/30",
+  },
+  cline: {
+    label: "Cline",
+    color: "amber",
+    textClass: "text-amber-500",
+    badgeClass: "bg-amber-500/10 text-amber-600 border-amber-500/20",
+    filterActiveClass: "bg-amber-500/15 text-amber-600 border-amber-500/30",
+  },
+  kilo: {
+    label: "Kilo",
+    color: "lime",
+    textClass: "text-lime-500",
+    badgeClass: "bg-lime-500/10 text-lime-600 border-lime-500/20",
+    filterActiveClass: "bg-lime-500/15 text-lime-600 border-lime-500/30",
+  },
+  opencode: {
+    label: "OpenCode",
+    color: "indigo",
+    textClass: "text-indigo-500",
+    badgeClass: "bg-indigo-500/10 text-indigo-600 border-indigo-500/20",
+    filterActiveClass: "bg-indigo-500/15 text-indigo-600 border-indigo-500/30",
+  },
+};
+
+/** All tool IDs in display order */
+export const ALL_TOOLS: SourceTool[] = Object.keys(TOOL_CONFIG) as SourceTool[];
+
+/** Get label for a tool */
+export function toolLabel(tool: SourceTool): string {
+  return TOOL_CONFIG[tool]?.label ?? tool;
+}
+
+/** Get text color class for a tool */
+export function toolTextColor(tool: SourceTool): string {
+  return TOOL_CONFIG[tool]?.textClass ?? "text-muted-foreground";
+}

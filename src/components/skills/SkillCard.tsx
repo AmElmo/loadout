@@ -1,13 +1,12 @@
 import { useState } from "react";
 import { Sparkles, EyeOff, ChevronRight, Share2 } from "lucide-react";
-import type { SkillItem, SourceTool } from "@/types";
+import type { SkillItem } from "@/types";
 import { cn } from "@/lib/utils";
 import { installSkillToTools } from "@/lib/api/sync";
 import { ToolBadge } from "@/components/mcps/ToolBadge";
 import { SyncDialog } from "@/components/sync";
 import { MaturityBadge } from "./MaturityBadge";
-
-const ALL_TOOLS: SourceTool[] = ["claude", "codex", "gemini"];
+import { ALL_TOOLS } from "@/config/tools";
 
 interface SkillCardProps {
   skill: SkillItem;

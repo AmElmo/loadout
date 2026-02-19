@@ -27,6 +27,13 @@ export function AddMCPDialog({ onClose }: AddMCPDialogProps) {
     "claude",
     "codex",
     "gemini",
+    "cursor",
+    "copilot",
+    "windsurf",
+    "roo",
+    "cline",
+    "kilo",
+    "opencode",
   ]);
 
   // Preview state

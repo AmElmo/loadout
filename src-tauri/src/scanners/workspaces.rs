@@ -23,6 +23,13 @@ pub struct WorkspaceSignals {
     pub has_claude_skills: bool,
     pub has_codex_skills: bool,
     pub has_gemini_skills: bool,
+    pub has_cursor_config: bool,
+    pub has_copilot_config: bool,
+    pub has_windsurf_config: bool,
+    pub has_roo_config: bool,
+    pub has_cline_config: bool,
+    pub has_kilo_config: bool,
+    pub has_open_code_config: bool,
 }
 
 impl WorkspaceSignals {
@@ -35,6 +42,27 @@ impl WorkspaceSignals {
             count += 1;
         }
         if self.has_gemini_config || self.has_gemini_prompt || self.has_gemini_skills {
+            count += 1;
+        }
+        if self.has_cursor_config {
+            count += 1;
+        }
+        if self.has_copilot_config {
+            count += 1;
+        }
+        if self.has_windsurf_config {
+            count += 1;
+        }
+        if self.has_roo_config {
+            count += 1;
+        }
+        if self.has_cline_config {
+            count += 1;
+        }
+        if self.has_kilo_config {
+            count += 1;
+        }
+        if self.has_open_code_config {
             count += 1;
         }
         count
@@ -105,6 +133,19 @@ const SIGNAL_NAMES: &[&str] = &[
     "AGENTS.md",
     "GEMINI.md",
     ".agents",
+    ".cursor",
+    ".github",
+    ".vscode",
+    ".windsurf",
+    ".roo",
+    ".roorules",
+    ".cline",
+    ".clinerules",
+    ".kilocode",
+    ".kilocoderules",
+    ".opencode",
+    "opencode.json",
+    ".roomodes",
 ];
 
 /// Scan the home directory for workspaces with AI CLI configs
@@ -159,48 +200,38 @@ pub fn discover_workspaces(max_depth: u32) -> Result<DiscoveryResult, String> {
         match name {
             ".claude" if signal_path.is_dir() => {
                 signals.has_claude_config = true;
-                // Check for CLAUDE.md inside
                 if signal_path.join("CLAUDE.md").exists() {
                     signals.has_claude_prompt = true;
                 }
-                // Check for skills
                 if signal_path.join("skills").is_dir() {
                     signals.has_claude_skills = true;
                 }
             }
             ".codex" if signal_path.is_dir() => {
                 signals.has_codex_config = true;
-                // Check for skills
                 if signal_path.join("skills").is_dir() {
                     signals.has_codex_skills = true;
                 }
             }
             ".gemini" if signal_path.is_dir() => {
                 signals.has_gemini_config = true;
-                // Check for GEMINI.md inside
                 if signal_path.join("GEMINI.md").exists() {
                     signals.has_gemini_prompt = true;
                 }
-                // Check for skills
                 if signal_path.join("skills").is_dir() {
                     signals.has_gemini_skills = true;
                 }
             }
             ".agents" if signal_path.is_dir() => {
-                // Codex stores user-level skills in ~/.agents/skills
-                // but project-level in .codex/skills - .agents at project level
-                // means codex skills
                 if signal_path.join("skills").is_dir() {
                     signals.has_codex_skills = true;
                 }
             }
             ".mcp.json" if signal_path.is_file() => {
                 signals.has_mcp_json = true;
-                // .mcp.json is Claude Code's project-level MCP config
                 signals.has_claude_config = true;
             }
             "CLAUDE.md" if signal_path.is_file() => {
-                // Root-level CLAUDE.md (not inside .claude/)
                 signals.has_claude_prompt = true;
                 signals.has_claude_config = true;
             }
@@ -209,9 +240,58 @@ pub fn discover_workspaces(max_depth: u32) -> Result<DiscoveryResult, String> {
                 signals.has_codex_config = true;
             }
             "GEMINI.md" if signal_path.is_file() => {
-                // Root-level GEMINI.md (not inside .gemini/)
                 signals.has_gemini_prompt = true;
                 signals.has_gemini_config = true;
+            }
+            // New tools
+            ".cursor" if signal_path.is_dir() => {
+                signals.has_cursor_config = true;
+            }
+            ".github" if signal_path.is_dir() => {
+                // Copilot signals: instructions, skills, hooks
+                if signal_path.join("copilot-instructions.md").exists()
+                    || signal_path.join("instructions").is_dir()
+                    || signal_path.join("skills").is_dir()
+                    || signal_path.join("hooks").is_dir()
+                {
+                    signals.has_copilot_config = true;
+                }
+            }
+            ".vscode" if signal_path.is_dir() => {
+                // Copilot MCP config
+                if signal_path.join("mcp.json").exists() {
+                    signals.has_copilot_config = true;
+                }
+            }
+            ".windsurf" if signal_path.is_dir() => {
+                signals.has_windsurf_config = true;
+            }
+            ".roo" if signal_path.is_dir() => {
+                signals.has_roo_config = true;
+            }
+            ".roorules" => {
+                signals.has_roo_config = true;
+            }
+            ".roomodes" => {
+                signals.has_roo_config = true;
+            }
+            ".cline" if signal_path.is_dir() => {
+                signals.has_cline_config = true;
+            }
+            ".clinerules" => {
+                signals.has_cline_config = true;
+            }
+            ".kilocode" if signal_path.is_dir() => {
+                signals.has_kilo_config = true;
+            }
+            ".kilocoderules" => {
+                signals.has_kilo_config = true;
+            }
+            ".opencode" if signal_path.is_dir() => {
+                signals.has_open_code_config = true;
+            }
+            "opencode.json" if signal_path.is_file() => {
+                signals.has_open_code_config = true;
             }
             _ => {}
         }

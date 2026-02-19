@@ -2,6 +2,7 @@ import { AlertTriangle, Check } from "lucide-react";
 import type { SourceTool } from "@/types";
 import { cn } from "@/lib/utils";
 import { ToolLogo } from "@/components/ToolLogo";
+import { ALL_TOOLS, TOOL_CONFIG } from "@/config/tools";
 
 interface ToolSelectorProps {
   selectedTools: SourceTool[];
@@ -12,23 +13,11 @@ interface ToolSelectorProps {
   disabledReason?: string;
 }
 
-const tools: { id: SourceTool; label: string; color: string }[] = [
-  {
-    id: "claude",
-    label: "Claude Code",
-    color: "accent-orange-500",
-  },
-  {
-    id: "codex",
-    label: "Codex CLI",
-    color: "accent-green-500",
-  },
-  {
-    id: "gemini",
-    label: "Gemini CLI",
-    color: "accent-blue-500",
-  },
-];
+const tools = ALL_TOOLS.map((id) => ({
+  id,
+  label: TOOL_CONFIG[id].label,
+  color: `accent-${TOOL_CONFIG[id].color}-500`,
+}));
 
 export function ToolSelector({
   selectedTools,

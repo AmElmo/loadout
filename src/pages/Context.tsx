@@ -13,12 +13,12 @@ import { ContextTable } from "@/components/context/ContextTable";
 import { Button } from "@/components/ui/button";
 import type { MCPItem, MCPToolsResult, SourceTool } from "@/types";
 import { ToolLogo } from "@/components/ToolLogo";
+import { ALL_TOOLS, TOOL_CONFIG } from "@/config/tools";
 
-const TOOL_FILTERS: { label: string; value: SourceTool }[] = [
-  { label: "Claude", value: "claude" },
-  { label: "Codex", value: "codex" },
-  { label: "Gemini", value: "gemini" },
-];
+const TOOL_FILTERS = ALL_TOOLS.map((id) => ({
+  label: TOOL_CONFIG[id].label,
+  value: id,
+}));
 
 export function Context() {
   const { current } = useWorkspaceStore();

@@ -1,6 +1,6 @@
 import { ChevronDown, ChevronUp, Share2, Activity } from "lucide-react";
 import { useState } from "react";
-import type { MCPItem, SourceTool } from "@/types";
+import type { MCPItem } from "@/types";
 import { cn } from "@/lib/utils";
 import { syncMCPToTools } from "@/lib/api/sync";
 import { SyncDialog } from "@/components/sync";
@@ -10,8 +10,7 @@ import { HealthBadge } from "./HealthBadge";
 import { MCPIcon } from "./MCPIcon";
 import { TestHealthDialog } from "./TestHealthDialog";
 import { ToolBadges } from "./ToolBadge";
-
-const ALL_TOOLS: SourceTool[] = ["claude", "codex", "gemini"];
+import { ALL_TOOLS } from "@/config/tools";
 
 interface MCPCardProps {
   mcp: MCPItem;

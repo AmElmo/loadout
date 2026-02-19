@@ -41,6 +41,13 @@ fn skill_dir_for_tool(tool: &str) -> Result<PathBuf, String> {
         "claude" => Ok(home.join(".claude").join("skills")),
         "codex" => Ok(home.join(".agents").join("skills")),
         "gemini" => Ok(home.join(".gemini").join("skills")),
+        "cursor" => Ok(home.join(".cursor").join("skills")),
+        "copilot" => Ok(home.join(".copilot").join("skills")),
+        "windsurf" => Ok(home.join(".codeium").join("windsurf").join("skills")),
+        "roo" => Ok(home.join(".roo").join("skills")),
+        "cline" => Ok(home.join(".cline").join("skills")),
+        "kilo" => Ok(home.join(".kilocode").join("skills")),
+        "opencode" => Ok(home.join(".config").join("opencode").join("skills")),
         _ => Err(format!("Unknown tool: {}", tool)),
     }
 }

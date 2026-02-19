@@ -21,6 +21,7 @@ import { useState, useEffect, useRef } from "react";
 import { useQuery } from "@tanstack/react-query";
 import type { DiscoveredWorkspace, SourceTool } from "@/types";
 import { ToolLogo } from "@/components/ToolLogo";
+import { TOOL_CONFIG, toolTextColor } from "@/config/tools";
 
 const navItems = [
   { id: "home" as const, label: "Home", icon: Home },
@@ -31,35 +32,19 @@ const navItems = [
   { id: "context" as const, label: "Context", icon: BarChart3 },
 ];
 
-const toolTextColors: Record<string, string> = {
-  claude: "text-orange-500",
-  codex: "text-green-500",
-  gemini: "text-blue-500",
-};
-
 function ToolDots({ workspace }: { workspace: DiscoveredWorkspace }) {
+  const s = workspace.signals;
   const tools: { name: SourceTool; active: boolean }[] = [
-    {
-      name: "claude",
-      active:
-        workspace.signals.hasClaudeConfig ||
-        workspace.signals.hasClaudePrompt ||
-        workspace.signals.hasClaudeSkills,
-    },
-    {
-      name: "codex",
-      active:
-        workspace.signals.hasCodexConfig ||
-        workspace.signals.hasCodexPrompt ||
-        workspace.signals.hasCodexSkills,
-    },
-    {
-      name: "gemini",
-      active:
-        workspace.signals.hasGeminiConfig ||
-        workspace.signals.hasGeminiPrompt ||
-        workspace.signals.hasGeminiSkills,
-    },
+    { name: "claude", active: s.hasClaudeConfig || s.hasClaudePrompt || s.hasClaudeSkills },
+    { name: "codex", active: s.hasCodexConfig || s.hasCodexPrompt || s.hasCodexSkills },
+    { name: "gemini", active: s.hasGeminiConfig || s.hasGeminiPrompt || s.hasGeminiSkills },
+    { name: "cursor", active: s.hasCursorConfig },
+    { name: "copilot", active: s.hasCopilotConfig },
+    { name: "windsurf", active: s.hasWindsurfConfig },
+    { name: "roo", active: s.hasRooConfig },
+    { name: "cline", active: s.hasClineConfig },
+    { name: "kilo", active: s.hasKiloConfig },
+    { name: "opencode", active: s.hasOpenCodeConfig },
   ];
 
   return (
@@ -69,8 +54,8 @@ function ToolDots({ workspace }: { workspace: DiscoveredWorkspace }) {
         .map((t) => (
           <span
             key={t.name}
-            className={toolTextColors[t.name]}
-            title={t.name}
+            className={toolTextColor(t.name)}
+            title={TOOL_CONFIG[t.name].label}
           >
             <ToolLogo tool={t.name} size={9} />
           </span>

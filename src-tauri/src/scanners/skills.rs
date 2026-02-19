@@ -19,6 +19,13 @@ pub enum SkillSourceTool {
     Claude,
     Codex,
     Gemini,
+    Cursor,
+    Copilot,
+    Windsurf,
+    Roo,
+    Cline,
+    Kilo,
+    OpenCode,
 }
 
 /// Scope of a skill (user-level or project-level)
@@ -150,6 +157,57 @@ pub fn scan_all_skills(workspace_path: Option<&str>) -> Result<SkillScanResult, 
         scan_skill_directory(&gemini_project_path, SkillSourceTool::Gemini, SkillScope::Project, &mut entries);
     }
 
+    // === Cursor Skills ===
+    scan_skill_directory(&home_dir.join(".cursor").join("skills"), SkillSourceTool::Cursor, SkillScope::User, &mut entries);
+    if let Some(ws_path) = workspace_path {
+        scan_skill_directory(&PathBuf::from(ws_path).join(".cursor").join("skills"), SkillSourceTool::Cursor, SkillScope::Project, &mut entries);
+    }
+
+    // === Copilot Skills ===
+    scan_skill_directory(&home_dir.join(".copilot").join("skills"), SkillSourceTool::Copilot, SkillScope::User, &mut entries);
+    if let Some(ws_path) = workspace_path {
+        let ws = PathBuf::from(ws_path);
+        scan_skill_directory(&ws.join(".github").join("skills"), SkillSourceTool::Copilot, SkillScope::Project, &mut entries);
+    }
+
+    // === Windsurf Skills ===
+    scan_skill_directory(&home_dir.join(".codeium").join("windsurf").join("skills"), SkillSourceTool::Windsurf, SkillScope::User, &mut entries);
+    if let Some(ws_path) = workspace_path {
+        scan_skill_directory(&PathBuf::from(ws_path).join(".windsurf").join("skills"), SkillSourceTool::Windsurf, SkillScope::Project, &mut entries);
+    }
+
+    // === Roo Skills ===
+    scan_skill_directory(&home_dir.join(".roo").join("skills"), SkillSourceTool::Roo, SkillScope::User, &mut entries);
+    // Roo also supports ~/.agents/skills (shared path — attributed to Roo as well)
+    scan_skill_directory(&home_dir.join(".agents").join("skills"), SkillSourceTool::Roo, SkillScope::User, &mut entries);
+    if let Some(ws_path) = workspace_path {
+        let ws = PathBuf::from(ws_path);
+        scan_skill_directory(&ws.join(".roo").join("skills"), SkillSourceTool::Roo, SkillScope::Project, &mut entries);
+        scan_skill_directory(&ws.join(".agents").join("skills"), SkillSourceTool::Roo, SkillScope::Project, &mut entries);
+    }
+
+    // === Cline Skills ===
+    scan_skill_directory(&home_dir.join(".cline").join("skills"), SkillSourceTool::Cline, SkillScope::User, &mut entries);
+    if let Some(ws_path) = workspace_path {
+        scan_skill_directory(&PathBuf::from(ws_path).join(".cline").join("skills"), SkillSourceTool::Cline, SkillScope::Project, &mut entries);
+    }
+
+    // === Kilo Skills ===
+    scan_skill_directory(&home_dir.join(".kilocode").join("skills"), SkillSourceTool::Kilo, SkillScope::User, &mut entries);
+    if let Some(ws_path) = workspace_path {
+        scan_skill_directory(&PathBuf::from(ws_path).join(".kilocode").join("skills"), SkillSourceTool::Kilo, SkillScope::Project, &mut entries);
+    }
+
+    // === OpenCode Skills ===
+    scan_skill_directory(&home_dir.join(".config").join("opencode").join("skills"), SkillSourceTool::OpenCode, SkillScope::User, &mut entries);
+    // OpenCode compatibility paths
+    scan_skill_directory(&home_dir.join(".claude").join("skills"), SkillSourceTool::OpenCode, SkillScope::User, &mut entries);
+    scan_skill_directory(&home_dir.join(".agents").join("skills"), SkillSourceTool::OpenCode, SkillScope::User, &mut entries);
+    if let Some(ws_path) = workspace_path {
+        let ws = PathBuf::from(ws_path);
+        scan_skill_directory(&ws.join(".opencode").join("skills"), SkillSourceTool::OpenCode, SkillScope::Project, &mut entries);
+    }
+
     // Process entries: detect conflicts and shadowing
     let (skills, conflicts) = process_skill_entries(entries);
 
@@ -271,7 +329,11 @@ fn process_skill_entries(entries: Vec<RawSkillEntry>) -> (Vec<SkillItem>, Vec<Sk
 
     // First pass: determine shadowing within same tool
     for (name, group) in &by_name {
-        for tool in [SkillSourceTool::Claude, SkillSourceTool::Codex, SkillSourceTool::Gemini] {
+        for tool in [
+            SkillSourceTool::Claude, SkillSourceTool::Codex, SkillSourceTool::Gemini,
+            SkillSourceTool::Cursor, SkillSourceTool::Copilot, SkillSourceTool::Windsurf,
+            SkillSourceTool::Roo, SkillSourceTool::Cline, SkillSourceTool::Kilo, SkillSourceTool::OpenCode,
+        ] {
             let tool_skills: Vec<_> = group.iter().filter(|e| e.source_tool == tool).collect();
 
             // If both project and user exist for same tool, project shadows user
@@ -307,6 +369,9 @@ fn process_skill_entries(entries: Vec<RawSkillEntry>) -> (Vec<SkillItem>, Vec<Sk
         let maturity = match entry.source_tool {
             SkillSourceTool::Claude | SkillSourceTool::Codex => SkillMaturity::Stable,
             SkillSourceTool::Gemini => SkillMaturity::Experimental,
+            SkillSourceTool::Cursor => SkillMaturity::Experimental,
+            SkillSourceTool::Copilot | SkillSourceTool::Windsurf | SkillSourceTool::Roo
+            | SkillSourceTool::Cline | SkillSourceTool::Kilo | SkillSourceTool::OpenCode => SkillMaturity::Stable,
         };
 
         // Check if this skill is shadowed

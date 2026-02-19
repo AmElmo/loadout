@@ -142,6 +142,60 @@ pub fn write_mcp_to_gemini(name: &str, mcp: &MCPServerInput, path: &Path) -> Res
     atomic_write(path, &output)
 }
 
+/// Write an MCP server entry to a generic JSON file using `mcpServers` format.
+/// Works for Cursor (.cursor/mcp.json), Copilot (.vscode/mcp.json),
+/// Windsurf (mcp_config.json), Roo (.roo/mcp.json), Kilo (.kilocode/mcp.json).
+pub fn write_mcp_to_json(name: &str, mcp: &MCPServerInput, path: &Path) -> Result<(), String> {
+    let mut root: Value = if path.exists() {
+        let content = fs::read_to_string(path)
+            .map_err(|e| format!("Failed to read {}: {}", path.display(), e))?;
+        serde_json::from_str(&content)
+            .map_err(|e| format!("Failed to parse {}: {}", path.display(), e))?
+    } else {
+        serde_json::json!({})
+    };
+
+    if root.get("mcpServers").is_none() {
+        root["mcpServers"] = serde_json::json!({});
+    }
+
+    root["mcpServers"][name] = crate::converters::to_json_value(mcp);
+
+    let output = serde_json::to_string_pretty(&root)
+        .map_err(|e| format!("Failed to serialize JSON: {}", e))?;
+
+    serde_json::from_str::<Value>(&output)
+        .map_err(|e| format!("Generated JSON is invalid: {}", e))?;
+
+    atomic_write(path, &output)
+}
+
+/// Write an MCP server entry to OpenCode config (uses `mcp` key, not `mcpServers`)
+pub fn write_mcp_to_opencode(name: &str, mcp: &MCPServerInput, path: &Path) -> Result<(), String> {
+    let mut root: Value = if path.exists() {
+        let content = fs::read_to_string(path)
+            .map_err(|e| format!("Failed to read {}: {}", path.display(), e))?;
+        serde_json::from_str(&content)
+            .map_err(|e| format!("Failed to parse {}: {}", path.display(), e))?
+    } else {
+        serde_json::json!({})
+    };
+
+    if root.get("mcp").is_none() {
+        root["mcp"] = serde_json::json!({});
+    }
+
+    root["mcp"][name] = crate::converters::to_json_value(mcp);
+
+    let output = serde_json::to_string_pretty(&root)
+        .map_err(|e| format!("Failed to serialize JSON: {}", e))?;
+
+    serde_json::from_str::<Value>(&output)
+        .map_err(|e| format!("Generated JSON is invalid: {}", e))?;
+
+    atomic_write(path, &output)
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;

@@ -8,10 +8,11 @@ interface HooksSectionProps {
   geminiHooksEnabled: boolean;
 }
 
-const toolColors: Record<string, string> = {
-  claude: "bg-orange-500/10 text-orange-600 border-orange-500/20",
-  gemini: "bg-blue-500/10 text-blue-600 border-blue-500/20",
-};
+import { TOOL_CONFIG } from "@/config/tools";
+
+const toolColors: Record<string, string> = Object.fromEntries(
+  Object.entries(TOOL_CONFIG).map(([id, cfg]) => [id, cfg.badgeClass])
+);
 
 /** Event mapping between Claude and Gemini */
 const EVENT_MAP: [string, string, string][] = [

@@ -11,9 +11,9 @@ mod workspace;
 mod writers;
 
 use commands::{
-    add_mcp_to_tools, fetch_mcp_tools, install_skill_to_tools, preview_mcp_configs,
-    reveal_in_file_manager, scan_hooks, scan_mcps, scan_rules, scan_skills, sync_mcp_to_tools,
-    test_mcp_health,
+    add_mcp_to_tools, detect_installed_tools, fetch_mcp_tools, install_skill_to_tools,
+    preview_mcp_configs, reveal_in_file_manager, scan_hooks, scan_mcps, scan_rules, scan_skills,
+    sync_mcp_to_tools, test_mcp_health,
 };
 use scanners::workspaces::{discover_workspaces, DiscoveryResult};
 
@@ -108,6 +108,7 @@ pub fn run() {
             scan_rules,
             scan_hooks,
             discover_ai_workspaces,
+            detect_installed_tools,
             add_mcp_to_tools,
             preview_mcp_configs,
             install_skill_to_tools,

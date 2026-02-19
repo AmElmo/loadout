@@ -1,6 +1,6 @@
-//! MCP server discovery across Claude Code, Codex CLI, and Gemini CLI
+//! MCP server discovery across all supported AI tools
 
-use crate::parsers::{parse_claude_config, parse_codex_config, parse_gemini_config};
+use crate::parsers::{parse_claude_config, parse_codex_config, parse_gemini_config, parse_opencode_config};
 use serde::{Deserialize, Serialize};
 use std::collections::HashMap;
 use std::path::PathBuf;
@@ -21,6 +21,13 @@ pub enum SourceTool {
     Claude,
     Codex,
     Gemini,
+    Cursor,
+    Copilot,
+    Windsurf,
+    Roo,
+    Cline,
+    Kilo,
+    OpenCode,
 }
 
 /// Scope of a configuration (user-level or project-level)
@@ -244,10 +251,106 @@ pub fn scan_all_mcps(workspace_path: Option<&str>) -> Result<Vec<MCPItem>, Strin
         }
     }
 
+    // === Windsurf MCPs ===
+    // User-level: ~/.codeium/windsurf/mcp_config.json
+    let windsurf_user_path = home_dir.join(".codeium").join("windsurf").join("mcp_config.json");
+    scan_json_mcp_file(&windsurf_user_path, SourceTool::Windsurf, Scope::User, &mut entries);
+
+    // === OpenCode MCPs ===
+    // User-level: ~/.config/opencode/opencode.json
+    let opencode_user_path = home_dir.join(".config").join("opencode").join("opencode.json");
+    if let Ok(config) = parse_opencode_config(&opencode_user_path) {
+        for (name, server) in config.mcp {
+            let mcp_type = if server.mcp_type == "http" { MCPType::Http } else { MCPType::Stdio };
+            entries.push(RawMCPEntry {
+                name,
+                mcp_type,
+                command: server.command,
+                args: server.args,
+                url: server.url,
+                env: server.env,
+                headers: server.headers,
+                source_tool: SourceTool::OpenCode,
+                scope: Scope::User,
+                path: opencode_user_path.to_string_lossy().to_string(),
+            });
+        }
+    }
+
+    // === Project-level scans for new tools ===
+    if let Some(ws_path) = workspace_path {
+        let ws = PathBuf::from(ws_path);
+
+        // Cursor: $PROJECT_ROOT/.cursor/mcp.json
+        let cursor_project_path = ws.join(".cursor").join("mcp.json");
+        scan_json_mcp_file(&cursor_project_path, SourceTool::Cursor, Scope::Project, &mut entries);
+
+        // Copilot: $PROJECT_ROOT/.vscode/mcp.json
+        let copilot_project_path = ws.join(".vscode").join("mcp.json");
+        scan_json_mcp_file(&copilot_project_path, SourceTool::Copilot, Scope::Project, &mut entries);
+
+        // Windsurf: project-level (already scanned user-level above)
+        // Windsurf doesn't have project-level MCP config (only user-level)
+
+        // Roo: $PROJECT_ROOT/.roo/mcp.json
+        let roo_project_path = ws.join(".roo").join("mcp.json");
+        scan_json_mcp_file(&roo_project_path, SourceTool::Roo, Scope::Project, &mut entries);
+
+        // Kilo: $PROJECT_ROOT/.kilocode/mcp.json
+        let kilo_project_path = ws.join(".kilocode").join("mcp.json");
+        scan_json_mcp_file(&kilo_project_path, SourceTool::Kilo, Scope::Project, &mut entries);
+
+        // OpenCode: $PROJECT_ROOT/opencode.json
+        let opencode_project_path = ws.join("opencode.json");
+        if let Ok(config) = parse_opencode_config(&opencode_project_path) {
+            for (name, server) in config.mcp {
+                let mcp_type = if server.mcp_type == "http" { MCPType::Http } else { MCPType::Stdio };
+                entries.push(RawMCPEntry {
+                    name,
+                    mcp_type,
+                    command: server.command,
+                    args: server.args,
+                    url: server.url,
+                    env: server.env,
+                    headers: server.headers,
+                    source_tool: SourceTool::OpenCode,
+                    scope: Scope::Project,
+                    path: opencode_project_path.to_string_lossy().to_string(),
+                });
+            }
+        }
+    }
+
     // Merge entries with the same name
     let merged = merge_mcp_entries(entries);
 
     Ok(merged)
+}
+
+/// Helper: scan a JSON file with Claude-style `mcpServers` format
+fn scan_json_mcp_file(
+    path: &PathBuf,
+    source_tool: SourceTool,
+    scope: Scope,
+    entries: &mut Vec<RawMCPEntry>,
+) {
+    if let Ok(config) = parse_claude_config(path) {
+        for (name, server) in config.mcp_servers {
+            let mcp_type = if server.mcp_type == "http" { MCPType::Http } else { MCPType::Stdio };
+            entries.push(RawMCPEntry {
+                name,
+                mcp_type,
+                command: server.command,
+                args: server.args,
+                url: server.url,
+                env: server.env,
+                headers: server.headers,
+                source_tool: source_tool.clone(),
+                scope: scope.clone(),
+                path: path.to_string_lossy().to_string(),
+            });
+        }
+    }
 }
 
 /// Merge MCP entries with the same name, tracking which tools they're configured in

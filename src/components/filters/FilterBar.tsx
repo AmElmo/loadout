@@ -1,6 +1,7 @@
 import { cn } from "@/lib/utils";
 import type { SourceTool } from "@/types";
 import { ToolLogo } from "@/components/ToolLogo";
+import { ALL_TOOLS, TOOL_CONFIG } from "@/config/tools";
 
 interface FilterBarProps {
   activeTools: SourceTool[];
@@ -11,23 +12,11 @@ interface FilterBarProps {
   scopeOptions?: { value: string; label: string }[];
 }
 
-const toolConfig: { id: SourceTool; label: string; activeClass: string }[] = [
-  {
-    id: "claude",
-    label: "Claude",
-    activeClass: "bg-orange-500/15 text-orange-600 border-orange-500/30",
-  },
-  {
-    id: "codex",
-    label: "Codex",
-    activeClass: "bg-green-500/15 text-green-600 border-green-500/30",
-  },
-  {
-    id: "gemini",
-    label: "Gemini",
-    activeClass: "bg-blue-500/15 text-blue-600 border-blue-500/30",
-  },
-];
+const toolConfig = ALL_TOOLS.map((id) => ({
+  id,
+  label: TOOL_CONFIG[id].label,
+  activeClass: TOOL_CONFIG[id].filterActiveClass,
+}));
 
 function toggleValue<T>(arr: T[], value: T): T[] {
   return arr.includes(value)

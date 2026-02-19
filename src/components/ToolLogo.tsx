@@ -1,5 +1,6 @@
 import type { SourceTool } from "@/types";
 import { cn } from "@/lib/utils";
+import { TOOL_CONFIG } from "@/config/tools";
 
 interface ToolLogoProps {
   tool: SourceTool;
@@ -48,5 +49,121 @@ export function ToolLogo({ tool, size = 14, className }: ToolLogoProps) {
           <path d="M11.04 19.32Q12 21.51 12 24q0-2.49.93-4.68.96-2.19 2.58-3.81t3.81-2.55Q21.51 12 24 12q-2.49 0-4.68-.93a12.3 12.3 0 0 1-3.81-2.58 12.3 12.3 0 0 1-2.58-3.81Q12 2.49 12 0q0 2.49-.96 4.68-.93 2.19-2.55 3.81a12.3 12.3 0 0 1-3.81 2.58Q2.49 12 0 12q2.49 0 4.68.96 2.19.93 3.81 2.55t2.55 3.81" />
         </svg>
       );
+    case "cursor":
+      // Cursor: stylised pointer arrow
+      return (
+        <svg
+          width={size}
+          height={size}
+          viewBox="0 0 16 16"
+          fill="currentColor"
+          className={cn("shrink-0", className)}
+        >
+          <path d="M2 1l11 5.5L8.5 8.5 7 14z" />
+        </svg>
+      );
+    case "copilot":
+      // Copilot: twin-wing icon
+      return (
+        <svg
+          width={size}
+          height={size}
+          viewBox="0 0 16 16"
+          fill="currentColor"
+          className={cn("shrink-0", className)}
+        >
+          <path d="M8 2a1 1 0 0 1 .867.5L11.5 7H14a1 1 0 0 1 .8 1.6l-2 2.667A1 1 0 0 1 12 12H4a1 1 0 0 1-.8-.4L1.2 8.933A1 1 0 0 1 1 8.4V8a1 1 0 0 1 1-1h2.5l2.633-4.5A1 1 0 0 1 8 2zM5.5 8H3l1.5 2h7L13 8h-2.5L8 3.5z" />
+        </svg>
+      );
+    case "windsurf":
+      // Windsurf: wave icon
+      return (
+        <svg
+          width={size}
+          height={size}
+          viewBox="0 0 16 16"
+          className={cn("shrink-0", className)}
+        >
+          <path d="M1 5c1.5-1.5 3-2 4.5-1S8 5 9.5 5 12.5 3 14 3M1 9c1.5-1.5 3-2 4.5-1S8 9 9.5 9s3-2 4.5-2M1 13c1.5-1.5 3-2 4.5-1S8 13 9.5 13s3-2 4.5-2" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" />
+        </svg>
+      );
+    case "roo":
+      // Roo: R monogram
+      return (
+        <svg
+          width={size}
+          height={size}
+          viewBox="0 0 16 16"
+          fill="currentColor"
+          className={cn("shrink-0", className)}
+        >
+          <path d="M4 2h4a4 4 0 0 1 0 8H6v4H4V2zm2 6h2a2 2 0 1 0 0-4H6v4z" />
+        </svg>
+      );
+    case "cline":
+      // Cline: terminal prompt
+      return (
+        <svg
+          width={size}
+          height={size}
+          viewBox="0 0 16 16"
+          className={cn("shrink-0", className)}
+        >
+          <path d="M2 3l5 4-5 4" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" />
+          <path d="M9 13h5" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" />
+        </svg>
+      );
+    case "kilo":
+      // Kilo: K monogram
+      return (
+        <svg
+          width={size}
+          height={size}
+          viewBox="0 0 16 16"
+          fill="currentColor"
+          className={cn("shrink-0", className)}
+        >
+          <path d="M4 2v12h2V9l4 5h3l-5-6 5-6H10L6 8V2z" />
+        </svg>
+      );
+    case "opencode":
+      // OpenCode: angle brackets < >
+      return (
+        <svg
+          width={size}
+          height={size}
+          viewBox="0 0 16 16"
+          className={cn("shrink-0", className)}
+        >
+          <path d="M5.5 3L1 8l4.5 5M10.5 3L15 8l-4.5 5" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" />
+        </svg>
+      );
+    default: {
+      // Fallback: first letter of the tool label in a circle
+      const _tool = tool as string;
+      const config = TOOL_CONFIG[tool as SourceTool];
+      const label = config?.label ?? _tool;
+      return (
+        <svg
+          width={size}
+          height={size}
+          viewBox="0 0 16 16"
+          className={cn("shrink-0", className)}
+        >
+          <circle cx="8" cy="8" r="7" fill="currentColor" opacity="0.15" />
+          <text
+            x="8"
+            y="8"
+            textAnchor="middle"
+            dominantBaseline="central"
+            fill="currentColor"
+            fontSize="9"
+            fontWeight="600"
+          >
+            {label.charAt(0).toUpperCase()}
+          </text>
+        </svg>
+      );
+    }
   }
 }

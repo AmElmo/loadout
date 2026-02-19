@@ -1,6 +1,6 @@
 import { X, Copy, Check, FolderOpen, Share2 } from "lucide-react";
 import { useState } from "react";
-import type { SkillItem, SourceTool } from "@/types";
+import type { SkillItem } from "@/types";
 import { installSkillToTools } from "@/lib/api/sync";
 import { ToolBadge } from "@/components/mcps/ToolBadge";
 import { TokenBadge } from "@/components/context";
@@ -8,8 +8,7 @@ import { SyncDialog } from "@/components/sync";
 import { MaturityBadge } from "./MaturityBadge";
 import { Button } from "@/components/ui/button";
 import { OpenPathButton } from "@/components/ui/open-path-button";
-
-const ALL_TOOLS: SourceTool[] = ["claude", "codex", "gemini"];
+import { ALL_TOOLS } from "@/config/tools";
 
 interface SkillViewerProps {
   skill: SkillItem;
