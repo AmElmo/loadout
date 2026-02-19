@@ -4,6 +4,7 @@ use thiserror::Error;
 
 mod commands;
 mod converters;
+pub mod helpers;
 mod parsers;
 mod scanners;
 mod workspace;
@@ -73,7 +74,7 @@ fn get_workspace_info(path: String) -> Result<WorkspaceInfo, String> {
 /// Get the user's home directory
 #[tauri::command]
 fn get_home_dir() -> Option<String> {
-    dirs::home_dir().map(|p| p.to_string_lossy().to_string())
+    helpers::effective_home().map(|p| p.to_string_lossy().to_string())
 }
 
 /// Discover workspaces with AI CLI configs across the home directory

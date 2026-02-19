@@ -109,7 +109,7 @@ const SIGNAL_NAMES: &[&str] = &[
 
 /// Scan the home directory for workspaces with AI CLI configs
 pub fn discover_workspaces(max_depth: u32) -> Result<DiscoveryResult, String> {
-    let home_dir = dirs::home_dir().ok_or("Could not determine home directory")?;
+    let home_dir = crate::helpers::effective_home().ok_or("Could not determine home directory")?;
     let start = std::time::Instant::now();
 
     let prune_set: HashSet<&str> = PRUNE_DIRS.iter().copied().collect();

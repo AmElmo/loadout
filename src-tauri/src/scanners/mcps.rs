@@ -86,7 +86,7 @@ struct RawMCPEntry {
 
 /// Scan all MCP configurations from Claude Code, Codex CLI, and Gemini CLI
 pub fn scan_all_mcps(workspace_path: Option<&str>) -> Result<Vec<MCPItem>, String> {
-    let home_dir = dirs::home_dir().ok_or("Could not determine home directory")?;
+    let home_dir = crate::helpers::effective_home().ok_or("Could not determine home directory")?;
     let mut entries: Vec<RawMCPEntry> = Vec::new();
 
     // Scan Claude Code MCPs

@@ -103,7 +103,7 @@ struct RawSkillEntry {
 
 /// Scan all skills across all tools
 pub fn scan_all_skills(workspace_path: Option<&str>) -> Result<SkillScanResult, String> {
-    let home_dir = dirs::home_dir().ok_or("Could not determine home directory")?;
+    let home_dir = crate::helpers::effective_home().ok_or("Could not determine home directory")?;
     let mut entries: Vec<RawSkillEntry> = Vec::new();
 
     // Scan Claude Code skills

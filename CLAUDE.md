@@ -24,10 +24,15 @@ A Tauri 2.x desktop application with React + Vite frontend.
 ## Key Commands
 
 ```bash
-pnpm tauri dev    # Start development (both frontend and backend)
-pnpm build        # Build frontend only
-pnpm tauri build  # Build full application
+pnpm tauri dev           # Start development (both frontend and backend)
+pnpm tauri:dev:fixtures  # Start dev with demo fixtures (uses LOADOUT_HOME)
+pnpm build               # Build frontend only
+pnpm tauri build         # Build full application
 ```
+
+## Test Fixtures
+
+`fixtures/home/` contains a realistic mock home directory with configurations for Claude, Codex, and Gemini (skills, rules, hooks, MCPs, and project-level settings). Use `pnpm tauri:dev:fixtures` to run the app against these fixtures instead of your real home directory. The `LOADOUT_HOME` env var is only honored in debug builds.
 
 ## Conventions
 

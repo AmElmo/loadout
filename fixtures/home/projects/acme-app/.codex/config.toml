@@ -1,0 +1,10 @@
+model = "o3"
+approval_policy = "suggest"
+
+[mcp_servers.supabase]
+command = "npx"
+args = ["-y", "@supabase/mcp-server"]
+
+[mcp_servers.supabase.env]
+SUPABASE_URL = "https://xyzacme.supabase.co"
+SUPABASE_SERVICE_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.xxxxx"

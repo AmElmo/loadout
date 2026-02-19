@@ -64,7 +64,7 @@ pub struct PromptScanResult {
 
 /// Scan all system prompt files and rules directories
 pub fn scan_all_prompts(workspace_path: Option<&str>) -> Result<PromptScanResult, String> {
-    let home_dir = dirs::home_dir().ok_or("Could not determine home directory")?;
+    let home_dir = crate::helpers::effective_home().ok_or("Could not determine home directory")?;
     let mut prompts: Vec<PromptFile> = Vec::new();
 
     // === Global main prompts ===

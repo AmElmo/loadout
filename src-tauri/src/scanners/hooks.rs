@@ -113,7 +113,7 @@ fn collect_gemini_hooks(config: &GeminiConfig, path: &Path, scope: HookScope) ->
 
 /// Scan all hook configurations (user-level + optional project-level)
 pub fn scan_all_hooks(workspace_path: Option<&str>) -> Result<HookScanResult, String> {
-    let home_dir = dirs::home_dir().ok_or("Could not determine home directory")?;
+    let home_dir = crate::helpers::effective_home().ok_or("Could not determine home directory")?;
     let mut hooks: Vec<HookItem> = Vec::new();
 
     // --- User-level hooks ---
