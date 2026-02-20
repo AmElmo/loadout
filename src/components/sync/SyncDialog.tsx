@@ -41,7 +41,7 @@ export function SyncDialog({
   );
   const disabledTools = ALL_TOOLS.filter((t) => !allowedTools.includes(t));
   const missingTools = allowedTools.filter((t) => !existingTools.includes(t));
-  const [targetTools, setTargetTools] = useState<SourceTool[]>([]);
+  const [targetTools, setTargetTools] = useState<SourceTool[]>(missingTools);
   const effectiveTargetTools = targetTools.filter((tool) =>
     allowedTools.includes(tool)
   );
