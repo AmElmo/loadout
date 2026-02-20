@@ -365,7 +365,14 @@ fn scan_json_mcp_file(
 ) {
     if let Ok(config) = parse_claude_config(path) {
         for (name, server) in config.mcp_servers {
-            let mcp_type = if server.mcp_type == "http" { MCPType::Http } else { MCPType::Stdio };
+            // Detect type: explicit "http" type, or infer from url presence when no command
+            let mcp_type = if server.mcp_type == "http"
+                || (server.url.is_some() && server.command.is_none())
+            {
+                MCPType::Http
+            } else {
+                MCPType::Stdio
+            };
             entries.push(RawMCPEntry {
                 name,
                 mcp_type,

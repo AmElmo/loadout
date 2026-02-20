@@ -178,12 +178,9 @@ pub fn scan_all_skills(workspace_path: Option<&str>) -> Result<SkillScanResult, 
 
     // === Roo Skills ===
     scan_skill_directory(&home_dir.join(".roo").join("skills"), SkillSourceTool::Roo, SkillScope::User, &mut entries);
-    // Roo also supports ~/.agents/skills (shared path — attributed to Roo as well)
-    scan_skill_directory(&home_dir.join(".agents").join("skills"), SkillSourceTool::Roo, SkillScope::User, &mut entries);
     if let Some(ws_path) = workspace_path {
         let ws = PathBuf::from(ws_path);
         scan_skill_directory(&ws.join(".roo").join("skills"), SkillSourceTool::Roo, SkillScope::Project, &mut entries);
-        scan_skill_directory(&ws.join(".agents").join("skills"), SkillSourceTool::Roo, SkillScope::Project, &mut entries);
     }
 
     // === Cline Skills ===
@@ -200,9 +197,6 @@ pub fn scan_all_skills(workspace_path: Option<&str>) -> Result<SkillScanResult, 
 
     // === OpenCode Skills ===
     scan_skill_directory(&home_dir.join(".config").join("opencode").join("skills"), SkillSourceTool::OpenCode, SkillScope::User, &mut entries);
-    // OpenCode compatibility paths
-    scan_skill_directory(&home_dir.join(".claude").join("skills"), SkillSourceTool::OpenCode, SkillScope::User, &mut entries);
-    scan_skill_directory(&home_dir.join(".agents").join("skills"), SkillSourceTool::OpenCode, SkillScope::User, &mut entries);
     if let Some(ws_path) = workspace_path {
         let ws = PathBuf::from(ws_path);
         scan_skill_directory(&ws.join(".opencode").join("skills"), SkillSourceTool::OpenCode, SkillScope::Project, &mut entries);

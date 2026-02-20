@@ -8,9 +8,15 @@ import { Hooks } from "@/pages/Hooks";
 import { Context } from "@/pages/Context";
 import { Learn } from "@/pages/Learn";
 import { useWorkspaceStore } from "@/stores/workspaceStore";
+import { useEffect, useRef } from "react";
 
 function App() {
   const { activeTab } = useWorkspaceStore();
+  const mainRef = useRef<HTMLElement>(null);
+
+  useEffect(() => {
+    mainRef.current?.scrollTo(0, 0);
+  }, [activeTab]);
 
   const renderPage = () => {
     switch (activeTab) {
@@ -38,7 +44,7 @@ function App() {
       <Sidebar />
       <div className="flex flex-1 flex-col overflow-hidden">
         <Header />
-        <main className="flex-1 overflow-auto">{renderPage()}</main>
+        <main ref={mainRef} className="flex-1 overflow-auto">{renderPage()}</main>
       </div>
     </div>
   );
