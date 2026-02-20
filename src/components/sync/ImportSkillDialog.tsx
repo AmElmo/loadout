@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react";
-import { X, Loader2, Globe, FileUp, AlertCircle } from "lucide-react";
+import { X, Loader2, Globe, FileUp, AlertCircle, FileText, FolderOpen } from "lucide-react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { open } from "@tauri-apps/plugin-dialog";
 import type { FetchedSkill, SourceTool } from "@/types";
@@ -14,6 +14,14 @@ import { Button } from "@/components/ui/button";
 import { ToolSelector } from "./ToolSelector";
 import { SuccessConfirmation } from "./SuccessConfirmation";
 import { cn } from "@/lib/utils";
+
+function formatFileSize(bytes: number): string {
+  if (bytes < 1024) return `${bytes} B`;
+  const kb = bytes / 1024;
+  if (kb < 1024) return `${kb.toFixed(1)} KB`;
+  const mb = kb / 1024;
+  return `${mb.toFixed(1)} MB`;
+}
 
 type ImportMode = "url" | "file";
 
@@ -124,6 +132,7 @@ export function ImportSkillDialog({
       name: editedName.trim(),
       content: preview.content,
       targetTools,
+      files: preview.files,
     });
   };
 
@@ -305,6 +314,41 @@ export function ImportSkillDialog({
                     Description
                   </label>
                   <p className="text-sm">{preview.description}</p>
+                </div>
+              )}
+
+              {/* File listing */}
+              {preview.files.length > 0 && (
+                <div className="space-y-1">
+                  <label className="flex items-center gap-1.5 text-sm font-medium text-muted-foreground">
+                    <FolderOpen className="h-3.5 w-3.5" />
+                    Included files ({preview.files.length + 1})
+                  </label>
+                  <div className="rounded-md border border-border bg-muted/30 p-2 text-xs font-mono">
+                    <div className="flex items-center justify-between py-0.5 px-1">
+                      <span className="flex items-center gap-1.5">
+                        <FileText className="h-3 w-3 text-primary" />
+                        SKILL.md
+                      </span>
+                      <span className="text-muted-foreground">
+                        {formatFileSize(preview.content.length)}
+                      </span>
+                    </div>
+                    {preview.files.map((file) => (
+                      <div
+                        key={file.relativePath}
+                        className="flex items-center justify-between py-0.5 px-1"
+                      >
+                        <span className="flex items-center gap-1.5">
+                          <FileText className="h-3 w-3 text-muted-foreground" />
+                          {file.relativePath}
+                        </span>
+                        <span className="text-muted-foreground">
+                          {formatFileSize(file.size)}
+                        </span>
+                      </div>
+                    ))}
+                  </div>
                 </div>
               )}
 

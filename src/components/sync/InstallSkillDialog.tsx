@@ -50,6 +50,7 @@ export function InstallSkillDialog({ onClose }: InstallSkillDialogProps) {
     name: name.trim(),
     content: buildContent(),
     targetTools,
+    files: [],
   });
 
   const writeMutation = useMutation({

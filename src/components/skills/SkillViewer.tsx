@@ -123,6 +123,7 @@ export function SkillViewer({ skill, onClose }: SkillViewerProps) {
               name: skill.name,
               content: skill.content,
               targetTools,
+              files: [],
             })
           }
           onClose={() => setShowSync(false)}

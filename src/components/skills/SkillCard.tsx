@@ -87,6 +87,7 @@ export function SkillCard({ skill, onClick }: SkillCardProps) {
               name: skill.name,
               content: skill.content,
               targetTools,
+              files: [],
             })
           }
           onClose={() => setShowSync(false)}

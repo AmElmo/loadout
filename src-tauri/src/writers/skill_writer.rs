@@ -66,6 +66,54 @@ pub fn write_skill(name: &str, content: &str, tool: &str) -> Result<String, Stri
     Ok(skill_path.to_string_lossy().to_string())
 }
 
+/// Validate a relative file path for safety (no path traversal).
+fn validate_relative_path(path: &str) -> Result<(), String> {
+    if path.is_empty() {
+        return Err("File path is empty".to_string());
+    }
+    if path.contains("..") {
+        return Err(format!("Path traversal not allowed: {}", path));
+    }
+    if path.starts_with('/') || path.starts_with('\\') {
+        return Err(format!("Absolute paths not allowed: {}", path));
+    }
+    if path.contains('\0') {
+        return Err("Null bytes not allowed in path".to_string());
+    }
+    Ok(())
+}
+
+/// Write a SKILL.md plus companion files for a specific tool.
+///
+/// Creates `{skills_dir}/{name}/SKILL.md` and companion files, returns all written paths.
+pub fn write_skill_with_files(
+    name: &str,
+    content: &str,
+    files: &[crate::commands::sync::SkillFile],
+    tool: &str,
+) -> Result<Vec<String>, String> {
+    let safe_name = validate_skill_name(name)?;
+    let skills_dir = skill_dir_for_tool(tool)?;
+    let skill_dir = skills_dir.join(&safe_name);
+    let skill_path = skill_dir.join("SKILL.md");
+
+    let mut written_paths = Vec::new();
+
+    // Write main SKILL.md
+    atomic_write(&skill_path, content)?;
+    written_paths.push(skill_path.to_string_lossy().to_string());
+
+    // Write companion files
+    for file in files {
+        validate_relative_path(&file.relative_path)?;
+        let file_path = skill_dir.join(&file.relative_path);
+        atomic_write(&file_path, &file.content)?;
+        written_paths.push(file_path.to_string_lossy().to_string());
+    }
+
+    Ok(written_paths)
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
