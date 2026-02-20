@@ -414,19 +414,19 @@ pub fn sync_mcp_to_tools(request: SyncMCPRequest) -> Result<WriteResult, String>
 /// Parsed GitHub URL information
 #[derive(Debug, Clone, PartialEq)]
 enum GitHubUrl {
-    /// A direct file: github.com/org/repo/blob/branch/path
+    /// A direct file: github.com/org/repo/blob/{ref_and_path}
     Blob {
         owner: String,
         repo: String,
-        branch: String,
-        path: String,
+        /// Combined branch + path (cannot be split without API lookup)
+        ref_and_path: String,
     },
-    /// A directory: github.com/org/repo/tree/branch/path
+    /// A directory: github.com/org/repo/tree/{ref_and_path}
     Tree {
         owner: String,
         repo: String,
-        branch: String,
-        path: String,
+        /// Combined branch + path (cannot be split without API lookup)
+        ref_and_path: String,
     },
     /// Bare repo: github.com/org/repo
     Repo {
@@ -435,34 +435,32 @@ enum GitHubUrl {
     },
 }
 
-/// Parse a GitHub URL into structured components
+/// Parse a GitHub URL into structured components.
+///
+/// Note: branch and path are stored together as `ref_and_path` because GitHub
+/// branch names can contain `/` (e.g. `feature/foo`), making it impossible to
+/// determine the split from the URL alone. Use `resolve_github_branch()` with
+/// the GitHub API to disambiguate when separate values are needed.
 fn parse_github_url(url: &str) -> Option<GitHubUrl> {
     let rest = url
         .strip_prefix("https://github.com/")
         .or_else(|| url.strip_prefix("http://github.com/"))?;
 
-    let parts: Vec<&str> = rest.splitn(5, '/').collect();
+    let parts: Vec<&str> = rest.splitn(4, '/').collect();
 
     if parts.len() >= 4 && parts[2] == "blob" {
         return Some(GitHubUrl::Blob {
             owner: parts[0].to_string(),
             repo: parts[1].to_string(),
-            branch: parts[3].to_string(),
-            path: parts.get(4).unwrap_or(&"").to_string(),
+            ref_and_path: parts[3].to_string(),
         });
     }
 
     if parts.len() >= 4 && parts[2] == "tree" {
-        let dir_path = parts
-            .get(4)
-            .unwrap_or(&"")
-            .trim_end_matches('/')
-            .to_string();
         return Some(GitHubUrl::Tree {
             owner: parts[0].to_string(),
             repo: parts[1].to_string(),
-            branch: parts[3].to_string(),
-            path: dir_path,
+            ref_and_path: parts[3].trim_end_matches('/').to_string(),
         });
     }
 
@@ -483,30 +481,19 @@ fn github_to_raw_url(url: &str) -> Option<String> {
         GitHubUrl::Blob {
             owner,
             repo,
-            branch,
-            path,
+            ref_and_path,
         } => Some(format!(
-            "https://raw.githubusercontent.com/{}/{}/{}/{}",
-            owner, repo, branch, path
+            "https://raw.githubusercontent.com/{}/{}/{}",
+            owner, repo, ref_and_path
         )),
         GitHubUrl::Tree {
             owner,
             repo,
-            branch,
-            path,
-        } => {
-            if path.is_empty() {
-                Some(format!(
-                    "https://raw.githubusercontent.com/{}/{}/{}/SKILL.md",
-                    owner, repo, branch
-                ))
-            } else {
-                Some(format!(
-                    "https://raw.githubusercontent.com/{}/{}/{}/{}/SKILL.md",
-                    owner, repo, branch, path
-                ))
-            }
-        }
+            ref_and_path,
+        } => Some(format!(
+            "https://raw.githubusercontent.com/{}/{}/{}/SKILL.md",
+            owner, repo, ref_and_path
+        )),
         GitHubUrl::Repo { owner, repo } => Some(format!(
             "https://raw.githubusercontent.com/{}/{}/main/SKILL.md",
             owner, repo
@@ -523,6 +510,88 @@ struct GitHubContentEntry {
     entry_type: String,
     size: Option<u64>,
     download_url: Option<String>,
+}
+
+/// A Git reference from the GitHub matching-refs API
+#[derive(Debug, Deserialize)]
+struct GitRef {
+    #[serde(rename = "ref")]
+    ref_name: String,
+}
+
+/// Resolve a combined `ref_and_path` string (e.g. "feature/branch/dir/file")
+/// into separate `(branch, path)` by querying the GitHub matching-refs API.
+///
+/// GitHub branch names can contain `/`, so we cannot determine the split from
+/// the URL alone. This function queries GitHub for all branches starting with
+/// the first path segment and picks the longest match.
+///
+/// Falls back to treating the first segment as the branch if the API call fails.
+async fn resolve_github_branch(
+    client: &reqwest::Client,
+    owner: &str,
+    repo: &str,
+    ref_and_path: &str,
+) -> Result<(String, String), String> {
+    let segments: Vec<&str> = ref_and_path.split('/').collect();
+    if segments.is_empty() {
+        return Ok((String::new(), String::new()));
+    }
+    if segments.len() == 1 {
+        return Ok((segments[0].to_string(), String::new()));
+    }
+
+    // Query matching-refs API with the first segment as prefix
+    let api_url = format!(
+        "https://api.github.com/repos/{}/{}/git/matching-refs/heads/{}",
+        owner, repo, segments[0]
+    );
+
+    let response = client
+        .get(&api_url)
+        .header("User-Agent", "Loadout/0.1")
+        .header("Accept", "application/vnd.github.v3+json")
+        .send()
+        .await;
+
+    if let Ok(response) = response {
+        if response.status().is_success() {
+            if let Ok(refs) = response.json::<Vec<GitRef>>().await {
+                // Find the longest branch name that is a prefix of ref_and_path
+                let mut best_branch: Option<String> = None;
+
+                for git_ref in &refs {
+                    if let Some(branch) = git_ref.ref_name.strip_prefix("refs/heads/") {
+                        if ref_and_path == branch
+                            || (ref_and_path.starts_with(branch)
+                                && ref_and_path.as_bytes().get(branch.len()) == Some(&b'/'))
+                        {
+                            if best_branch
+                                .as_ref()
+                                .map_or(true, |b| branch.len() > b.len())
+                            {
+                                best_branch = Some(branch.to_string());
+                            }
+                        }
+                    }
+                }
+
+                if let Some(branch) = best_branch {
+                    let path = if ref_and_path.len() > branch.len() {
+                        ref_and_path[branch.len()..]
+                            .trim_start_matches('/')
+                            .to_string()
+                    } else {
+                        String::new()
+                    };
+                    return Ok((branch, path));
+                }
+            }
+        }
+    }
+
+    // Fallback: first segment as branch (original behavior)
+    Ok((segments[0].to_string(), segments[1..].join("/")))
 }
 
 const MAX_FILE_SIZE: u64 = 100_000; // 100 KB limit per companion file
@@ -690,29 +759,25 @@ pub async fn fetch_skill_from_url(url: String) -> Result<FetchedSkill, String> {
             GitHubUrl::Tree {
                 owner,
                 repo,
-                branch,
-                path,
+                ref_and_path,
             } => {
-                // Fetch SKILL.md from the directory
-                let skill_md_url = if path.is_empty() {
-                    format!(
-                        "https://raw.githubusercontent.com/{}/{}/{}/SKILL.md",
-                        owner, repo, branch
-                    )
-                } else {
-                    format!(
-                        "https://raw.githubusercontent.com/{}/{}/{}/{}/SKILL.md",
-                        owner, repo, branch, path
-                    )
-                };
+                // Fetch SKILL.md (raw URL works with combined ref+path)
+                let skill_md_url = format!(
+                    "https://raw.githubusercontent.com/{}/{}/{}/SKILL.md",
+                    owner, repo, ref_and_path
+                );
 
                 let raw_content = fetch_raw_content(&client, &skill_md_url).await?;
 
-                // Derive fallback name from directory path
-                let fallback_name = if path.is_empty() {
+                // Resolve branch/path for the Contents API and fallback name
+                let (branch, dir_path) =
+                    resolve_github_branch(&client, &owner, &repo, &ref_and_path).await?;
+
+                let fallback_name = if dir_path.is_empty() {
                     repo.clone()
                 } else {
-                    path.rsplit('/')
+                    dir_path
+                        .rsplit('/')
                         .next()
                         .unwrap_or("imported-skill")
                         .to_string()
@@ -723,7 +788,7 @@ pub async fn fetch_skill_from_url(url: String) -> Result<FetchedSkill, String> {
 
                 // Fetch companion files from the directory
                 let files =
-                    fetch_github_directory(&client, &owner, &repo, &branch, &path).await?;
+                    fetch_github_directory(&client, &owner, &repo, &branch, &dir_path).await?;
 
                 return Ok(FetchedSkill {
                     name: parsed.name,
@@ -736,17 +801,16 @@ pub async fn fetch_skill_from_url(url: String) -> Result<FetchedSkill, String> {
             GitHubUrl::Blob {
                 owner,
                 repo,
-                branch,
-                ref path,
+                ref ref_and_path,
             } => {
-                // Fetch the file itself
+                // Fetch the file (raw URL works with combined ref+path)
                 let raw_url = format!(
-                    "https://raw.githubusercontent.com/{}/{}/{}/{}",
-                    owner, repo, branch, path
+                    "https://raw.githubusercontent.com/{}/{}/{}",
+                    owner, repo, ref_and_path
                 );
                 let raw_content = fetch_raw_content(&client, &raw_url).await?;
 
-                let fallback_name = path
+                let fallback_name = ref_and_path
                     .rsplit('/')
                     .find(|s| !s.is_empty())
                     .unwrap_or("imported-skill")
@@ -757,10 +821,28 @@ pub async fn fetch_skill_from_url(url: String) -> Result<FetchedSkill, String> {
                     .map_err(|e| format!("Failed to parse skill: {}", e))?;
 
                 // If this is a SKILL.md file, also fetch sibling files
-                let files = if path.ends_with("SKILL.md") {
-                    let dir_path = path.trim_end_matches("SKILL.md").trim_end_matches('/');
-                    fetch_github_directory(&client, &owner, &repo, &branch, dir_path).await
-                        .unwrap_or_default()
+                let files = if ref_and_path.ends_with("SKILL.md") {
+                    let dir_ref_and_path = ref_and_path
+                        .trim_end_matches("SKILL.md")
+                        .trim_end_matches('/');
+                    if !dir_ref_and_path.is_empty() {
+                        let (branch, dir_path) =
+                            resolve_github_branch(&client, &owner, &repo, dir_ref_and_path)
+                                .await
+                                .unwrap_or_else(|_| {
+                                    let parts: Vec<&str> =
+                                        dir_ref_and_path.splitn(2, '/').collect();
+                                    (
+                                        parts[0].to_string(),
+                                        parts.get(1).unwrap_or(&"").to_string(),
+                                    )
+                                });
+                        fetch_github_directory(&client, &owner, &repo, &branch, &dir_path)
+                            .await
+                            .unwrap_or_default()
+                    } else {
+                        vec![]
+                    }
                 } else {
                     vec![]
                 };
