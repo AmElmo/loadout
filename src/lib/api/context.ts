@@ -1,7 +1,5 @@
 import type { PromptFile, SkillItem, MCPItem, MCPToolsResult, SourceTool } from "@/types";
-
-/** Default context window size for Claude models */
-export const CONTEXT_WINDOW_LIMIT = 200_000;
+import { toolContextWindow } from "@/config/tools";
 
 export interface ContextSummary {
   /** Total tokens consumed at idle (rules + skills idle + MCPs if fetched) */
@@ -74,7 +72,7 @@ export function computeContextSummary(
   return {
     totalIdleTokens,
     totalActiveTokens,
-    contextLimit: CONTEXT_WINDOW_LIMIT,
+    contextLimit: toolContextWindow(activeTool),
     rulesTokens,
     rulesConditionalTokens,
     skillsIdleTokens,
