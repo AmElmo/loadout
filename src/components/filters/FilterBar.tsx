@@ -1,6 +1,7 @@
 import { cn } from "@/lib/utils";
 import type { SourceTool } from "@/types";
 import { ToolLogo } from "@/components/ToolLogo";
+import { ALL_TOOLS, TOOL_CONFIG } from "@/config/tools";
 
 interface FilterBarProps {
   activeTools: SourceTool[];
@@ -9,25 +10,16 @@ interface FilterBarProps {
   onScopesChange: (scopes: string[]) => void;
   showScopeFilter: boolean;
   scopeOptions?: { value: string; label: string }[];
+  availableTools?: SourceTool[];
 }
 
-const toolConfig: { id: SourceTool; label: string; activeClass: string }[] = [
-  {
-    id: "claude",
-    label: "Claude",
-    activeClass: "bg-orange-500/15 text-orange-600 border-orange-500/30",
-  },
-  {
-    id: "codex",
-    label: "Codex",
-    activeClass: "bg-green-500/15 text-green-600 border-green-500/30",
-  },
-  {
-    id: "gemini",
-    label: "Gemini",
-    activeClass: "bg-blue-500/15 text-blue-600 border-blue-500/30",
-  },
-];
+function buildToolConfig(tools: SourceTool[]) {
+  return tools.map((id) => ({
+    id,
+    label: TOOL_CONFIG[id].label,
+    activeClass: TOOL_CONFIG[id].filterActiveClass,
+  }));
+}
 
 function toggleValue<T>(arr: T[], value: T): T[] {
   return arr.includes(value)
@@ -45,7 +37,12 @@ export function FilterBar({
     { value: "user", label: "User" },
     { value: "project", label: "Project" },
   ],
+  availableTools,
 }: FilterBarProps) {
+  const toolConfig = buildToolConfig(availableTools ?? ALL_TOOLS);
+
+  if (toolConfig.length <= 1) return null;
+
   return (
     <div className="flex items-center gap-6">
       <div className="flex items-center gap-2">

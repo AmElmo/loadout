@@ -66,7 +66,7 @@ export function Rules() {
         </div>
       )}
 
-      {result && result.prompts.length > 0 && (
+      {result && result.prompts.some((p) => p.exists) && (
         <div className="mb-4">
           <SearchBar
             value={searchQuery}

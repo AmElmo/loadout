@@ -13,12 +13,14 @@ import { ContextTable } from "@/components/context/ContextTable";
 import { Button } from "@/components/ui/button";
 import type { MCPItem, MCPToolsResult, SourceTool } from "@/types";
 import { ToolLogo } from "@/components/ToolLogo";
+import { ALL_TOOLS, TOOL_CONFIG } from "@/config/tools";
 
-const TOOL_FILTERS: { label: string; value: SourceTool }[] = [
-  { label: "Claude", value: "claude" },
-  { label: "Codex", value: "codex" },
-  { label: "Gemini", value: "gemini" },
-];
+function buildToolFilters(tools: SourceTool[]) {
+  return tools.map((id) => ({
+    label: TOOL_CONFIG[id].label,
+    value: id,
+  }));
+}
 
 export function Context() {
   const { current } = useWorkspaceStore();
@@ -149,10 +151,27 @@ export function Context() {
   const skills = skillsResult?.skills ?? [];
   const mcpsList = mcps ?? [];
 
+  const availableTools = useMemo(() => {
+    const tools = new Set<SourceTool>();
+    for (const p of prompts) tools.add(p.sourceTool);
+    for (const s of skills) tools.add(s.sourceTool);
+    for (const m of mcpsList) {
+      for (const t of m.configuredIn) tools.add(t);
+    }
+    return ALL_TOOLS.filter((t) => tools.has(t));
+  }, [prompts, skills, mcpsList]);
+
+  const toolFilters = useMemo(() => buildToolFilters(availableTools), [availableTools]);
+
+  // Reset active tool if it's not in available tools
+  const effectiveTool = availableTools.includes(activeTool)
+    ? activeTool
+    : availableTools[0] ?? "claude";
+
   // Filter MCPs by active tool
   const filteredMcps = useMemo(() => {
-    return mcpsList.filter((mcp) => mcp.configuredIn.includes(activeTool));
-  }, [mcpsList, activeTool]);
+    return mcpsList.filter((mcp) => mcp.configuredIn.includes(effectiveTool));
+  }, [mcpsList, effectiveTool]);
 
   const summary = useMemo(() => {
     return computeContextSummary(
@@ -161,9 +180,9 @@ export function Context() {
       mcpsList,
       mcpToolsMap,
       mcpToolsFetched,
-      activeTool
+      effectiveTool
     );
-  }, [prompts, skills, mcpsList, mcpToolsMap, mcpToolsFetched, activeTool]);
+  }, [prompts, skills, mcpsList, mcpToolsMap, mcpToolsFetched, effectiveTool]);
 
   const isLoading = rulesLoading || skillsLoading;
   const error = rulesError || skillsError;
@@ -181,23 +200,25 @@ export function Context() {
         </div>
 
         {/* Tool filter */}
-        <div className="flex items-center gap-1 rounded-lg border border-border bg-muted/50 p-1">
-          {TOOL_FILTERS.map((filter) => (
-            <button
-              key={filter.label}
-              onClick={() => setActiveTool(filter.value)}
-              className={cn(
-                "inline-flex items-center gap-1 rounded-md px-3 py-1 text-xs font-medium transition-colors",
-                activeTool === filter.value
-                  ? "bg-background text-foreground shadow-sm"
-                  : "text-muted-foreground hover:text-foreground"
-              )}
-            >
-              <ToolLogo tool={filter.value} size={12} />
-              {filter.label}
-            </button>
-          ))}
-        </div>
+        {toolFilters.length > 1 && (
+          <div className="flex items-center gap-1 rounded-lg border border-border bg-muted/50 p-1">
+            {toolFilters.map((filter) => (
+              <button
+                key={filter.label}
+                onClick={() => setActiveTool(filter.value)}
+                className={cn(
+                  "inline-flex items-center gap-1 rounded-md px-3 py-1 text-xs font-medium transition-colors",
+                  effectiveTool === filter.value
+                    ? "bg-background text-foreground shadow-sm"
+                    : "text-muted-foreground hover:text-foreground"
+                )}
+              >
+                <ToolLogo tool={filter.value} size={12} />
+                {filter.label}
+              </button>
+            ))}
+          </div>
+        )}
       </div>
 
       {!current && (
@@ -233,14 +254,14 @@ export function Context() {
           {/* Summary text */}
           <div className="rounded-lg border border-border bg-card p-4">
             <p className="text-sm">
-              <span className="font-medium capitalize">{activeTool}</span>{" "}
+              <span className="font-medium capitalize">{effectiveTool}</span>{" "}
               configuration consumes an estimated{" "}
               <span className="font-semibold">
                 {formatTokens(summary.totalIdleTokens)}
               </span>{" "}
               tokens at idle (
               <span className="font-medium">{idlePercent}%</span> of 200K).
-              {activeTool === "claude" && summary.mcpsIdleTokens !== null && summary.mcpsIdleTokens > 0 && (
+              {effectiveTool === "claude" && summary.mcpsIdleTokens !== null && summary.mcpsIdleTokens > 0 && (
                 <span className="text-muted-foreground">
                   {" "}Claude Code's Tool Search may load fewer MCP tools per turn.
                 </span>
@@ -283,7 +304,7 @@ export function Context() {
                 <div>
                   <span className="font-medium text-cyan-500">MCPs</span>{" "}
                   — Full tool definitions (name, description, JSON schema) loaded on every message.
-                  {activeTool === "claude" && (
+                  {effectiveTool === "claude" && (
                     <span className="text-muted-foreground/70">
                       {" "}Claude Code's Tool Search can dynamically load only relevant tools per turn,
                       so actual usage may be lower than shown.
@@ -436,7 +457,7 @@ export function Context() {
               skills={skills}
               mcps={mcpsList}
               mcpTools={mcpToolsMap}
-              activeTool={activeTool}
+              activeTool={effectiveTool}
             />
           </div>
         </div>

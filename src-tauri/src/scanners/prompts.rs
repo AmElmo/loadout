@@ -17,6 +17,13 @@ pub enum PromptSourceTool {
     Claude,
     Codex,
     Gemini,
+    Cursor,
+    Copilot,
+    Windsurf,
+    Roo,
+    Cline,
+    Kilo,
+    OpenCode,
 }
 
 /// Scope of a prompt file
@@ -162,6 +169,111 @@ pub fn scan_all_prompts(workspace_path: Option<&str>) -> Result<PromptScanResult
         // Subdirectory context files (Codex and Gemini place their main files in subdirs)
         // Walk the project tree with pruning for fast discovery.
         scan_subdirectory_rules(&mut prompts, &project_root);
+
+        // === Cursor Rules ===
+        // .cursor/rules/*.mdc (recursive)
+        scan_rules_directory_ext(
+            &mut prompts,
+            PromptSourceTool::Cursor,
+            PromptScope::Project,
+            &project_root.join(".cursor").join("rules"),
+            &["mdc", "md"],
+        );
+
+        // === Copilot Rules ===
+        // .github/copilot-instructions.md
+        let copilot_instructions = project_root.join(".github").join("copilot-instructions.md");
+        if copilot_instructions.exists() {
+            prompts.push(scan_prompt_file(
+                "copilot-instructions.md",
+                PromptSourceTool::Copilot,
+                PromptScope::Project,
+                &copilot_instructions,
+            ));
+        }
+        // .github/instructions/**/*.instructions.md
+        scan_instructions_directory(
+            &mut prompts,
+            PromptSourceTool::Copilot,
+            PromptScope::Project,
+            &project_root.join(".github").join("instructions"),
+        );
+
+        // === Windsurf Rules ===
+        scan_rules_directory(
+            &mut prompts,
+            PromptSourceTool::Windsurf,
+            PromptScope::Project,
+            &project_root.join(".windsurf").join("rules"),
+        );
+
+        // === Roo Rules ===
+        scan_rules_directory(
+            &mut prompts,
+            PromptSourceTool::Roo,
+            PromptScope::Project,
+            &project_root.join(".roo").join("rules"),
+        );
+        // Fallback: .roorules (single file)
+        let roorules = project_root.join(".roorules");
+        if roorules.exists() {
+            prompts.push(scan_prompt_file(
+                ".roorules",
+                PromptSourceTool::Roo,
+                PromptScope::Project,
+                &roorules,
+            ));
+        }
+
+        // === Cline Rules ===
+        // .clinerules (file or directory)
+        let clinerules = project_root.join(".clinerules");
+        if clinerules.is_file() {
+            prompts.push(scan_prompt_file(
+                ".clinerules",
+                PromptSourceTool::Cline,
+                PromptScope::Project,
+                &clinerules,
+            ));
+        } else if clinerules.is_dir() {
+            scan_rules_directory(
+                &mut prompts,
+                PromptSourceTool::Cline,
+                PromptScope::Project,
+                &clinerules,
+            );
+        }
+
+        // === Kilo Rules ===
+        scan_rules_directory(
+            &mut prompts,
+            PromptSourceTool::Kilo,
+            PromptScope::Project,
+            &project_root.join(".kilocode").join("rules"),
+        );
+        // Fallback: .kilocoderules
+        let kilorules = project_root.join(".kilocoderules");
+        if kilorules.exists() {
+            prompts.push(scan_prompt_file(
+                ".kilocoderules",
+                PromptSourceTool::Kilo,
+                PromptScope::Project,
+                &kilorules,
+            ));
+        }
+
+        // === OpenCode Rules ===
+        // AGENTS.md is also used by OpenCode (shared with Codex, already scanned above)
+        // AGENT.md variant
+        let agent_md = project_root.join("AGENT.md");
+        if agent_md.exists() {
+            prompts.push(scan_prompt_file(
+                "AGENT.md",
+                PromptSourceTool::OpenCode,
+                PromptScope::Project,
+                &agent_md,
+            ));
+        }
     }
 
     Ok(PromptScanResult { prompts })
@@ -251,6 +363,94 @@ fn collect_md_files(dir: &Path) -> Vec<PathBuf> {
         }
     }
     results
+}
+
+/// Recursively scan a rules directory for files with specific extensions
+fn scan_rules_directory_ext(
+    prompts: &mut Vec<PromptFile>,
+    tool: PromptSourceTool,
+    scope: PromptScope,
+    rules_dir: &Path,
+    extensions: &[&str],
+) {
+    if !rules_dir.is_dir() {
+        return;
+    }
+
+    let mut entries = collect_files_with_extensions(rules_dir, extensions);
+    entries.sort();
+
+    for path in entries {
+        let name = path
+            .strip_prefix(rules_dir)
+            .unwrap_or(&path)
+            .to_string_lossy()
+            .to_string();
+
+        let prompt = scan_prompt_file(&name, tool, scope, &path);
+        prompts.push(prompt);
+    }
+}
+
+/// Recursively collect all files with given extensions
+fn collect_files_with_extensions(dir: &Path, extensions: &[&str]) -> Vec<PathBuf> {
+    let mut results = Vec::new();
+    let entries = match fs::read_dir(dir) {
+        Ok(e) => e,
+        Err(_) => return results,
+    };
+
+    for entry in entries.flatten() {
+        let path = entry.path();
+        if path.is_dir() {
+            results.extend(collect_files_with_extensions(&path, extensions));
+        } else if let Some(ext) = path.extension().and_then(|e| e.to_str()) {
+            if extensions.contains(&ext) {
+                results.push(path);
+            }
+        }
+    }
+    results
+}
+
+/// Scan Copilot .github/instructions/**/*.instructions.md files
+fn scan_instructions_directory(
+    prompts: &mut Vec<PromptFile>,
+    tool: PromptSourceTool,
+    scope: PromptScope,
+    instructions_dir: &Path,
+) {
+    if !instructions_dir.is_dir() {
+        return;
+    }
+
+    let mut entries = collect_files_with_extensions(instructions_dir, &["md"]);
+    entries.sort();
+
+    for path in entries {
+        // Only include *.instructions.md files
+        let filename = path.file_name().unwrap_or_default().to_string_lossy();
+        if !filename.ends_with(".instructions.md") {
+            continue;
+        }
+
+        let name = path
+            .strip_prefix(instructions_dir)
+            .unwrap_or(&path)
+            .to_string_lossy()
+            .to_string();
+
+        let mut prompt = scan_prompt_file(&name, tool, scope, &path);
+
+        // Parse applyTo frontmatter and map to scopedPaths
+        if prompt.exists && !prompt.content.is_empty() {
+            let scoping = crate::parsers::parse_rule_frontmatter(&prompt.content);
+            prompt.is_scoped = scoping.paths.is_some();
+            prompt.scoped_paths = scoping.paths;
+        }
+
+        prompts.push(prompt);
+    }
 }
 
 /// Directories to skip when walking the project tree for subdirectory rules

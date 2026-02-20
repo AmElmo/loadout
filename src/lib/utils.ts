@@ -9,12 +9,21 @@ export function cn(...inputs: ClassValue[]) {
 const USER_CONFIG_DIRS = new Set([".claude", ".codex", ".gemini"]);
 
 /**
- * Filter out user-level config directories from discovered workspaces.
- * Directories like ~/.claude, ~/.codex, ~/.gemini contain AI tool configs
- * but aren't real project workspaces.
+ * Match paths inside hidden dot-directory extension folders.
+ * Catches ~/.vscode/extensions/*, ~/.cursor/extensions/*, ~/.antigravity/extensions/*, etc.
  */
-export function isRealWorkspace(ws: { name: string }): boolean {
-  return !USER_CONFIG_DIRS.has(ws.name);
+const DOT_DIR_EXTENSIONS_RE = /\/\.[^/]+\/extensions\//;
+
+/**
+ * Filter out user-level config directories and editor extension directories
+ * from discovered workspaces. Directories like ~/.claude, ~/.codex, ~/.gemini
+ * contain AI tool configs but aren't real project workspaces. Similarly,
+ * VS Code/Cursor extension directories contain config files but aren't projects.
+ */
+export function isRealWorkspace(ws: { name: string; path?: string }): boolean {
+  if (USER_CONFIG_DIRS.has(ws.name)) return false;
+  if (ws.path && DOT_DIR_EXTENSIONS_RE.test(ws.path)) return false;
+  return true;
 }
 
 /**

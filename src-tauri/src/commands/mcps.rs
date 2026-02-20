@@ -1,6 +1,8 @@
 //! Tauri commands for MCP management
 
-use crate::parsers::{parse_claude_config, parse_codex_config, parse_gemini_config};
+use crate::parsers::{
+    parse_claude_config, parse_codex_config, parse_gemini_config, parse_opencode_config,
+};
 use crate::scanners::mcps::{scan_all_mcps, HealthStatus, MCPItem};
 use crate::scanners::tokens::estimate_tokens;
 use serde::{Deserialize, Serialize};
@@ -56,10 +58,7 @@ fn read_real_env(name: &str, config_path: &str) -> Result<HashMap<String, String
         return Ok(HashMap::new());
     }
 
-    let ext = path
-        .extension()
-        .and_then(|e| e.to_str())
-        .unwrap_or("");
+    let ext = path.extension().and_then(|e| e.to_str()).unwrap_or("");
 
     match ext {
         "json" => {
@@ -73,8 +72,16 @@ fn read_real_env(name: &str, config_path: &str) -> Result<HashMap<String, String
                     .get(name)
                     .map(|s| s.env.clone())
                     .unwrap_or_default())
+            } else if file_name == "opencode.json" {
+                // OpenCode (uses `mcp` key, not `mcpServers`)
+                let config = parse_opencode_config(path)?;
+                Ok(config
+                    .mcp
+                    .get(name)
+                    .map(|s| s.env.clone())
+                    .unwrap_or_default())
             } else {
-                // Claude
+                // Claude and other mcpServers-based JSON configs
                 let config = parse_claude_config(path)?;
                 Ok(config
                     .mcp_servers
@@ -96,16 +103,47 @@ fn read_real_env(name: &str, config_path: &str) -> Result<HashMap<String, String
     }
 }
 
+/// Split a command string into binary + args when args is empty.
+/// Supports quoted values (`"..."`, `'...'`) and falls back to whitespace splitting
+/// for malformed command strings to preserve backwards compatibility.
+fn resolve_command(command: &str, args: &[String]) -> Result<(String, Vec<String>), String> {
+    let trimmed = command.trim();
+    if trimmed.is_empty() {
+        return Err("No command specified for stdio MCP".to_string());
+    }
+    if !args.is_empty() {
+        return Ok((trimmed.to_string(), args.to_vec()));
+    }
+    if !trimmed.chars().any(char::is_whitespace) {
+        return Ok((trimmed.to_string(), Vec::new()));
+    }
+
+    if let Some(parts) = shlex::split(trimmed) {
+        if let Some((bin, rest)) = parts.split_first() {
+            return Ok((bin.clone(), rest.to_vec()));
+        }
+    }
+
+    let mut parts = trimmed.split_whitespace();
+    let bin = parts
+        .next()
+        .ok_or("No command specified for stdio MCP")?
+        .to_string();
+    let extra_args: Vec<String> = parts.map(|s| s.to_string()).collect();
+    Ok((bin, extra_args))
+}
+
 /// Test a stdio MCP by spawning the process and performing a JSON-RPC initialize handshake
 async fn test_stdio_mcp(
     command: Option<String>,
     args: Vec<String>,
     env: HashMap<String, String>,
 ) -> Result<HealthTestResult, String> {
-    let cmd = command.ok_or("No command specified for stdio MCP")?;
+    let raw_cmd = command.ok_or("No command specified for stdio MCP")?;
+    let (cmd, resolved_args) = resolve_command(&raw_cmd, &args)?;
 
     let mut child = Command::new(&cmd)
-        .args(&args)
+        .args(&resolved_args)
         .envs(&env)
         .stdin(std::process::Stdio::piped())
         .stdout(std::process::Stdio::piped())
@@ -271,13 +309,13 @@ fn parse_tools_response(response: &serde_json::Value) -> Result<MCPToolsResult, 
     // Check for non-MCP error responses (e.g., HTTP auth errors)
     if response.get("result").is_none() {
         // Try to extract a meaningful error from the response
-        if let Some(err_desc) = response
-            .get("error_description")
-            .and_then(|d| d.as_str())
-        {
+        if let Some(err_desc) = response.get("error_description").and_then(|d| d.as_str()) {
             return Err(format!("Authentication failed: {}", err_desc));
         }
-        return Err("Invalid response: no result from tools/list (server may require authentication)".to_string());
+        return Err(
+            "Invalid response: no result from tools/list (server may require authentication)"
+                .to_string(),
+        );
     }
 
     let empty_vec = vec![];
@@ -330,10 +368,11 @@ async fn fetch_stdio_mcp_tools(
     args: Vec<String>,
     env: HashMap<String, String>,
 ) -> Result<MCPToolsResult, String> {
-    let cmd = command.ok_or("No command specified for stdio MCP")?;
+    let raw_cmd = command.ok_or("No command specified for stdio MCP")?;
+    let (cmd, resolved_args) = resolve_command(&raw_cmd, &args)?;
 
     let mut child = Command::new(&cmd)
-        .args(&args)
+        .args(&resolved_args)
         .envs(&env)
         .stdin(std::process::Stdio::piped())
         .stdout(std::process::Stdio::piped())
@@ -371,16 +410,24 @@ async fn fetch_stdio_mcp_tools(
 
         let init_str = serde_json::to_string(&init_request)
             .map_err(|e| format!("Failed to serialize init request: {}", e))?;
-        writer.write_all(init_str.as_bytes()).await
+        writer
+            .write_all(init_str.as_bytes())
+            .await
             .map_err(|e| format!("Failed to write init request: {}", e))?;
-        writer.write_all(b"\n").await
+        writer
+            .write_all(b"\n")
+            .await
             .map_err(|e| format!("Failed to write newline: {}", e))?;
-        writer.flush().await
+        writer
+            .flush()
+            .await
             .map_err(|e| format!("Failed to flush: {}", e))?;
 
         // Read initialize response
         let mut line = String::new();
-        reader.read_line(&mut line).await
+        reader
+            .read_line(&mut line)
+            .await
             .map_err(|e| format!("Failed to read init response: {}", e))?;
 
         if line.is_empty() {
@@ -404,16 +451,24 @@ async fn fetch_stdio_mcp_tools(
 
         let tools_str = serde_json::to_string(&tools_request)
             .map_err(|e| format!("Failed to serialize tools/list request: {}", e))?;
-        writer.write_all(tools_str.as_bytes()).await
+        writer
+            .write_all(tools_str.as_bytes())
+            .await
             .map_err(|e| format!("Failed to write tools/list request: {}", e))?;
-        writer.write_all(b"\n").await
+        writer
+            .write_all(b"\n")
+            .await
             .map_err(|e| format!("Failed to write newline: {}", e))?;
-        writer.flush().await
+        writer
+            .flush()
+            .await
             .map_err(|e| format!("Failed to flush: {}", e))?;
 
         // Read tools/list response
         let mut tools_line = String::new();
-        reader.read_line(&mut tools_line).await
+        reader
+            .read_line(&mut tools_line)
+            .await
             .map_err(|e| format!("Failed to read tools/list response: {}", e))?;
 
         if tools_line.is_empty() {
@@ -452,6 +507,11 @@ fn read_real_headers(name: &str, config_path: &str) -> HashMap<String, String> {
                     .ok()
                     .and_then(|c| c.mcp_servers.get(name).map(|s| s.headers.clone()))
                     .unwrap_or_default()
+            } else if file_name == "opencode.json" {
+                parse_opencode_config(path)
+                    .ok()
+                    .and_then(|c| c.mcp.get(name).map(|s| s.headers.clone()))
+                    .unwrap_or_default()
             } else {
                 parse_claude_config(path)
                     .ok()
@@ -480,7 +540,12 @@ fn interpolate_env_vars(value: &str) -> String {
         if let Some(end) = result[start..].find('}') {
             let var_name = &result[start + 2..start + end];
             let replacement = std::env::var(var_name).unwrap_or_default();
-            result = format!("{}{}{}", &result[..start], replacement, &result[start + end + 1..]);
+            result = format!(
+                "{}{}{}",
+                &result[..start],
+                replacement,
+                &result[start + end + 1..]
+            );
         } else {
             break;
         }
@@ -543,7 +608,9 @@ async fn fetch_http_mcp_tools(
 
     // Resolve auth: config headers > Keychain OAuth (if allowed) > none
     let config_headers = read_real_headers(name, config_path);
-    let has_auth_header = config_headers.keys().any(|k| k.to_lowercase() == "authorization");
+    let has_auth_header = config_headers
+        .keys()
+        .any(|k| k.to_lowercase() == "authorization");
 
     let oauth_token = if !has_auth_header && use_keychain {
         read_keychain_oauth_token(name)
@@ -660,8 +727,8 @@ async fn fetch_http_mcp_tools(
         body
     };
 
-    let response: serde_json::Value = serde_json::from_str(&json_str)
-        .map_err(|e| format!("Invalid tools/list JSON: {}", e))?;
+    let response: serde_json::Value =
+        serde_json::from_str(&json_str).map_err(|e| format!("Invalid tools/list JSON: {}", e))?;
 
     parse_tools_response(&response)
 }
@@ -726,5 +793,36 @@ async fn test_http_mcp(url: Option<String>) -> Result<HealthTestResult, String> 
                 })
             }
         }
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::resolve_command;
+
+    #[test]
+    fn resolve_command_parses_quoted_args() {
+        let (bin, args) =
+            resolve_command(r#"node "/tmp/my dir/server.js" --mode stdio"#, &[]).unwrap();
+        assert_eq!(bin, "node");
+        assert_eq!(args, vec!["/tmp/my dir/server.js", "--mode", "stdio"]);
+    }
+
+    #[test]
+    fn resolve_command_uses_explicit_args_when_provided() {
+        let (bin, args) = resolve_command(
+            "npx -y @modelcontextprotocol/server-github",
+            &["--foo".to_string()],
+        )
+        .unwrap();
+        assert_eq!(bin, "npx -y @modelcontextprotocol/server-github");
+        assert_eq!(args, vec!["--foo"]);
+    }
+
+    #[test]
+    fn resolve_command_falls_back_for_invalid_quotes() {
+        let (bin, args) = resolve_command(r#"npx "-y"#, &[]).unwrap();
+        assert_eq!(bin, "npx");
+        assert_eq!(args, vec![r#""-y"#]);
     }
 }

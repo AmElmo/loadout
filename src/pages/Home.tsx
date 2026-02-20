@@ -26,20 +26,7 @@ import type {
   DiscoveredWorkspace,
 } from "@/types";
 import { ToolLogo } from "@/components/ToolLogo";
-
-const TOOLS: SourceTool[] = ["claude", "codex", "gemini"];
-
-const toolTextColors: Record<SourceTool, string> = {
-  claude: "text-orange-500",
-  codex: "text-green-500",
-  gemini: "text-blue-500",
-};
-
-const toolLabels: Record<SourceTool, string> = {
-  claude: "Claude",
-  codex: "Codex",
-  gemini: "Gemini",
-};
+import { ALL_TOOLS, toolLabel, toolTextColor } from "@/config/tools";
 
 // ---------------------------------------------------------------------------
 // Stat Card
@@ -96,7 +83,7 @@ function StatCard({
           {nonZeroTools.map(({ tool, count: toolCount }) => (
             <span
               key={tool}
-              className={cn("flex items-center gap-1 text-xs", toolTextColors[tool])}
+              className={cn("flex items-center gap-1 text-xs", toolTextColor(tool))}
             >
               <ToolLogo tool={tool} size={10} />
               <span className="text-muted-foreground">{toolCount}</span>
@@ -139,11 +126,11 @@ function ToolRow({
 
   return (
     <div className="flex items-center gap-3 rounded-md px-3 py-2.5 transition-colors hover:bg-muted/50">
-      <span className={cn("shrink-0", toolTextColors[tool])}>
+      <span className={cn("shrink-0", toolTextColor(tool))}>
         <ToolLogo tool={tool} size={14} />
       </span>
-      <span className={cn("w-16 text-sm font-medium", toolTextColors[tool])}>
-        {toolLabels[tool]}
+      <span className={cn("w-16 text-sm font-medium", toolTextColor(tool))}>
+        {toolLabel(tool)}
       </span>
       <span className="text-sm text-muted-foreground">
         {segments
@@ -159,10 +146,8 @@ function ToolRow({
 // ---------------------------------------------------------------------------
 
 function wsHasMCPs(ws: DiscoveredWorkspace): boolean {
-  // Only .mcp.json indicates project-level MCP servers.
-  // hasClaudeConfig/hasCodexConfig/hasGeminiConfig are too broad —
-  // they fire for .claude/ dirs and CLAUDE.md files which don't mean MCPs.
-  return ws.signals.hasMcpJson;
+  // Only specific MCP signals — not coarse has*Config flags
+  return ws.signals.hasMcpJson || ws.signals.hasCursorMcps;
 }
 
 function wsHasSkills(ws: DiscoveredWorkspace): boolean {
@@ -170,7 +155,19 @@ function wsHasSkills(ws: DiscoveredWorkspace): boolean {
 }
 
 function wsHasRules(ws: DiscoveredWorkspace): boolean {
-  return ws.signals.hasClaudePrompt || ws.signals.hasCodexPrompt || ws.signals.hasGeminiPrompt;
+  const s = ws.signals;
+  return (
+    s.hasClaudePrompt ||
+    s.hasCodexPrompt ||
+    s.hasGeminiPrompt ||
+    s.hasCursorRules ||
+    s.hasCopilotRules ||
+    s.hasWindsurfRules ||
+    s.hasRooRules ||
+    s.hasClineRules ||
+    s.hasKiloRules ||
+    s.hasOpenCodeRules
+  );
 }
 
 function countWorkspacesWithMCPs(workspaces: DiscoveredWorkspace[]): number {
@@ -183,6 +180,23 @@ function countWorkspacesWithSkills(workspaces: DiscoveredWorkspace[]): number {
 
 function countWorkspacesWithRules(workspaces: DiscoveredWorkspace[]): number {
   return workspaces.filter(wsHasRules).length;
+}
+
+/** Which tools are present in a workspace (for logo dots) */
+function wsToolDots(ws: DiscoveredWorkspace): SourceTool[] {
+  const s = ws.signals;
+  const result: SourceTool[] = [];
+  if (s.hasClaudeConfig || s.hasClaudePrompt || s.hasClaudeSkills) result.push("claude");
+  if (s.hasCodexConfig || s.hasCodexPrompt || s.hasCodexSkills) result.push("codex");
+  if (s.hasGeminiConfig || s.hasGeminiPrompt || s.hasGeminiSkills) result.push("gemini");
+  if (s.hasCursorConfig) result.push("cursor");
+  if (s.hasCopilotConfig) result.push("copilot");
+  if (s.hasWindsurfConfig) result.push("windsurf");
+  if (s.hasRooConfig) result.push("roo");
+  if (s.hasClineConfig) result.push("cline");
+  if (s.hasKiloConfig) result.push("kilo");
+  if (s.hasOpenCodeConfig) result.push("opencode");
+  return result;
 }
 
 /** Workspace has at least one meaningful project-level config (not just a .claude/ session dir) */
@@ -270,7 +284,7 @@ export function Home() {
   // Tool breakdown for stat cards
   const mcpToolBreakdown = useMemo(
     () =>
-      TOOLS.map((tool) => ({
+      ALL_TOOLS.map((tool) => ({
         tool,
         count: mcpsList.filter((m) => m.configuredIn.includes(tool)).length,
       })),
@@ -279,7 +293,7 @@ export function Home() {
 
   const skillToolBreakdown = useMemo(
     () =>
-      TOOLS.map((tool) => ({
+      ALL_TOOLS.map((tool) => ({
         tool,
         count: skills.filter((s) => s.sourceTool === tool).length,
       })),
@@ -288,7 +302,7 @@ export function Home() {
 
   const ruleToolBreakdown = useMemo(
     () =>
-      TOOLS.map((tool) => ({
+      ALL_TOOLS.map((tool) => ({
         tool,
         count: rules.filter((r) => r.sourceTool === tool).length,
       })),
@@ -297,7 +311,7 @@ export function Home() {
 
   const hookToolBreakdown = useMemo(
     () =>
-      TOOLS.map((tool) => ({
+      ALL_TOOLS.map((tool) => ({
         tool,
         count: hooks.filter((h) => h.sourceTool === tool).length,
       })),
@@ -307,7 +321,7 @@ export function Home() {
   // Per-tool coverage
   const toolCoverage = useMemo(
     () =>
-      TOOLS.map((tool) => ({
+      ALL_TOOLS.map((tool) => ({
         tool,
         ...computeToolBreakdown(mcpsList, skills, rules, hooks, tool),
       })),
@@ -381,7 +395,7 @@ export function Home() {
             Tools on this computer
           </h3>
           <div className="flex items-center gap-3">
-            {TOOLS.map((tool) => {
+            {ALL_TOOLS.map((tool) => {
               const bd = computeToolBreakdown(mcpsList, skills, rules, hooks, tool);
               const total = bd.mcpCount + bd.skillCount + bd.ruleCount + bd.hookCount;
               if (total === 0) return null;
@@ -390,11 +404,11 @@ export function Home() {
                   key={tool}
                   className={cn(
                     "flex items-center gap-2.5 rounded-lg border border-border bg-card px-4 py-3",
-                    toolTextColors[tool]
+                    toolTextColor(tool)
                   )}
                 >
                   <ToolLogo tool={tool} size={20} />
-                  <span className="text-sm font-medium">{toolLabels[tool]}</span>
+                  <span className="text-sm font-medium">{toolLabel(tool)}</span>
                 </div>
               );
             })}
@@ -560,27 +574,11 @@ export function Home() {
                   <GitBranch className="h-3 w-3 shrink-0 text-muted-foreground" />
                 )}
                 <div className="ml-auto flex items-center gap-1">
-                  {(ws.signals.hasClaudeConfig ||
-                    ws.signals.hasClaudePrompt ||
-                    ws.signals.hasClaudeSkills) && (
-                    <span className="text-orange-500" title="Claude">
-                      <ToolLogo tool="claude" size={10} />
+                  {wsToolDots(ws).map((t) => (
+                    <span key={t} className={toolTextColor(t)} title={toolLabel(t)}>
+                      <ToolLogo tool={t} size={10} />
                     </span>
-                  )}
-                  {(ws.signals.hasCodexConfig ||
-                    ws.signals.hasCodexPrompt ||
-                    ws.signals.hasCodexSkills) && (
-                    <span className="text-green-500" title="Codex">
-                      <ToolLogo tool="codex" size={10} />
-                    </span>
-                  )}
-                  {(ws.signals.hasGeminiConfig ||
-                    ws.signals.hasGeminiPrompt ||
-                    ws.signals.hasGeminiSkills) && (
-                    <span className="text-blue-500" title="Gemini">
-                      <ToolLogo tool="gemini" size={10} />
-                    </span>
-                  )}
+                  ))}
                 </div>
               </div>
             ))}

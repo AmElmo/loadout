@@ -23,6 +23,21 @@ pub struct WorkspaceSignals {
     pub has_claude_skills: bool,
     pub has_codex_skills: bool,
     pub has_gemini_skills: bool,
+    pub has_cursor_config: bool,
+    pub has_cursor_rules: bool,
+    pub has_cursor_mcps: bool,
+    pub has_copilot_config: bool,
+    pub has_copilot_rules: bool,
+    pub has_windsurf_config: bool,
+    pub has_windsurf_rules: bool,
+    pub has_roo_config: bool,
+    pub has_roo_rules: bool,
+    pub has_cline_config: bool,
+    pub has_cline_rules: bool,
+    pub has_kilo_config: bool,
+    pub has_kilo_rules: bool,
+    pub has_open_code_config: bool,
+    pub has_open_code_rules: bool,
 }
 
 impl WorkspaceSignals {
@@ -35,6 +50,27 @@ impl WorkspaceSignals {
             count += 1;
         }
         if self.has_gemini_config || self.has_gemini_prompt || self.has_gemini_skills {
+            count += 1;
+        }
+        if self.has_cursor_config || self.has_cursor_rules || self.has_cursor_mcps {
+            count += 1;
+        }
+        if self.has_copilot_config || self.has_copilot_rules {
+            count += 1;
+        }
+        if self.has_windsurf_config || self.has_windsurf_rules {
+            count += 1;
+        }
+        if self.has_roo_config || self.has_roo_rules {
+            count += 1;
+        }
+        if self.has_cline_config || self.has_cline_rules {
+            count += 1;
+        }
+        if self.has_kilo_config || self.has_kilo_rules {
+            count += 1;
+        }
+        if self.has_open_code_config || self.has_open_code_rules {
             count += 1;
         }
         count
@@ -105,6 +141,20 @@ const SIGNAL_NAMES: &[&str] = &[
     "AGENTS.md",
     "GEMINI.md",
     ".agents",
+    ".cursor",
+    ".github",
+    ".vscode",
+    ".windsurf",
+    ".roo",
+    ".roorules",
+    ".cline",
+    ".clinerules",
+    ".kilocode",
+    ".kilocoderules",
+    ".opencode",
+    "opencode.json",
+    "AGENT.md",
+    ".roomodes",
 ];
 
 /// Scan the home directory for workspaces with AI CLI configs
@@ -159,48 +209,38 @@ pub fn discover_workspaces(max_depth: u32) -> Result<DiscoveryResult, String> {
         match name {
             ".claude" if signal_path.is_dir() => {
                 signals.has_claude_config = true;
-                // Check for CLAUDE.md inside
                 if signal_path.join("CLAUDE.md").exists() {
                     signals.has_claude_prompt = true;
                 }
-                // Check for skills
                 if signal_path.join("skills").is_dir() {
                     signals.has_claude_skills = true;
                 }
             }
             ".codex" if signal_path.is_dir() => {
                 signals.has_codex_config = true;
-                // Check for skills
                 if signal_path.join("skills").is_dir() {
                     signals.has_codex_skills = true;
                 }
             }
             ".gemini" if signal_path.is_dir() => {
                 signals.has_gemini_config = true;
-                // Check for GEMINI.md inside
                 if signal_path.join("GEMINI.md").exists() {
                     signals.has_gemini_prompt = true;
                 }
-                // Check for skills
                 if signal_path.join("skills").is_dir() {
                     signals.has_gemini_skills = true;
                 }
             }
             ".agents" if signal_path.is_dir() => {
-                // Codex stores user-level skills in ~/.agents/skills
-                // but project-level in .codex/skills - .agents at project level
-                // means codex skills
                 if signal_path.join("skills").is_dir() {
                     signals.has_codex_skills = true;
                 }
             }
             ".mcp.json" if signal_path.is_file() => {
                 signals.has_mcp_json = true;
-                // .mcp.json is Claude Code's project-level MCP config
                 signals.has_claude_config = true;
             }
             "CLAUDE.md" if signal_path.is_file() => {
-                // Root-level CLAUDE.md (not inside .claude/)
                 signals.has_claude_prompt = true;
                 signals.has_claude_config = true;
             }
@@ -209,9 +249,85 @@ pub fn discover_workspaces(max_depth: u32) -> Result<DiscoveryResult, String> {
                 signals.has_codex_config = true;
             }
             "GEMINI.md" if signal_path.is_file() => {
-                // Root-level GEMINI.md (not inside .gemini/)
                 signals.has_gemini_prompt = true;
                 signals.has_gemini_config = true;
+            }
+            // New tools — check granular signals (rules, MCPs) inside each dir
+            ".cursor" if signal_path.is_dir() => {
+                signals.has_cursor_config = true;
+                if signal_path.join("rules").is_dir() {
+                    signals.has_cursor_rules = true;
+                }
+                if signal_path.join("mcp.json").exists() {
+                    signals.has_cursor_mcps = true;
+                }
+            }
+            ".github" if signal_path.is_dir() => {
+                // Copilot rules: instructions files
+                if signal_path.join("copilot-instructions.md").exists()
+                    || signal_path.join("instructions").is_dir()
+                {
+                    signals.has_copilot_config = true;
+                    signals.has_copilot_rules = true;
+                }
+                if signal_path.join("skills").is_dir() || signal_path.join("hooks").is_dir() {
+                    signals.has_copilot_config = true;
+                }
+            }
+            ".vscode" if signal_path.is_dir() => {
+                // Copilot MCP config
+                if signal_path.join("mcp.json").exists() {
+                    signals.has_copilot_config = true;
+                }
+            }
+            ".windsurf" if signal_path.is_dir() => {
+                signals.has_windsurf_config = true;
+                if signal_path.join("rules").is_dir() {
+                    signals.has_windsurf_rules = true;
+                }
+            }
+            ".roo" if signal_path.is_dir() => {
+                signals.has_roo_config = true;
+                if signal_path.join("rules").is_dir() {
+                    signals.has_roo_rules = true;
+                }
+            }
+            ".roorules" => {
+                signals.has_roo_config = true;
+                signals.has_roo_rules = true;
+            }
+            ".roomodes" => {
+                signals.has_roo_config = true;
+            }
+            ".cline" if signal_path.is_dir() => {
+                signals.has_cline_config = true;
+                if signal_path.join("rules").is_dir() {
+                    signals.has_cline_rules = true;
+                }
+            }
+            ".clinerules" => {
+                signals.has_cline_config = true;
+                signals.has_cline_rules = true;
+            }
+            ".kilocode" if signal_path.is_dir() => {
+                signals.has_kilo_config = true;
+                if signal_path.join("rules").is_dir() {
+                    signals.has_kilo_rules = true;
+                }
+            }
+            ".kilocoderules" => {
+                signals.has_kilo_config = true;
+                signals.has_kilo_rules = true;
+            }
+            ".opencode" if signal_path.is_dir() => {
+                signals.has_open_code_config = true;
+            }
+            "opencode.json" if signal_path.is_file() => {
+                signals.has_open_code_config = true;
+            }
+            "AGENT.md" if signal_path.is_file() => {
+                signals.has_open_code_config = true;
+                signals.has_open_code_rules = true;
             }
             _ => {}
         }
@@ -220,21 +336,24 @@ pub fn discover_workspaces(max_depth: u32) -> Result<DiscoveryResult, String> {
     // Convert to sorted list
     let mut workspaces: Vec<DiscoveredWorkspace> = workspace_map
         .into_iter()
-        .map(|(path, signals)| {
+        .filter_map(|(path, signals)| {
             let name = path
                 .file_name()
                 .map(|n| n.to_string_lossy().to_string())
                 .unwrap_or_else(|| "Unknown".to_string());
             let is_git_repo = path.join(".git").exists();
             let tool_count = signals.tool_count();
+            if tool_count == 0 {
+                return None;
+            }
 
-            DiscoveredWorkspace {
+            Some(DiscoveredWorkspace {
                 path: path.to_string_lossy().to_string(),
                 name,
                 is_git_repo,
                 signals,
                 tool_count,
-            }
+            })
         })
         .collect();
 
@@ -257,6 +376,24 @@ pub fn discover_workspaces(max_depth: u32) -> Result<DiscoveryResult, String> {
 #[cfg(test)]
 mod tests {
     use super::*;
+    use std::fs;
+    use std::sync::{Mutex, OnceLock};
+    use tempfile::TempDir;
+
+    fn with_loadout_home<T>(home: &std::path::Path, f: impl FnOnce() -> T) -> T {
+        static LOCK: OnceLock<Mutex<()>> = OnceLock::new();
+        let _guard = LOCK.get_or_init(|| Mutex::new(())).lock().unwrap();
+
+        let previous = std::env::var("LOADOUT_HOME").ok();
+        std::env::set_var("LOADOUT_HOME", home);
+        let result = f();
+        if let Some(prev) = previous {
+            std::env::set_var("LOADOUT_HOME", prev);
+        } else {
+            std::env::remove_var("LOADOUT_HOME");
+        }
+        result
+    }
 
     #[test]
     fn test_workspace_signals_tool_count() {
@@ -309,5 +446,23 @@ mod tests {
         assert!(json.contains("\"isGitRepo\":true"));
         assert!(json.contains("\"toolCount\":1"));
         assert!(json.contains("\"hasClaudeConfig\":true"));
+    }
+
+    #[test]
+    fn test_discovery_skips_workspace_without_effective_signals() {
+        let home = TempDir::new().unwrap();
+        let projects = home.path().join("projects");
+        let no_signal = projects.join("plain-github");
+        let copilot = projects.join("copilot-project");
+
+        fs::create_dir_all(no_signal.join(".github")).unwrap();
+        fs::create_dir_all(copilot.join(".github").join("instructions")).unwrap();
+
+        let result = with_loadout_home(home.path(), || discover_workspaces(6)).unwrap();
+        let names: Vec<String> = result.workspaces.iter().map(|w| w.name.clone()).collect();
+
+        assert!(!names.contains(&"plain-github".to_string()));
+        assert!(names.contains(&"copilot-project".to_string()));
+        assert!(result.workspaces.iter().all(|w| w.tool_count > 0));
     }
 }

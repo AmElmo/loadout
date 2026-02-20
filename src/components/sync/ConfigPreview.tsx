@@ -1,16 +1,11 @@
 import { useState } from "react";
-import type { PreviewConfig, SourceTool } from "@/types";
+import type { PreviewConfig } from "@/types";
 import { cn } from "@/lib/utils";
+import { toolLabel } from "@/config/tools";
 
 interface ConfigPreviewProps {
   previews: PreviewConfig[];
 }
-
-const toolLabels: Record<SourceTool, string> = {
-  claude: "Claude",
-  codex: "Codex",
-  gemini: "Gemini",
-};
 
 export function ConfigPreview({ previews }: ConfigPreviewProps) {
   const [activeTab, setActiveTab] = useState(0);
@@ -34,7 +29,7 @@ export function ConfigPreview({ previews }: ConfigPreviewProps) {
                   : "text-muted-foreground hover:text-foreground"
               )}
             >
-              {toolLabels[preview.tool]}{" "}
+              {toolLabel(preview.tool)}{" "}
               <span className="text-muted-foreground">
                 ({preview.format.toUpperCase()})
               </span>

@@ -5,6 +5,7 @@ import type { SourceTool } from "@/types";
 import { Button } from "@/components/ui/button";
 import { ToolSelector } from "./ToolSelector";
 import { SuccessConfirmation } from "./SuccessConfirmation";
+import { ALL_TOOLS } from "@/config/tools";
 
 interface SyncDialogProps {
   type: "mcp" | "skill";
@@ -23,8 +24,6 @@ interface SyncDialogProps {
   /** Query key to invalidate on success */
   queryKey: string;
 }
-
-const ALL_TOOLS: SourceTool[] = ["claude", "codex", "gemini"];
 
 export function SyncDialog({
   type,

@@ -20,6 +20,11 @@ export function InstallSkillDialog({ onClose }: InstallSkillDialogProps) {
   const [targetTools, setTargetTools] = useState<SourceTool[]>([
     "claude",
     "codex",
+    "cursor",
+    "roo",
+    "cline",
+    "kilo",
+    "opencode",
   ]);
 
   const buildContent = (): string => {
