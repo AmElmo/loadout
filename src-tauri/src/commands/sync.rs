@@ -459,10 +459,32 @@ pub async fn fetch_skill_from_url(url: String) -> Result<FetchedSkill, String> {
         ));
     }
 
+    // Check content type — reject HTML responses (e.g. GitHub page instead of raw content)
+    let content_type = response
+        .headers()
+        .get("content-type")
+        .and_then(|v| v.to_str().ok())
+        .unwrap_or("")
+        .to_lowercase();
+
+    if content_type.contains("text/html") {
+        return Err(
+            "URL returned an HTML page instead of raw markdown. For GitHub, use a raw URL like https://raw.githubusercontent.com/org/repo/main/SKILL.md".to_string()
+        );
+    }
+
     let raw_content = response
         .text()
         .await
         .map_err(|e| format!("Failed to read response: {}", e))?;
+
+    // Double-check: sometimes content-type is missing/wrong, detect HTML by content
+    let trimmed = raw_content.trim_start();
+    if trimmed.starts_with("<!DOCTYPE") || trimmed.starts_with("<html") {
+        return Err(
+            "URL returned an HTML page instead of raw markdown. For GitHub, use a raw URL like https://raw.githubusercontent.com/org/repo/main/SKILL.md".to_string()
+        );
+    }
 
     // Derive a fallback name from the URL path
     let fallback_name = fetch_url

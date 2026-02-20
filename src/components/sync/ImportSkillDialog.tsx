@@ -1,6 +1,6 @@
 import { useEffect, useState } from "react";
 import { X, Loader2, Globe, FileUp, AlertCircle } from "lucide-react";
-import { useMutation, useQueryClient } from "@tanstack/react-query";
+import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { open } from "@tauri-apps/plugin-dialog";
 import type { FetchedSkill, SourceTool } from "@/types";
 import {
@@ -9,6 +9,7 @@ import {
   readSkillFile,
   installSkillToTools,
 } from "@/lib/api/sync";
+import { detectInstalledTools } from "@/lib/api/detection";
 import { Button } from "@/components/ui/button";
 import { ToolSelector } from "./ToolSelector";
 import { SuccessConfirmation } from "./SuccessConfirmation";
@@ -35,15 +36,20 @@ export function ImportSkillDialog({
   const [url, setUrl] = useState("");
   const [preview, setPreview] = useState<FetchedSkill | null>(null);
   const [editedName, setEditedName] = useState("");
-  const [targetTools, setTargetTools] = useState<SourceTool[]>([
-    "claude",
-    "codex",
-    "cursor",
-    "roo",
-    "cline",
-    "kilo",
-    "opencode",
-  ]);
+  const [targetTools, setTargetTools] = useState<SourceTool[]>([]);
+
+  // Detect installed tools to pre-select only those
+  const { data: detectionResult } = useQuery({
+    queryKey: ["installed-tools"],
+    queryFn: detectInstalledTools,
+  });
+
+  // Set default selected tools once detection completes
+  useEffect(() => {
+    if (detectionResult && targetTools.length === 0) {
+      setTargetTools(detectionResult.tools.map((t) => t.id as SourceTool));
+    }
+  }, [detectionResult, targetTools.length]);
 
   // Fetch skill from URL
   const fetchMutation = useMutation({
