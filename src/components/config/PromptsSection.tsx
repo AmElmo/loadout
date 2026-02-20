@@ -12,13 +12,15 @@ interface PromptsSectionProps {
 export function PromptsSection({ prompts, workspaceName }: PromptsSectionProps) {
   const [selectedRule, setSelectedRule] = useState<PromptFile | null>(null);
 
-  const userRules = prompts.filter((p) => p.scope === "user");
-  const projectRules = prompts.filter((p) => p.scope === "project");
+  const existingPrompts = prompts.filter((p) => p.exists);
+
+  const userRules = existingPrompts.filter((p) => p.scope === "user");
+  const projectRules = existingPrompts.filter((p) => p.scope === "project");
   const alwaysLoadedProjectRules = projectRules.filter((p) => !p.isScoped);
   const scopedProjectRules = projectRules.filter((p) => p.isScoped);
   const hasBothTypes = alwaysLoadedProjectRules.length > 0 && scopedProjectRules.length > 0;
 
-  if (prompts.length === 0) {
+  if (existingPrompts.length === 0) {
     return (
       <div className="rounded-lg border border-dashed border-border p-8 text-center">
         <FileText className="mx-auto mb-3 h-10 w-10 text-muted-foreground" />

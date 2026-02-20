@@ -246,12 +246,20 @@ export interface WorkspaceSignals {
   hasCodexSkills: boolean;
   hasGeminiSkills: boolean;
   hasCursorConfig: boolean;
+  hasCursorRules: boolean;
+  hasCursorMcps: boolean;
   hasCopilotConfig: boolean;
+  hasCopilotRules: boolean;
   hasWindsurfConfig: boolean;
+  hasWindsurfRules: boolean;
   hasRooConfig: boolean;
+  hasRooRules: boolean;
   hasClineConfig: boolean;
+  hasClineRules: boolean;
   hasKiloConfig: boolean;
+  hasKiloRules: boolean;
   hasOpenCodeConfig: boolean;
+  hasOpenCodeRules: boolean;
 }
 
 /**

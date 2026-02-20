@@ -1,9 +1,10 @@
 import { invoke } from "@tauri-apps/api/core";
 
 export interface DetectedTool {
-  tool: string;
-  hasConfig: boolean;
-  hasCli: boolean;
+  id: string;
+  label: string;
+  hasHomeConfig: boolean;
+  hasBinary: boolean;
 }
 
 export interface DetectionResult {

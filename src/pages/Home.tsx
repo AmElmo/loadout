@@ -146,10 +146,8 @@ function ToolRow({
 // ---------------------------------------------------------------------------
 
 function wsHasMCPs(ws: DiscoveredWorkspace): boolean {
-  // Only .mcp.json indicates project-level MCP servers.
-  // hasClaudeConfig/hasCodexConfig/hasGeminiConfig are too broad —
-  // they fire for .claude/ dirs and CLAUDE.md files which don't mean MCPs.
-  return ws.signals.hasMcpJson;
+  // Only specific MCP signals — not coarse has*Config flags
+  return ws.signals.hasMcpJson || ws.signals.hasCursorMcps;
 }
 
 function wsHasSkills(ws: DiscoveredWorkspace): boolean {
@@ -157,7 +155,19 @@ function wsHasSkills(ws: DiscoveredWorkspace): boolean {
 }
 
 function wsHasRules(ws: DiscoveredWorkspace): boolean {
-  return ws.signals.hasClaudePrompt || ws.signals.hasCodexPrompt || ws.signals.hasGeminiPrompt;
+  const s = ws.signals;
+  return (
+    s.hasClaudePrompt ||
+    s.hasCodexPrompt ||
+    s.hasGeminiPrompt ||
+    s.hasCursorRules ||
+    s.hasCopilotRules ||
+    s.hasWindsurfRules ||
+    s.hasRooRules ||
+    s.hasClineRules ||
+    s.hasKiloRules ||
+    s.hasOpenCodeRules
+  );
 }
 
 function countWorkspacesWithMCPs(workspaces: DiscoveredWorkspace[]): number {

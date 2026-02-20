@@ -1,6 +1,6 @@
 //! Tauri commands for MCP management
 
-use crate::parsers::{parse_claude_config, parse_codex_config, parse_gemini_config};
+use crate::parsers::{parse_claude_config, parse_codex_config, parse_gemini_config, parse_opencode_config};
 use crate::scanners::mcps::{scan_all_mcps, HealthStatus, MCPItem};
 use crate::scanners::tokens::estimate_tokens;
 use serde::{Deserialize, Serialize};
@@ -73,8 +73,16 @@ fn read_real_env(name: &str, config_path: &str) -> Result<HashMap<String, String
                     .get(name)
                     .map(|s| s.env.clone())
                     .unwrap_or_default())
+            } else if file_name == "opencode.json" {
+                // OpenCode (uses `mcp` key, not `mcpServers`)
+                let config = parse_opencode_config(path)?;
+                Ok(config
+                    .mcp
+                    .get(name)
+                    .map(|s| s.env.clone())
+                    .unwrap_or_default())
             } else {
-                // Claude
+                // Claude and other mcpServers-based JSON configs
                 let config = parse_claude_config(path)?;
                 Ok(config
                     .mcp_servers
@@ -96,16 +104,29 @@ fn read_real_env(name: &str, config_path: &str) -> Result<HashMap<String, String
     }
 }
 
+/// Split a command string into binary + args when args is empty.
+/// Handles cases like `"npx -y some-package"` in the command field with no separate args.
+fn resolve_command(command: &str, args: &[String]) -> (String, Vec<String>) {
+    if !args.is_empty() || !command.contains(' ') {
+        return (command.to_string(), args.to_vec());
+    }
+    let mut parts = command.split_whitespace();
+    let bin = parts.next().unwrap_or(command).to_string();
+    let extra_args: Vec<String> = parts.map(|s| s.to_string()).collect();
+    (bin, extra_args)
+}
+
 /// Test a stdio MCP by spawning the process and performing a JSON-RPC initialize handshake
 async fn test_stdio_mcp(
     command: Option<String>,
     args: Vec<String>,
     env: HashMap<String, String>,
 ) -> Result<HealthTestResult, String> {
-    let cmd = command.ok_or("No command specified for stdio MCP")?;
+    let raw_cmd = command.ok_or("No command specified for stdio MCP")?;
+    let (cmd, resolved_args) = resolve_command(&raw_cmd, &args);
 
     let mut child = Command::new(&cmd)
-        .args(&args)
+        .args(&resolved_args)
         .envs(&env)
         .stdin(std::process::Stdio::piped())
         .stdout(std::process::Stdio::piped())
@@ -330,10 +351,11 @@ async fn fetch_stdio_mcp_tools(
     args: Vec<String>,
     env: HashMap<String, String>,
 ) -> Result<MCPToolsResult, String> {
-    let cmd = command.ok_or("No command specified for stdio MCP")?;
+    let raw_cmd = command.ok_or("No command specified for stdio MCP")?;
+    let (cmd, resolved_args) = resolve_command(&raw_cmd, &args);
 
     let mut child = Command::new(&cmd)
-        .args(&args)
+        .args(&resolved_args)
         .envs(&env)
         .stdin(std::process::Stdio::piped())
         .stdout(std::process::Stdio::piped())
@@ -451,6 +473,11 @@ fn read_real_headers(name: &str, config_path: &str) -> HashMap<String, String> {
                 parse_gemini_config(path)
                     .ok()
                     .and_then(|c| c.mcp_servers.get(name).map(|s| s.headers.clone()))
+                    .unwrap_or_default()
+            } else if file_name == "opencode.json" {
+                parse_opencode_config(path)
+                    .ok()
+                    .and_then(|c| c.mcp.get(name).map(|s| s.headers.clone()))
                     .unwrap_or_default()
             } else {
                 parse_claude_config(path)

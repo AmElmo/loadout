@@ -89,6 +89,7 @@ fn mcp_config_path(tool: &str) -> Result<PathBuf, String> {
         "copilot" => Ok(home.join(".vscode").join("mcp.json")),
         "windsurf" => Ok(home.join(".codeium").join("windsurf").join("mcp_config.json")),
         "roo" => Ok(home.join(".roo").join("mcp.json")),
+        "cline" => Ok(home.join(".cline").join("mcp.json")),
         "kilo" => Ok(home.join(".kilocode").join("mcp.json")),
         "opencode" => Ok(home.join(".config").join("opencode").join("opencode.json")),
         _ => Err(format!("Unknown tool: {}", tool)),
@@ -130,7 +131,7 @@ pub fn preview_mcp_configs(request: AddMCPRequest) -> Result<PreviewResult, Stri
                 content: to_gemini_json_preview(&request.name, &mcp),
             }),
             // All JSON-based tools use the same preview format
-            "cursor" | "copilot" | "windsurf" | "roo" | "kilo" => {
+            "cursor" | "copilot" | "windsurf" | "roo" | "cline" | "kilo" => {
                 configs.push(PreviewConfig {
                     tool: tool.clone(),
                     format: "json".to_string(),
@@ -218,7 +219,7 @@ fn write_mcp_to_target_tools(
             "claude" => mcp_writer::write_mcp_to_claude(name, mcp, &path),
             "codex" => mcp_writer::write_mcp_to_codex(name, mcp, &path),
             "gemini" => mcp_writer::write_mcp_to_gemini(name, mcp, &path),
-            "cursor" | "copilot" | "windsurf" | "roo" | "kilo" => {
+            "cursor" | "copilot" | "windsurf" | "roo" | "cline" | "kilo" => {
                 mcp_writer::write_mcp_to_json(name, mcp, &path)
             }
             "opencode" => mcp_writer::write_mcp_to_opencode(name, mcp, &path),
@@ -328,7 +329,7 @@ fn read_mcp_from_source(
             Err(format!("MCP '{}' not found in Gemini configs", name))
         }
         // For tools that use mcpServers JSON format, use the generic parser
-        "cursor" | "copilot" | "windsurf" | "roo" | "kilo" => {
+        "cursor" | "copilot" | "windsurf" | "roo" | "cline" | "kilo" => {
             let path = match mcp_config_path(source_tool) {
                 Ok(p) => p,
                 Err(e) => return Err(e),

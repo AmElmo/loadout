@@ -24,12 +24,20 @@ pub struct WorkspaceSignals {
     pub has_codex_skills: bool,
     pub has_gemini_skills: bool,
     pub has_cursor_config: bool,
+    pub has_cursor_rules: bool,
+    pub has_cursor_mcps: bool,
     pub has_copilot_config: bool,
+    pub has_copilot_rules: bool,
     pub has_windsurf_config: bool,
+    pub has_windsurf_rules: bool,
     pub has_roo_config: bool,
+    pub has_roo_rules: bool,
     pub has_cline_config: bool,
+    pub has_cline_rules: bool,
     pub has_kilo_config: bool,
+    pub has_kilo_rules: bool,
     pub has_open_code_config: bool,
+    pub has_open_code_rules: bool,
 }
 
 impl WorkspaceSignals {
@@ -44,25 +52,25 @@ impl WorkspaceSignals {
         if self.has_gemini_config || self.has_gemini_prompt || self.has_gemini_skills {
             count += 1;
         }
-        if self.has_cursor_config {
+        if self.has_cursor_config || self.has_cursor_rules || self.has_cursor_mcps {
             count += 1;
         }
-        if self.has_copilot_config {
+        if self.has_copilot_config || self.has_copilot_rules {
             count += 1;
         }
-        if self.has_windsurf_config {
+        if self.has_windsurf_config || self.has_windsurf_rules {
             count += 1;
         }
-        if self.has_roo_config {
+        if self.has_roo_config || self.has_roo_rules {
             count += 1;
         }
-        if self.has_cline_config {
+        if self.has_cline_config || self.has_cline_rules {
             count += 1;
         }
-        if self.has_kilo_config {
+        if self.has_kilo_config || self.has_kilo_rules {
             count += 1;
         }
-        if self.has_open_code_config {
+        if self.has_open_code_config || self.has_open_code_rules {
             count += 1;
         }
         count
@@ -145,6 +153,7 @@ const SIGNAL_NAMES: &[&str] = &[
     ".kilocoderules",
     ".opencode",
     "opencode.json",
+    "AGENT.md",
     ".roomodes",
 ];
 
@@ -243,15 +252,25 @@ pub fn discover_workspaces(max_depth: u32) -> Result<DiscoveryResult, String> {
                 signals.has_gemini_prompt = true;
                 signals.has_gemini_config = true;
             }
-            // New tools
+            // New tools — check granular signals (rules, MCPs) inside each dir
             ".cursor" if signal_path.is_dir() => {
                 signals.has_cursor_config = true;
+                if signal_path.join("rules").is_dir() {
+                    signals.has_cursor_rules = true;
+                }
+                if signal_path.join("mcp.json").exists() {
+                    signals.has_cursor_mcps = true;
+                }
             }
             ".github" if signal_path.is_dir() => {
-                // Copilot signals: instructions, skills, hooks
+                // Copilot rules: instructions files
                 if signal_path.join("copilot-instructions.md").exists()
                     || signal_path.join("instructions").is_dir()
-                    || signal_path.join("skills").is_dir()
+                {
+                    signals.has_copilot_config = true;
+                    signals.has_copilot_rules = true;
+                }
+                if signal_path.join("skills").is_dir()
                     || signal_path.join("hooks").is_dir()
                 {
                     signals.has_copilot_config = true;
@@ -265,33 +284,52 @@ pub fn discover_workspaces(max_depth: u32) -> Result<DiscoveryResult, String> {
             }
             ".windsurf" if signal_path.is_dir() => {
                 signals.has_windsurf_config = true;
+                if signal_path.join("rules").is_dir() {
+                    signals.has_windsurf_rules = true;
+                }
             }
             ".roo" if signal_path.is_dir() => {
                 signals.has_roo_config = true;
+                if signal_path.join("rules").is_dir() {
+                    signals.has_roo_rules = true;
+                }
             }
             ".roorules" => {
                 signals.has_roo_config = true;
+                signals.has_roo_rules = true;
             }
             ".roomodes" => {
                 signals.has_roo_config = true;
             }
             ".cline" if signal_path.is_dir() => {
                 signals.has_cline_config = true;
+                if signal_path.join("rules").is_dir() {
+                    signals.has_cline_rules = true;
+                }
             }
             ".clinerules" => {
                 signals.has_cline_config = true;
+                signals.has_cline_rules = true;
             }
             ".kilocode" if signal_path.is_dir() => {
                 signals.has_kilo_config = true;
+                if signal_path.join("rules").is_dir() {
+                    signals.has_kilo_rules = true;
+                }
             }
             ".kilocoderules" => {
                 signals.has_kilo_config = true;
+                signals.has_kilo_rules = true;
             }
             ".opencode" if signal_path.is_dir() => {
                 signals.has_open_code_config = true;
             }
             "opencode.json" if signal_path.is_file() => {
                 signals.has_open_code_config = true;
+            }
+            "AGENT.md" if signal_path.is_file() => {
+                signals.has_open_code_config = true;
+                signals.has_open_code_rules = true;
             }
             _ => {}
         }
