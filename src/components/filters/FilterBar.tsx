@@ -10,13 +10,16 @@ interface FilterBarProps {
   onScopesChange: (scopes: string[]) => void;
   showScopeFilter: boolean;
   scopeOptions?: { value: string; label: string }[];
+  availableTools?: SourceTool[];
 }
 
-const toolConfig = ALL_TOOLS.map((id) => ({
-  id,
-  label: TOOL_CONFIG[id].label,
-  activeClass: TOOL_CONFIG[id].filterActiveClass,
-}));
+function buildToolConfig(tools: SourceTool[]) {
+  return tools.map((id) => ({
+    id,
+    label: TOOL_CONFIG[id].label,
+    activeClass: TOOL_CONFIG[id].filterActiveClass,
+  }));
+}
 
 function toggleValue<T>(arr: T[], value: T): T[] {
   return arr.includes(value)
@@ -34,7 +37,12 @@ export function FilterBar({
     { value: "user", label: "User" },
     { value: "project", label: "Project" },
   ],
+  availableTools,
 }: FilterBarProps) {
+  const toolConfig = buildToolConfig(availableTools ?? ALL_TOOLS);
+
+  if (toolConfig.length <= 1) return null;
+
   return (
     <div className="flex items-center gap-6">
       <div className="flex items-center gap-2">

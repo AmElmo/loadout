@@ -251,6 +251,16 @@ pub fn scan_all_mcps(workspace_path: Option<&str>) -> Result<Vec<MCPItem>, Strin
         }
     }
 
+    // === Cursor MCPs ===
+    // User-level: ~/.cursor/mcp.json
+    let cursor_user_path = home_dir.join(".cursor").join("mcp.json");
+    scan_json_mcp_file(&cursor_user_path, SourceTool::Cursor, Scope::User, &mut entries);
+
+    // === Copilot MCPs ===
+    // User-level: ~/.vscode/mcp.json
+    let copilot_user_path = home_dir.join(".vscode").join("mcp.json");
+    scan_json_mcp_file(&copilot_user_path, SourceTool::Copilot, Scope::User, &mut entries);
+
     // === Windsurf MCPs ===
     // User-level: ~/.codeium/windsurf/mcp_config.json
     let windsurf_user_path = home_dir.join(".codeium").join("windsurf").join("mcp_config.json");
@@ -277,6 +287,21 @@ pub fn scan_all_mcps(workspace_path: Option<&str>) -> Result<Vec<MCPItem>, Strin
         }
     }
 
+    // === Roo MCPs ===
+    // User-level: ~/.roo/mcp.json
+    let roo_user_path = home_dir.join(".roo").join("mcp.json");
+    scan_json_mcp_file(&roo_user_path, SourceTool::Roo, Scope::User, &mut entries);
+
+    // === Cline MCPs ===
+    // User-level: ~/.cline/mcp.json
+    let cline_user_path = home_dir.join(".cline").join("mcp.json");
+    scan_json_mcp_file(&cline_user_path, SourceTool::Cline, Scope::User, &mut entries);
+
+    // === Kilo MCPs ===
+    // User-level: ~/.kilocode/mcp.json
+    let kilo_user_path = home_dir.join(".kilocode").join("mcp.json");
+    scan_json_mcp_file(&kilo_user_path, SourceTool::Kilo, Scope::User, &mut entries);
+
     // === Project-level scans for new tools ===
     if let Some(ws_path) = workspace_path {
         let ws = PathBuf::from(ws_path);
@@ -295,6 +320,10 @@ pub fn scan_all_mcps(workspace_path: Option<&str>) -> Result<Vec<MCPItem>, Strin
         // Roo: $PROJECT_ROOT/.roo/mcp.json
         let roo_project_path = ws.join(".roo").join("mcp.json");
         scan_json_mcp_file(&roo_project_path, SourceTool::Roo, Scope::Project, &mut entries);
+
+        // Cline: $PROJECT_ROOT/.cline/mcp.json
+        let cline_project_path = ws.join(".cline").join("mcp.json");
+        scan_json_mcp_file(&cline_project_path, SourceTool::Cline, Scope::Project, &mut entries);
 
         // Kilo: $PROJECT_ROOT/.kilocode/mcp.json
         let kilo_project_path = ws.join(".kilocode").join("mcp.json");

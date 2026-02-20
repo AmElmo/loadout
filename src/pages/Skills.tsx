@@ -9,6 +9,7 @@ import { InstallSkillDialog } from "@/components/sync";
 import { Button } from "@/components/ui/button";
 import { useInfiniteList } from "@/hooks/useInfiniteList";
 import type { SourceTool } from "@/types";
+import { ALL_TOOLS } from "@/config/tools";
 
 export function Skills() {
   const { current } = useWorkspaceStore();
@@ -31,6 +32,13 @@ export function Skills() {
     queryKey: ["skills", current?.repo_root ?? current?.path ?? null],
     queryFn: () => scanSkills(current?.repo_root ?? current?.path),
   });
+
+  const availableTools = useMemo(() => {
+    if (!result) return [];
+    const tools = new Set<SourceTool>();
+    for (const skill of result.skills) tools.add(skill.sourceTool);
+    return ALL_TOOLS.filter((t) => tools.has(t));
+  }, [result]);
 
   const filteredSkills = useMemo(() => {
     if (!result) return [];
@@ -110,6 +118,7 @@ export function Skills() {
             activeScopes={activeScopes}
             onScopesChange={setActiveScopes}
             showScopeFilter={!!current}
+            availableTools={availableTools}
           />
         </div>
       )}

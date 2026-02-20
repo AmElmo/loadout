@@ -9,6 +9,7 @@ import { AddMCPDialog } from "@/components/sync";
 import { Button } from "@/components/ui/button";
 import { useInfiniteList } from "@/hooks/useInfiniteList";
 import type { SourceTool } from "@/types";
+import { ALL_TOOLS } from "@/config/tools";
 
 export function MCPs() {
   const { current } = useWorkspaceStore();
@@ -31,6 +32,15 @@ export function MCPs() {
     queryKey: ["mcps", current?.repo_root ?? current?.path ?? null],
     queryFn: () => scanMCPs(current?.repo_root ?? current?.path),
   });
+
+  const availableTools = useMemo(() => {
+    if (!mcps) return [];
+    const tools = new Set<SourceTool>();
+    for (const mcp of mcps) {
+      for (const t of mcp.configuredIn) tools.add(t);
+    }
+    return ALL_TOOLS.filter((t) => tools.has(t));
+  }, [mcps]);
 
   const filteredMcps = useMemo(() => {
     if (!mcps) return [];
@@ -116,6 +126,7 @@ export function MCPs() {
             activeScopes={activeScopes}
             onScopesChange={setActiveScopes}
             showScopeFilter={!!current}
+            availableTools={availableTools}
           />
         </div>
       )}
