@@ -270,9 +270,7 @@ pub fn discover_workspaces(max_depth: u32) -> Result<DiscoveryResult, String> {
                     signals.has_copilot_config = true;
                     signals.has_copilot_rules = true;
                 }
-                if signal_path.join("skills").is_dir()
-                    || signal_path.join("hooks").is_dir()
-                {
+                if signal_path.join("skills").is_dir() || signal_path.join("hooks").is_dir() {
                     signals.has_copilot_config = true;
                 }
             }
@@ -338,21 +336,24 @@ pub fn discover_workspaces(max_depth: u32) -> Result<DiscoveryResult, String> {
     // Convert to sorted list
     let mut workspaces: Vec<DiscoveredWorkspace> = workspace_map
         .into_iter()
-        .map(|(path, signals)| {
+        .filter_map(|(path, signals)| {
             let name = path
                 .file_name()
                 .map(|n| n.to_string_lossy().to_string())
                 .unwrap_or_else(|| "Unknown".to_string());
             let is_git_repo = path.join(".git").exists();
             let tool_count = signals.tool_count();
+            if tool_count == 0 {
+                return None;
+            }
 
-            DiscoveredWorkspace {
+            Some(DiscoveredWorkspace {
                 path: path.to_string_lossy().to_string(),
                 name,
                 is_git_repo,
                 signals,
                 tool_count,
-            }
+            })
         })
         .collect();
 
@@ -375,6 +376,24 @@ pub fn discover_workspaces(max_depth: u32) -> Result<DiscoveryResult, String> {
 #[cfg(test)]
 mod tests {
     use super::*;
+    use std::fs;
+    use std::sync::{Mutex, OnceLock};
+    use tempfile::TempDir;
+
+    fn with_loadout_home<T>(home: &std::path::Path, f: impl FnOnce() -> T) -> T {
+        static LOCK: OnceLock<Mutex<()>> = OnceLock::new();
+        let _guard = LOCK.get_or_init(|| Mutex::new(())).lock().unwrap();
+
+        let previous = std::env::var("LOADOUT_HOME").ok();
+        std::env::set_var("LOADOUT_HOME", home);
+        let result = f();
+        if let Some(prev) = previous {
+            std::env::set_var("LOADOUT_HOME", prev);
+        } else {
+            std::env::remove_var("LOADOUT_HOME");
+        }
+        result
+    }
 
     #[test]
     fn test_workspace_signals_tool_count() {
@@ -427,5 +446,23 @@ mod tests {
         assert!(json.contains("\"isGitRepo\":true"));
         assert!(json.contains("\"toolCount\":1"));
         assert!(json.contains("\"hasClaudeConfig\":true"));
+    }
+
+    #[test]
+    fn test_discovery_skips_workspace_without_effective_signals() {
+        let home = TempDir::new().unwrap();
+        let projects = home.path().join("projects");
+        let no_signal = projects.join("plain-github");
+        let copilot = projects.join("copilot-project");
+
+        fs::create_dir_all(no_signal.join(".github")).unwrap();
+        fs::create_dir_all(copilot.join(".github").join("instructions")).unwrap();
+
+        let result = with_loadout_home(home.path(), || discover_workspaces(6)).unwrap();
+        let names: Vec<String> = result.workspaces.iter().map(|w| w.name.clone()).collect();
+
+        assert!(!names.contains(&"plain-github".to_string()));
+        assert!(names.contains(&"copilot-project".to_string()));
+        assert!(result.workspaces.iter().all(|w| w.tool_count > 0));
     }
 }

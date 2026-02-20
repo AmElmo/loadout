@@ -23,18 +23,7 @@ export function AddMCPDialog({ onClose }: AddMCPDialogProps) {
   const [argInput, setArgInput] = useState("");
   const [url, setUrl] = useState("");
   const [envVars, setEnvVars] = useState<{ key: string; value: string }[]>([]);
-  const [targetTools, setTargetTools] = useState<SourceTool[]>([
-    "claude",
-    "codex",
-    "gemini",
-    "cursor",
-    "copilot",
-    "windsurf",
-    "roo",
-    "cline",
-    "kilo",
-    "opencode",
-  ]);
+  const [targetTools, setTargetTools] = useState<SourceTool[]>([]);
 
   // Preview state
   const [previews, setPreviews] = useState<PreviewConfig[]>([]);

@@ -1860,6 +1860,7 @@ dependencies = [
  "serde",
  "serde_json",
  "serde_yaml",
+ "shlex",
  "tauri",
  "tauri-build",
  "tauri-plugin-dialog",

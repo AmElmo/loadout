@@ -87,7 +87,10 @@ fn mcp_config_path(tool: &str) -> Result<PathBuf, String> {
         "gemini" => Ok(home.join(".gemini").join("settings.json")),
         "cursor" => Ok(home.join(".cursor").join("mcp.json")),
         "copilot" => Ok(home.join(".vscode").join("mcp.json")),
-        "windsurf" => Ok(home.join(".codeium").join("windsurf").join("mcp_config.json")),
+        "windsurf" => Ok(home
+            .join(".codeium")
+            .join("windsurf")
+            .join("mcp_config.json")),
         "roo" => Ok(home.join(".roo").join("mcp.json")),
         "cline" => Ok(home.join(".cline").join("mcp.json")),
         "kilo" => Ok(home.join(".kilocode").join("mcp.json")),
@@ -100,6 +103,16 @@ fn is_supported_mcp_type(mcp_type: &str) -> bool {
     matches!(mcp_type, "stdio" | "http")
 }
 
+fn candidate_paths(source_path: Option<&str>, default_path: PathBuf) -> Vec<PathBuf> {
+    let mut paths = Vec::new();
+    if let Some(path) = source_path {
+        paths.push(PathBuf::from(path));
+    }
+    if !paths.iter().any(|path| path == &default_path) {
+        paths.push(default_path);
+    }
+    paths
+}
 
 /// Preview the generated config for each selected tool without writing
 #[tauri::command]
@@ -181,9 +194,7 @@ pub fn add_mcp_to_tools(request: AddMCPRequest) -> Result<WriteResult, String> {
         return Err("Command is required for stdio MCPs".to_string());
     }
 
-    if normalized_mcp_type == "http"
-        && request.url.as_ref().map_or(true, |u| u.trim().is_empty())
-    {
+    if normalized_mcp_type == "http" && request.url.as_ref().map_or(true, |u| u.trim().is_empty()) {
         return Err("URL is required for http MCPs".to_string());
     }
 
@@ -250,13 +261,7 @@ fn read_mcp_from_source(
     match source_tool {
         "claude" => {
             let default_path = home.join(".claude.json");
-            let mut candidate_paths = Vec::new();
-            if let Some(path) = source_path {
-                candidate_paths.push(PathBuf::from(path));
-            }
-            if !candidate_paths.iter().any(|path| path == &default_path) {
-                candidate_paths.push(default_path);
-            }
+            let candidate_paths = candidate_paths(source_path, default_path);
 
             for path in candidate_paths {
                 let config = parse_claude_config(&path)?;
@@ -275,13 +280,7 @@ fn read_mcp_from_source(
         }
         "codex" => {
             let default_path = home.join(".codex").join("config.toml");
-            let mut candidate_paths = Vec::new();
-            if let Some(path) = source_path {
-                candidate_paths.push(PathBuf::from(path));
-            }
-            if !candidate_paths.iter().any(|path| path == &default_path) {
-                candidate_paths.push(default_path);
-            }
+            let candidate_paths = candidate_paths(source_path, default_path);
 
             for path in candidate_paths {
                 let config = parse_codex_config(&path)?;
@@ -305,13 +304,7 @@ fn read_mcp_from_source(
         }
         "gemini" => {
             let default_path = home.join(".gemini").join("settings.json");
-            let mut candidate_paths = Vec::new();
-            if let Some(path) = source_path {
-                candidate_paths.push(PathBuf::from(path));
-            }
-            if !candidate_paths.iter().any(|path| path == &default_path) {
-                candidate_paths.push(default_path);
-            }
+            let candidate_paths = candidate_paths(source_path, default_path);
 
             for path in candidate_paths {
                 let config = parse_gemini_config(&path)?;
@@ -330,36 +323,43 @@ fn read_mcp_from_source(
         }
         // For tools that use mcpServers JSON format, use the generic parser
         "cursor" | "copilot" | "windsurf" | "roo" | "cline" | "kilo" => {
-            let path = match mcp_config_path(source_tool) {
+            let default_path = match mcp_config_path(source_tool) {
                 Ok(p) => p,
                 Err(e) => return Err(e),
             };
-            let config = parse_claude_config(&path)?;
-            if let Some(server) = config.mcp_servers.get(name) {
-                return Ok(MCPServerInput {
-                    mcp_type: server.mcp_type.clone(),
-                    command: server.command.clone(),
-                    args: server.args.clone(),
-                    url: server.url.clone(),
-                    env: server.env.clone(),
-                });
+            for path in candidate_paths(source_path, default_path) {
+                let config = parse_claude_config(&path)?;
+                if let Some(server) = config.mcp_servers.get(name) {
+                    return Ok(MCPServerInput {
+                        mcp_type: server.mcp_type.clone(),
+                        command: server.command.clone(),
+                        args: server.args.clone(),
+                        url: server.url.clone(),
+                        env: server.env.clone(),
+                    });
+                }
             }
-            Err(format!("MCP '{}' not found in {} configs", name, source_tool))
+            Err(format!(
+                "MCP '{}' not found in {} configs",
+                name, source_tool
+            ))
         }
         "opencode" => {
-            let path = match mcp_config_path(source_tool) {
+            let default_path = match mcp_config_path(source_tool) {
                 Ok(p) => p,
                 Err(e) => return Err(e),
             };
-            let config = crate::parsers::parse_opencode_config(&path)?;
-            if let Some(server) = config.mcp.get(name) {
-                return Ok(MCPServerInput {
-                    mcp_type: server.mcp_type.clone(),
-                    command: server.command.clone(),
-                    args: server.args.clone(),
-                    url: server.url.clone(),
-                    env: server.env.clone(),
-                });
+            for path in candidate_paths(source_path, default_path) {
+                let config = crate::parsers::parse_opencode_config(&path)?;
+                if let Some(server) = config.mcp.get(name) {
+                    return Ok(MCPServerInput {
+                        mcp_type: server.mcp_type.clone(),
+                        command: server.command.clone(),
+                        args: server.args.clone(),
+                        url: server.url.clone(),
+                        env: server.env.clone(),
+                    });
+                }
             }
             Err(format!("MCP '{}' not found in OpenCode configs", name))
         }
@@ -473,5 +473,61 @@ mod tests {
         assert_eq!(result.configs.len(), 1);
         assert_eq!(result.configs[0].tool, "codex");
         assert!(result.configs[0].content.contains("url"));
+    }
+
+    #[test]
+    fn test_read_mcp_from_cline_source_path() {
+        let file = NamedTempFile::new().unwrap();
+        fs::write(
+            file.path(),
+            r#"{
+  "mcpServers": {
+    "project-server": {
+      "type": "stdio",
+      "command": "node",
+      "args": ["server.js"]
+    }
+  }
+}"#,
+        )
+        .unwrap();
+
+        let mcp = read_mcp_from_source(
+            "project-server",
+            "cline",
+            Some(file.path().to_string_lossy().as_ref()),
+        )
+        .unwrap();
+
+        assert_eq!(mcp.mcp_type, "stdio");
+        assert_eq!(mcp.command.as_deref(), Some("node"));
+        assert_eq!(mcp.args, vec!["server.js"]);
+    }
+
+    #[test]
+    fn test_read_mcp_from_opencode_source_path() {
+        let file = NamedTempFile::new().unwrap();
+        fs::write(
+            file.path(),
+            r#"{
+  "mcp": {
+    "linear": {
+      "type": "http",
+      "url": "https://mcp.linear.app/mcp"
+    }
+  }
+}"#,
+        )
+        .unwrap();
+
+        let mcp = read_mcp_from_source(
+            "linear",
+            "opencode",
+            Some(file.path().to_string_lossy().as_ref()),
+        )
+        .unwrap();
+
+        assert_eq!(mcp.mcp_type, "http");
+        assert_eq!(mcp.url.as_deref(), Some("https://mcp.linear.app/mcp"));
     }
 }
