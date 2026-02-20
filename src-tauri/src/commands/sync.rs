@@ -408,7 +408,7 @@ fn github_to_raw_url(url: &str) -> Option<String> {
     {
         let parts: Vec<&str> = rest.splitn(5, '/').collect();
         if parts.len() >= 4 && parts[2] == "blob" {
-            // github.com/org/repo/blob/branch/path
+            // github.com/org/repo/blob/branch/path → raw file
             let org = parts[0];
             let repo = parts[1];
             let branch = parts[3];
@@ -416,6 +416,27 @@ fn github_to_raw_url(url: &str) -> Option<String> {
             return Some(format!(
                 "https://raw.githubusercontent.com/{}/{}/{}/{}",
                 org, repo, branch, path
+            ));
+        }
+        if parts.len() >= 4 && parts[2] == "tree" {
+            // github.com/org/repo/tree/branch/path → directory, look for SKILL.md inside
+            let org = parts[0];
+            let repo = parts[1];
+            let branch = parts[3];
+            let dir_path = if parts.len() == 5 {
+                parts[4].trim_end_matches('/')
+            } else {
+                ""
+            };
+            if dir_path.is_empty() {
+                return Some(format!(
+                    "https://raw.githubusercontent.com/{}/{}/{}/SKILL.md",
+                    org, repo, branch
+                ));
+            }
+            return Some(format!(
+                "https://raw.githubusercontent.com/{}/{}/{}/{}/SKILL.md",
+                org, repo, branch, dir_path
             ));
         }
         if parts.len() == 2 || (parts.len() == 3 && parts[2].is_empty()) {
@@ -684,6 +705,16 @@ mod tests {
         assert_eq!(
             raw,
             "https://raw.githubusercontent.com/anthropics/skills/main/commit/SKILL.md"
+        );
+    }
+
+    #[test]
+    fn test_github_tree_url_conversion() {
+        let url = "https://github.com/anthropics/skills/tree/main/skills/algorithmic-art";
+        let raw = github_to_raw_url(url).unwrap();
+        assert_eq!(
+            raw,
+            "https://raw.githubusercontent.com/anthropics/skills/main/skills/algorithmic-art/SKILL.md"
         );
     }
 
