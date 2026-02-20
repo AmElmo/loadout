@@ -160,6 +160,11 @@ export function InstallSkillDialog({ onClose }: InstallSkillDialogProps) {
             selectedTools={targetTools}
             onToolsChange={setTargetTools}
             type="skill"
+            availableTools={
+              detectionResult
+                ? (detectionResult.tools.map((t) => t.id) as SourceTool[])
+                : undefined
+            }
           />
         </div>
 

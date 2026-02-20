@@ -325,6 +325,11 @@ export function ImportSkillDialog({
                 selectedTools={targetTools}
                 onToolsChange={setTargetTools}
                 type="skill"
+                availableTools={
+                  detectionResult
+                    ? (detectionResult.tools.map((t) => t.id) as SourceTool[])
+                    : undefined
+                }
               />
 
               {/* Reset button */}
