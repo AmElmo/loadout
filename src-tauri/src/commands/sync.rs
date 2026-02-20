@@ -4,6 +4,7 @@ use crate::converters::{
     to_claude_json_preview, to_codex_toml_preview, to_gemini_json_preview, MCPServerInput,
 };
 use crate::parsers::{parse_claude_config, parse_codex_config, parse_gemini_config};
+use crate::parsers::parse_skill_content;
 use crate::writers::{mcp_writer, skill_writer};
 use serde::{Deserialize, Serialize};
 use std::collections::HashMap;
@@ -48,6 +49,16 @@ pub struct WriteResult {
     pub success: bool,
     pub modified_files: Vec<String>,
     pub errors: Vec<String>,
+}
+
+/// A skill fetched from a URL or parsed from file content
+#[derive(Debug, Clone, Serialize)]
+#[serde(rename_all = "camelCase")]
+pub struct FetchedSkill {
+    pub name: String,
+    pub description: String,
+    pub content: String,
+    pub source_url: Option<String>,
 }
 
 /// Preview of generated configs for each tool
@@ -388,6 +399,146 @@ pub fn sync_mcp_to_tools(request: SyncMCPRequest) -> Result<WriteResult, String>
     write_mcp_to_target_tools(&request.name, &mcp, &request.target_tools)
 }
 
+/// Convert a GitHub URL to a raw content URL
+fn github_to_raw_url(url: &str) -> Option<String> {
+    // Handle github.com/org/repo/blob/branch/path → raw.githubusercontent.com/org/repo/branch/path
+    if let Some(rest) = url
+        .strip_prefix("https://github.com/")
+        .or_else(|| url.strip_prefix("http://github.com/"))
+    {
+        let parts: Vec<&str> = rest.splitn(5, '/').collect();
+        if parts.len() >= 4 && parts[2] == "blob" {
+            // github.com/org/repo/blob/branch/path
+            let org = parts[0];
+            let repo = parts[1];
+            let branch = parts[3];
+            let path = if parts.len() == 5 { parts[4] } else { "" };
+            return Some(format!(
+                "https://raw.githubusercontent.com/{}/{}/{}/{}",
+                org, repo, branch, path
+            ));
+        }
+        if parts.len() == 2 || (parts.len() == 3 && parts[2].is_empty()) {
+            // github.com/org/repo → look for SKILL.md at root on main
+            let org = parts[0];
+            let repo = parts[1].trim_end_matches('/');
+            return Some(format!(
+                "https://raw.githubusercontent.com/{}/{}/main/SKILL.md",
+                org, repo
+            ));
+        }
+    }
+    None
+}
+
+/// Fetch a skill from a URL, parse its frontmatter, and return a preview
+#[tauri::command]
+pub async fn fetch_skill_from_url(url: String) -> Result<FetchedSkill, String> {
+    let url = url.trim().to_string();
+    if url.is_empty() {
+        return Err("URL is required".to_string());
+    }
+
+    // Convert GitHub URLs to raw content URLs
+    let fetch_url = github_to_raw_url(&url).unwrap_or_else(|| url.clone());
+
+    // Fetch the content
+    let client = reqwest::Client::new();
+    let response = client
+        .get(&fetch_url)
+        .header("User-Agent", "Loadout/0.1")
+        .send()
+        .await
+        .map_err(|e| format!("Failed to fetch URL: {}", e))?;
+
+    if !response.status().is_success() {
+        return Err(format!(
+            "HTTP {} fetching {}",
+            response.status(),
+            fetch_url
+        ));
+    }
+
+    let raw_content = response
+        .text()
+        .await
+        .map_err(|e| format!("Failed to read response: {}", e))?;
+
+    // Derive a fallback name from the URL path
+    let fallback_name = fetch_url
+        .rsplit('/')
+        .find(|s| !s.is_empty())
+        .unwrap_or("imported-skill")
+        .trim_end_matches(".md")
+        .to_string();
+
+    let parsed = parse_skill_content(&raw_content, &fallback_name)
+        .map_err(|e| format!("Failed to parse skill: {}", e))?;
+
+    Ok(FetchedSkill {
+        name: parsed.name,
+        description: parsed.description,
+        content: raw_content,
+        source_url: Some(url),
+    })
+}
+
+/// Parse skill content from raw markdown text (for file imports)
+#[tauri::command]
+pub fn parse_skill_file_content(content: String, filename: String) -> Result<FetchedSkill, String> {
+    let fallback_name = filename
+        .trim_end_matches(".md")
+        .trim_end_matches("/SKILL")
+        .rsplit('/')
+        .next()
+        .unwrap_or("imported-skill")
+        .to_string();
+
+    let parsed = parse_skill_content(&content, &fallback_name)
+        .map_err(|e| format!("Failed to parse skill: {}", e))?;
+
+    Ok(FetchedSkill {
+        name: parsed.name,
+        description: parsed.description,
+        content,
+        source_url: None,
+    })
+}
+
+/// Read and parse a skill file from disk (for file picker imports)
+#[tauri::command]
+pub fn read_skill_file(path: String) -> Result<FetchedSkill, String> {
+    let path_buf = PathBuf::from(&path);
+    let content = std::fs::read_to_string(&path_buf)
+        .map_err(|e| format!("Failed to read file: {}", e))?;
+
+    let filename = path_buf
+        .file_name()
+        .map(|n| n.to_string_lossy().to_string())
+        .unwrap_or_else(|| "SKILL.md".to_string());
+
+    // Use parent dir name as fallback skill name (matching how the scanner works)
+    let fallback_name = path_buf
+        .parent()
+        .and_then(|p| p.file_name())
+        .map(|n| n.to_string_lossy().to_string())
+        .unwrap_or_else(|| {
+            filename
+                .trim_end_matches(".md")
+                .to_string()
+        });
+
+    let parsed = parse_skill_content(&content, &fallback_name)
+        .map_err(|e| format!("Failed to parse skill: {}", e))?;
+
+    Ok(FetchedSkill {
+        name: parsed.name,
+        description: parsed.description,
+        content,
+        source_url: None,
+    })
+}
+
 /// Install a skill to all selected tools
 #[tauri::command]
 pub fn install_skill_to_tools(request: InstallSkillRequest) -> Result<WriteResult, String> {
@@ -502,6 +653,57 @@ mod tests {
         assert_eq!(mcp.mcp_type, "stdio");
         assert_eq!(mcp.command.as_deref(), Some("node"));
         assert_eq!(mcp.args, vec!["server.js"]);
+    }
+
+    #[test]
+    fn test_github_blob_url_conversion() {
+        let url = "https://github.com/anthropics/skills/blob/main/commit/SKILL.md";
+        let raw = github_to_raw_url(url).unwrap();
+        assert_eq!(
+            raw,
+            "https://raw.githubusercontent.com/anthropics/skills/main/commit/SKILL.md"
+        );
+    }
+
+    #[test]
+    fn test_github_repo_url_conversion() {
+        let url = "https://github.com/anthropics/skills";
+        let raw = github_to_raw_url(url).unwrap();
+        assert_eq!(
+            raw,
+            "https://raw.githubusercontent.com/anthropics/skills/main/SKILL.md"
+        );
+    }
+
+    #[test]
+    fn test_github_repo_url_with_trailing_slash() {
+        let url = "https://github.com/anthropics/skills/";
+        let raw = github_to_raw_url(url).unwrap();
+        assert_eq!(
+            raw,
+            "https://raw.githubusercontent.com/anthropics/skills/main/SKILL.md"
+        );
+    }
+
+    #[test]
+    fn test_non_github_url_returns_none() {
+        let url = "https://example.com/skill.md";
+        assert!(github_to_raw_url(url).is_none());
+    }
+
+    #[test]
+    fn test_parse_skill_file_content_with_frontmatter() {
+        let content = "---\nname: test-skill\ndescription: A test\n---\n\nContent here".to_string();
+        let result = parse_skill_file_content(content, "test.md".to_string()).unwrap();
+        assert_eq!(result.name, "test-skill");
+        assert_eq!(result.description, "A test");
+    }
+
+    #[test]
+    fn test_parse_skill_file_content_without_frontmatter() {
+        let content = "# My Skill\n\nDo the thing.".to_string();
+        let result = parse_skill_file_content(content, "my-skill/SKILL.md".to_string()).unwrap();
+        assert_eq!(result.name, "my-skill");
     }
 
     #[test]

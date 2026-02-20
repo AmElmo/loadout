@@ -317,6 +317,16 @@ export interface InstallSkillRequest {
 }
 
 /**
+ * A skill fetched from a URL or parsed from file content
+ */
+export interface FetchedSkill {
+  name: string;
+  description: string;
+  content: string;
+  sourceUrl: string | null;
+}
+
+/**
  * Result of a write operation
  */
 export interface WriteResult {
