@@ -1,5 +1,5 @@
 export { AddMCPDialog } from "./AddMCPDialog";
-export { InstallSkillDialog } from "./InstallSkillDialog";
+export { ImportSkillDialog } from "./ImportSkillDialog";
 export { SyncDialog } from "./SyncDialog";
 export { ToolSelector } from "./ToolSelector";
 export { ConfigPreview } from "./ConfigPreview";

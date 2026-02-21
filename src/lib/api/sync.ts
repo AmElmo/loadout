@@ -1,6 +1,7 @@
 import { invoke } from "@tauri-apps/api/core";
 import type {
   AddMCPRequest,
+  FetchedSkill,
   InstallSkillRequest,
   SyncMCPRequest,
   PreviewResult,
@@ -32,6 +33,34 @@ export async function installSkillToTools(
   request: InstallSkillRequest
 ): Promise<WriteResult> {
   return invoke<WriteResult>("install_skill_to_tools", { request });
+}
+
+/**
+ * Fetch a skill from a URL and parse its frontmatter
+ */
+export async function fetchSkillFromUrl(
+  url: string
+): Promise<FetchedSkill> {
+  return invoke<FetchedSkill>("fetch_skill_from_url", { url });
+}
+
+/**
+ * Parse skill content from raw markdown text (for file imports)
+ */
+export async function parseSkillFileContent(
+  content: string,
+  filename: string
+): Promise<FetchedSkill> {
+  return invoke<FetchedSkill>("parse_skill_file_content", { content, filename });
+}
+
+/**
+ * Read and parse a skill file from disk (for file picker imports)
+ */
+export async function readSkillFile(
+  path: string
+): Promise<FetchedSkill> {
+  return invoke<FetchedSkill>("read_skill_file", { path });
 }
 
 /**

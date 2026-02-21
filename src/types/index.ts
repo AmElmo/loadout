@@ -308,12 +308,33 @@ export interface SyncMCPRequest {
 }
 
 /**
+ * A companion file within a skill directory
+ */
+export interface SkillFile {
+  relativePath: string;
+  content: string;
+  size: number;
+}
+
+/**
  * Request to install a skill to one or more tools
  */
 export interface InstallSkillRequest {
   name: string;
   content: string;
   targetTools: SourceTool[];
+  files: SkillFile[];
+}
+
+/**
+ * A skill fetched from a URL or parsed from file content
+ */
+export interface FetchedSkill {
+  name: string;
+  description: string;
+  content: string;
+  sourceUrl: string | null;
+  files: SkillFile[];
 }
 
 /**

@@ -1,22 +1,28 @@
-import { useEffect, useMemo, useState } from "react";
-import { RefreshCw, AlertCircle, FolderOpen, Plus } from "lucide-react";
+import { useCallback, useEffect, useMemo, useState } from "react";
+import { RefreshCw, AlertCircle, FolderOpen, Plus, Download } from "lucide-react";
 import { useQuery } from "@tanstack/react-query";
 import { useWorkspaceStore } from "@/stores/workspaceStore";
 import { scanSkills } from "@/lib/api/skills";
 import { SkillList, ConflictWarning } from "@/components/skills";
 import { FilterBar, SearchBar } from "@/components/filters";
-import { InstallSkillDialog } from "@/components/sync";
+import { ImportSkillDialog } from "@/components/sync";
 import { Button } from "@/components/ui/button";
 import { useInfiniteList } from "@/hooks/useInfiniteList";
 import type { SourceTool } from "@/types";
 import { ALL_TOOLS } from "@/config/tools";
+import { cn } from "@/lib/utils";
 
 export function Skills() {
   const { current } = useWorkspaceStore();
-  const [showInstallDialog, setShowInstallDialog] = useState(false);
+  const [showImportDialog, setShowImportDialog] = useState(false);
+  const [droppedFile, setDroppedFile] = useState<{
+    content: string;
+    name: string;
+  } | null>(null);
   const [activeTools, setActiveTools] = useState<SourceTool[]>([]);
   const [activeScopes, setActiveScopes] = useState<string[]>([]);
   const [searchQuery, setSearchQuery] = useState("");
+  const [isDragOver, setIsDragOver] = useState(false);
 
   useEffect(() => {
     if (!current) setActiveScopes([]);
@@ -67,8 +73,53 @@ export function Skills() {
     setSearchQuery("");
   }
 
+  const handleDragOver = useCallback((e: React.DragEvent) => {
+    e.preventDefault();
+    e.stopPropagation();
+    setIsDragOver(true);
+  }, []);
+
+  const handleDragLeave = useCallback((e: React.DragEvent) => {
+    e.preventDefault();
+    e.stopPropagation();
+    setIsDragOver(false);
+  }, []);
+
+  const handleDrop = useCallback((e: React.DragEvent) => {
+    e.preventDefault();
+    e.stopPropagation();
+    setIsDragOver(false);
+
+    const files = Array.from(e.dataTransfer.files);
+    const mdFile = files.find((f) => f.name.endsWith(".md"));
+    if (!mdFile) return;
+
+    const reader = new FileReader();
+    reader.onload = () => {
+      const content = reader.result as string;
+      setDroppedFile({ content, name: mdFile.name });
+      setShowImportDialog(true);
+    };
+    reader.readAsText(mdFile);
+  }, []);
+
   return (
-    <div className="p-6">
+    <div
+      className="p-6"
+      onDragOver={handleDragOver}
+      onDragLeave={handleDragLeave}
+      onDrop={handleDrop}
+    >
+      {/* Drag overlay */}
+      {isDragOver && (
+        <div className="pointer-events-none fixed inset-0 z-40 flex items-center justify-center bg-primary/5">
+          <div className="rounded-xl border-2 border-dashed border-primary bg-background/90 px-8 py-6 text-center shadow-lg">
+            <Download className="mx-auto mb-2 h-8 w-8 text-primary" />
+            <p className="text-sm font-medium">Drop .md file to import skill</p>
+          </div>
+        </div>
+      )}
+
       <div className="mb-6 flex items-start justify-between">
         <div>
           <h2 className="text-2xl font-semibold">Skills</h2>
@@ -77,7 +128,7 @@ export function Skills() {
           </p>
         </div>
         <div className="flex gap-2">
-          <Button size="sm" onClick={() => setShowInstallDialog(true)}>
+          <Button size="sm" onClick={() => setShowImportDialog(true)}>
             <Plus className="mr-2 h-4 w-4" />
             Install Skill
           </Button>
@@ -88,7 +139,7 @@ export function Skills() {
             disabled={isLoading || isRefetching}
           >
             <RefreshCw
-              className={`mr-2 h-4 w-4 ${isRefetching ? "animate-spin" : ""}`}
+              className={cn("mr-2 h-4 w-4", isRefetching && "animate-spin")}
             />
             Refresh
           </Button>
@@ -167,8 +218,15 @@ export function Skills() {
           )}
         </p>
       )}
-      {showInstallDialog && (
-        <InstallSkillDialog onClose={() => setShowInstallDialog(false)} />
+      {showImportDialog && (
+        <ImportSkillDialog
+          onClose={() => {
+            setShowImportDialog(false);
+            setDroppedFile(null);
+          }}
+          initialFileContent={droppedFile?.content}
+          initialFileName={droppedFile?.name}
+        />
       )}
     </div>
   );

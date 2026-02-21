@@ -1,8 +1,9 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { X, Loader2 } from "lucide-react";
-import { useMutation, useQueryClient } from "@tanstack/react-query";
+import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import type { InstallSkillRequest, SourceTool } from "@/types";
 import { installSkillToTools } from "@/lib/api/sync";
+import { detectInstalledTools } from "@/lib/api/detection";
 import { Button } from "@/components/ui/button";
 import { ToolSelector } from "./ToolSelector";
 import { SuccessConfirmation } from "./SuccessConfirmation";
@@ -17,15 +18,20 @@ export function InstallSkillDialog({ onClose }: InstallSkillDialogProps) {
   const [name, setName] = useState("");
   const [description, setDescription] = useState("");
   const [instructions, setInstructions] = useState("");
-  const [targetTools, setTargetTools] = useState<SourceTool[]>([
-    "claude",
-    "codex",
-    "cursor",
-    "roo",
-    "cline",
-    "kilo",
-    "opencode",
-  ]);
+  const [targetTools, setTargetTools] = useState<SourceTool[]>([]);
+
+  // Detect installed tools to pre-select only those
+  const { data: detectionResult } = useQuery({
+    queryKey: ["installed-tools"],
+    queryFn: detectInstalledTools,
+  });
+
+  // Set default selected tools once detection completes
+  useEffect(() => {
+    if (detectionResult && targetTools.length === 0) {
+      setTargetTools(detectionResult.tools.map((t) => t.id as SourceTool));
+    }
+  }, [detectionResult, targetTools.length]);
 
   const buildContent = (): string => {
     const lines = [];
@@ -44,6 +50,7 @@ export function InstallSkillDialog({ onClose }: InstallSkillDialogProps) {
     name: name.trim(),
     content: buildContent(),
     targetTools,
+    files: [],
   });
 
   const writeMutation = useMutation({
@@ -154,6 +161,11 @@ export function InstallSkillDialog({ onClose }: InstallSkillDialogProps) {
             selectedTools={targetTools}
             onToolsChange={setTargetTools}
             type="skill"
+            availableTools={
+              detectionResult
+                ? (detectionResult.tools.map((t) => t.id) as SourceTool[])
+                : undefined
+            }
           />
         </div>
 

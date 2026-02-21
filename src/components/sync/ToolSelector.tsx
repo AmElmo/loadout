@@ -11,9 +11,11 @@ interface ToolSelectorProps {
   existingTools?: SourceTool[];
   disabledTools?: SourceTool[];
   disabledReason?: string;
+  /** If provided, only these tools will be shown. Otherwise all tools are shown. */
+  availableTools?: SourceTool[];
 }
 
-const tools = ALL_TOOLS.map((id) => ({
+const allToolItems = ALL_TOOLS.map((id) => ({
   id,
   label: TOOL_CONFIG[id].label,
   color: `accent-${TOOL_CONFIG[id].color}-500`,
@@ -26,7 +28,12 @@ export function ToolSelector({
   existingTools = [],
   disabledTools = [],
   disabledReason,
+  availableTools,
 }: ToolSelectorProps) {
+  const tools = availableTools
+    ? allToolItems.filter(({ id }) => availableTools.includes(id))
+    : allToolItems;
+
   const toggle = (tool: SourceTool) => {
     if (disabledTools.includes(tool)) {
       return;

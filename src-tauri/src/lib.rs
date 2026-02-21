@@ -11,9 +11,10 @@ mod workspace;
 mod writers;
 
 use commands::{
-    add_mcp_to_tools, detect_installed_tools, fetch_mcp_tools, install_skill_to_tools,
-    preview_mcp_configs, reveal_in_file_manager, scan_hooks, scan_mcps, scan_rules, scan_skills,
-    sync_mcp_to_tools, test_mcp_health,
+    add_mcp_to_tools, detect_installed_tools, fetch_mcp_tools, fetch_skill_from_url,
+    install_skill_to_tools, parse_skill_file_content, preview_mcp_configs, read_skill_file,
+    reveal_in_file_manager, scan_hooks, scan_mcps, scan_rules, scan_skills, sync_mcp_to_tools,
+    test_mcp_health,
 };
 use scanners::workspaces::{discover_workspaces, DiscoveryResult};
 
@@ -115,6 +116,9 @@ pub fn run() {
             sync_mcp_to_tools,
             test_mcp_health,
             fetch_mcp_tools,
+            fetch_skill_from_url,
+            parse_skill_file_content,
+            read_skill_file,
             reveal_in_file_manager,
         ])
         .run(tauri::generate_context!())

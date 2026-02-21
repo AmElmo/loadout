@@ -4,6 +4,7 @@ use crate::converters::{
     to_claude_json_preview, to_codex_toml_preview, to_gemini_json_preview, MCPServerInput,
 };
 use crate::parsers::{parse_claude_config, parse_codex_config, parse_gemini_config};
+use crate::parsers::parse_skill_content;
 use crate::writers::{mcp_writer, skill_writer};
 use serde::{Deserialize, Serialize};
 use std::collections::HashMap;
@@ -29,6 +30,8 @@ pub struct InstallSkillRequest {
     pub name: String,
     pub content: String,
     pub target_tools: Vec<String>,
+    #[serde(default)]
+    pub files: Vec<SkillFile>,
 }
 
 /// Request to sync an existing MCP to other tools
@@ -48,6 +51,26 @@ pub struct WriteResult {
     pub success: bool,
     pub modified_files: Vec<String>,
     pub errors: Vec<String>,
+}
+
+/// A companion file within a skill directory
+#[derive(Debug, Clone, Serialize, Deserialize)]
+#[serde(rename_all = "camelCase")]
+pub struct SkillFile {
+    pub relative_path: String,
+    pub content: String,
+    pub size: u64,
+}
+
+/// A skill fetched from a URL or parsed from file content
+#[derive(Debug, Clone, Serialize)]
+#[serde(rename_all = "camelCase")]
+pub struct FetchedSkill {
+    pub name: String,
+    pub description: String,
+    pub content: String,
+    pub source_url: Option<String>,
+    pub files: Vec<SkillFile>,
 }
 
 /// Preview of generated configs for each tool
@@ -388,6 +411,558 @@ pub fn sync_mcp_to_tools(request: SyncMCPRequest) -> Result<WriteResult, String>
     write_mcp_to_target_tools(&request.name, &mcp, &request.target_tools)
 }
 
+/// Parsed GitHub URL information
+#[derive(Debug, Clone, PartialEq)]
+enum GitHubUrl {
+    /// A direct file: github.com/org/repo/blob/{ref_and_path}
+    Blob {
+        owner: String,
+        repo: String,
+        /// Combined branch + path (cannot be split without API lookup)
+        ref_and_path: String,
+    },
+    /// A directory: github.com/org/repo/tree/{ref_and_path}
+    Tree {
+        owner: String,
+        repo: String,
+        /// Combined branch + path (cannot be split without API lookup)
+        ref_and_path: String,
+    },
+    /// Bare repo: github.com/org/repo
+    Repo {
+        owner: String,
+        repo: String,
+    },
+}
+
+/// Parse a GitHub URL into structured components.
+///
+/// Note: branch and path are stored together as `ref_and_path` because GitHub
+/// branch names can contain `/` (e.g. `feature/foo`), making it impossible to
+/// determine the split from the URL alone. Use `resolve_github_branch()` with
+/// the GitHub API to disambiguate when separate values are needed.
+fn parse_github_url(url: &str) -> Option<GitHubUrl> {
+    let rest = url
+        .strip_prefix("https://github.com/")
+        .or_else(|| url.strip_prefix("http://github.com/"))?;
+
+    let parts: Vec<&str> = rest.splitn(4, '/').collect();
+
+    if parts.len() >= 4 && parts[2] == "blob" {
+        return Some(GitHubUrl::Blob {
+            owner: parts[0].to_string(),
+            repo: parts[1].to_string(),
+            ref_and_path: parts[3].to_string(),
+        });
+    }
+
+    if parts.len() >= 4 && parts[2] == "tree" {
+        return Some(GitHubUrl::Tree {
+            owner: parts[0].to_string(),
+            repo: parts[1].to_string(),
+            ref_and_path: parts[3].trim_end_matches('/').to_string(),
+        });
+    }
+
+    if parts.len() == 2 || (parts.len() == 3 && parts[2].is_empty()) {
+        return Some(GitHubUrl::Repo {
+            owner: parts[0].to_string(),
+            repo: parts[1].trim_end_matches('/').to_string(),
+        });
+    }
+
+    None
+}
+
+/// Convert a GitHub URL to a raw content URL (used in tests)
+#[cfg(test)]
+fn github_to_raw_url(url: &str) -> Option<String> {
+    match parse_github_url(url)? {
+        GitHubUrl::Blob {
+            owner,
+            repo,
+            ref_and_path,
+        } => Some(format!(
+            "https://raw.githubusercontent.com/{}/{}/{}",
+            owner, repo, ref_and_path
+        )),
+        GitHubUrl::Tree {
+            owner,
+            repo,
+            ref_and_path,
+        } => Some(format!(
+            "https://raw.githubusercontent.com/{}/{}/{}/SKILL.md",
+            owner, repo, ref_and_path
+        )),
+        GitHubUrl::Repo { owner, repo } => Some(format!(
+            "https://raw.githubusercontent.com/{}/{}/main/SKILL.md",
+            owner, repo
+        )),
+    }
+}
+
+/// Entry from the GitHub Contents API
+#[derive(Debug, Deserialize)]
+struct GitHubContentEntry {
+    name: String,
+    path: String,
+    #[serde(rename = "type")]
+    entry_type: String,
+    size: Option<u64>,
+    download_url: Option<String>,
+}
+
+/// A Git reference from the GitHub matching-refs API
+#[derive(Debug, Deserialize)]
+struct GitRef {
+    #[serde(rename = "ref")]
+    ref_name: String,
+}
+
+/// Resolve a combined `ref_and_path` string (e.g. "feature/branch/dir/file")
+/// into separate `(branch, path)` by querying the GitHub matching-refs API.
+///
+/// GitHub branch names can contain `/`, so we cannot determine the split from
+/// the URL alone. This function queries GitHub for all branches starting with
+/// the first path segment and picks the longest match.
+///
+/// Falls back to treating the first segment as the branch if the API call fails.
+async fn resolve_github_branch(
+    client: &reqwest::Client,
+    owner: &str,
+    repo: &str,
+    ref_and_path: &str,
+) -> Result<(String, String), String> {
+    let segments: Vec<&str> = ref_and_path.split('/').collect();
+    if segments.is_empty() {
+        return Ok((String::new(), String::new()));
+    }
+    if segments.len() == 1 {
+        return Ok((segments[0].to_string(), String::new()));
+    }
+
+    // Query matching-refs API with the first segment as prefix
+    let api_url = format!(
+        "https://api.github.com/repos/{}/{}/git/matching-refs/heads/{}",
+        owner, repo, segments[0]
+    );
+
+    let response = client
+        .get(&api_url)
+        .header("User-Agent", "Loadout/0.1")
+        .header("Accept", "application/vnd.github.v3+json")
+        .send()
+        .await;
+
+    if let Ok(response) = response {
+        if response.status().is_success() {
+            if let Ok(refs) = response.json::<Vec<GitRef>>().await {
+                // Find the longest branch name that is a prefix of ref_and_path
+                let mut best_branch: Option<String> = None;
+
+                for git_ref in &refs {
+                    if let Some(branch) = git_ref.ref_name.strip_prefix("refs/heads/") {
+                        if ref_and_path == branch
+                            || (ref_and_path.starts_with(branch)
+                                && ref_and_path.as_bytes().get(branch.len()) == Some(&b'/'))
+                        {
+                            if best_branch
+                                .as_ref()
+                                .map_or(true, |b| branch.len() > b.len())
+                            {
+                                best_branch = Some(branch.to_string());
+                            }
+                        }
+                    }
+                }
+
+                if let Some(branch) = best_branch {
+                    let path = if ref_and_path.len() > branch.len() {
+                        ref_and_path[branch.len()..]
+                            .trim_start_matches('/')
+                            .to_string()
+                    } else {
+                        String::new()
+                    };
+                    return Ok((branch, path));
+                }
+            }
+        }
+    }
+
+    // Fallback: first segment as branch (original behavior)
+    Ok((segments[0].to_string(), segments[1..].join("/")))
+}
+
+const MAX_FILE_SIZE: u64 = 100_000; // 100 KB limit per companion file
+const SKIP_DIRS: &[&str] = &[".git", ".github", "node_modules", "__pycache__"];
+
+/// Fetch all files in a GitHub directory using the Contents API
+async fn fetch_github_directory(
+    client: &reqwest::Client,
+    owner: &str,
+    repo: &str,
+    branch: &str,
+    dir_path: &str,
+) -> Result<Vec<SkillFile>, String> {
+    let api_url = if dir_path.is_empty() {
+        format!(
+            "https://api.github.com/repos/{}/{}/contents?ref={}",
+            owner, repo, branch
+        )
+    } else {
+        format!(
+            "https://api.github.com/repos/{}/{}/contents/{}?ref={}",
+            owner, repo, dir_path, branch
+        )
+    };
+
+    let response = client
+        .get(&api_url)
+        .header("User-Agent", "Loadout/0.1")
+        .header("Accept", "application/vnd.github.v3+json")
+        .send()
+        .await
+        .map_err(|e| format!("Failed to list directory: {}", e))?;
+
+    if !response.status().is_success() {
+        return Err(format!("GitHub API returned HTTP {}", response.status()));
+    }
+
+    let entries: Vec<GitHubContentEntry> = response
+        .json()
+        .await
+        .map_err(|e| format!("Failed to parse GitHub API response: {}", e))?;
+
+    let mut files = Vec::new();
+
+    for entry in entries {
+        // Skip unwanted directories
+        if entry.entry_type == "dir" {
+            if SKIP_DIRS.contains(&entry.name.as_str()) {
+                continue;
+            }
+            // Recurse into subdirectories
+            let sub_files = Box::pin(fetch_github_directory(
+                client, owner, repo, branch, &entry.path,
+            ))
+            .await?;
+            files.extend(sub_files);
+            continue;
+        }
+
+        // Skip SKILL.md (it goes into FetchedSkill.content, not files)
+        if entry.name == "SKILL.md" {
+            continue;
+        }
+
+        // Skip oversized files
+        if entry.size.unwrap_or(0) > MAX_FILE_SIZE {
+            continue;
+        }
+
+        // Fetch file content via download_url
+        if let Some(download_url) = &entry.download_url {
+            let file_response = client
+                .get(download_url)
+                .header("User-Agent", "Loadout/0.1")
+                .send()
+                .await
+                .map_err(|e| format!("Failed to fetch {}: {}", entry.path, e))?;
+
+            if file_response.status().is_success() {
+                let content = file_response
+                    .text()
+                    .await
+                    .map_err(|e| format!("Failed to read {}: {}", entry.path, e))?;
+
+                // Compute relative path from the directory root
+                let relative_path = if dir_path.is_empty() {
+                    entry.path.clone()
+                } else {
+                    entry
+                        .path
+                        .strip_prefix(dir_path)
+                        .unwrap_or(&entry.path)
+                        .trim_start_matches('/')
+                        .to_string()
+                };
+
+                files.push(SkillFile {
+                    size: content.len() as u64,
+                    relative_path,
+                    content,
+                });
+            }
+        }
+    }
+
+    Ok(files)
+}
+
+/// Fetch raw content from a URL, rejecting HTML responses
+async fn fetch_raw_content(client: &reqwest::Client, url: &str) -> Result<String, String> {
+    let response = client
+        .get(url)
+        .header("User-Agent", "Loadout/0.1")
+        .send()
+        .await
+        .map_err(|e| format!("Failed to fetch URL: {}", e))?;
+
+    if !response.status().is_success() {
+        return Err(format!("HTTP {} fetching {}", response.status(), url));
+    }
+
+    // Check content type — reject HTML responses
+    let content_type = response
+        .headers()
+        .get("content-type")
+        .and_then(|v| v.to_str().ok())
+        .unwrap_or("")
+        .to_lowercase();
+
+    if content_type.contains("text/html") {
+        return Err(
+            "URL returned an HTML page instead of raw markdown. For GitHub, use a raw URL like https://raw.githubusercontent.com/org/repo/main/SKILL.md".to_string()
+        );
+    }
+
+    let raw_content = response
+        .text()
+        .await
+        .map_err(|e| format!("Failed to read response: {}", e))?;
+
+    // Double-check: sometimes content-type is missing/wrong, detect HTML by content
+    let trimmed = raw_content.trim_start();
+    if trimmed.starts_with("<!DOCTYPE") || trimmed.starts_with("<html") {
+        return Err(
+            "URL returned an HTML page instead of raw markdown. For GitHub, use a raw URL like https://raw.githubusercontent.com/org/repo/main/SKILL.md".to_string()
+        );
+    }
+
+    Ok(raw_content)
+}
+
+/// Fetch a skill from a URL, parse its frontmatter, and return a preview
+#[tauri::command]
+pub async fn fetch_skill_from_url(url: String) -> Result<FetchedSkill, String> {
+    let url = url.trim().to_string();
+    if url.is_empty() {
+        return Err("URL is required".to_string());
+    }
+
+    let client = reqwest::Client::new();
+
+    // Check if this is a GitHub URL with directory structure
+    if let Some(gh) = parse_github_url(&url) {
+        match gh {
+            GitHubUrl::Tree {
+                owner,
+                repo,
+                ref_and_path,
+            } => {
+                // Fetch SKILL.md (raw URL works with combined ref+path)
+                let skill_md_url = format!(
+                    "https://raw.githubusercontent.com/{}/{}/{}/SKILL.md",
+                    owner, repo, ref_and_path
+                );
+
+                let raw_content = fetch_raw_content(&client, &skill_md_url).await?;
+
+                // Resolve branch/path for the Contents API and fallback name
+                let (branch, dir_path) =
+                    resolve_github_branch(&client, &owner, &repo, &ref_and_path).await?;
+
+                let fallback_name = if dir_path.is_empty() {
+                    repo.clone()
+                } else {
+                    dir_path
+                        .rsplit('/')
+                        .next()
+                        .unwrap_or("imported-skill")
+                        .to_string()
+                };
+
+                let parsed = parse_skill_content(&raw_content, &fallback_name)
+                    .map_err(|e| format!("Failed to parse skill: {}", e))?;
+
+                // Fetch companion files from the directory
+                let files =
+                    fetch_github_directory(&client, &owner, &repo, &branch, &dir_path).await?;
+
+                return Ok(FetchedSkill {
+                    name: parsed.name,
+                    description: parsed.description,
+                    content: raw_content,
+                    source_url: Some(url),
+                    files,
+                });
+            }
+            GitHubUrl::Blob {
+                owner,
+                repo,
+                ref ref_and_path,
+            } => {
+                // Fetch the file (raw URL works with combined ref+path)
+                let raw_url = format!(
+                    "https://raw.githubusercontent.com/{}/{}/{}",
+                    owner, repo, ref_and_path
+                );
+                let raw_content = fetch_raw_content(&client, &raw_url).await?;
+
+                let fallback_name = ref_and_path
+                    .rsplit('/')
+                    .find(|s| !s.is_empty())
+                    .unwrap_or("imported-skill")
+                    .trim_end_matches(".md")
+                    .to_string();
+
+                let parsed = parse_skill_content(&raw_content, &fallback_name)
+                    .map_err(|e| format!("Failed to parse skill: {}", e))?;
+
+                // If this is a SKILL.md file, also fetch sibling files
+                let files = if ref_and_path.ends_with("SKILL.md") {
+                    let dir_ref_and_path = ref_and_path
+                        .trim_end_matches("SKILL.md")
+                        .trim_end_matches('/');
+                    if !dir_ref_and_path.is_empty() {
+                        let (branch, dir_path) =
+                            resolve_github_branch(&client, &owner, &repo, dir_ref_and_path)
+                                .await
+                                .unwrap_or_else(|_| {
+                                    let parts: Vec<&str> =
+                                        dir_ref_and_path.splitn(2, '/').collect();
+                                    (
+                                        parts[0].to_string(),
+                                        parts.get(1).unwrap_or(&"").to_string(),
+                                    )
+                                });
+                        fetch_github_directory(&client, &owner, &repo, &branch, &dir_path)
+                            .await
+                            .unwrap_or_default()
+                    } else {
+                        vec![]
+                    }
+                } else {
+                    vec![]
+                };
+
+                return Ok(FetchedSkill {
+                    name: parsed.name,
+                    description: parsed.description,
+                    content: raw_content,
+                    source_url: Some(url),
+                    files,
+                });
+            }
+            GitHubUrl::Repo { owner, repo } => {
+                // Try fetching SKILL.md from main branch root
+                let raw_url = format!(
+                    "https://raw.githubusercontent.com/{}/{}/main/SKILL.md",
+                    owner, repo
+                );
+                let raw_content = fetch_raw_content(&client, &raw_url).await?;
+
+                let parsed = parse_skill_content(&raw_content, &repo)
+                    .map_err(|e| format!("Failed to parse skill: {}", e))?;
+
+                // Fetch companion files from repo root
+                let files =
+                    fetch_github_directory(&client, &owner, &repo, "main", "").await
+                        .unwrap_or_default();
+
+                return Ok(FetchedSkill {
+                    name: parsed.name,
+                    description: parsed.description,
+                    content: raw_content,
+                    source_url: Some(url),
+                    files,
+                });
+            }
+        }
+    }
+
+    // Non-GitHub URL: simple fetch
+    let fetch_url = url.clone();
+    let raw_content = fetch_raw_content(&client, &fetch_url).await?;
+
+    let fallback_name = fetch_url
+        .rsplit('/')
+        .find(|s| !s.is_empty())
+        .unwrap_or("imported-skill")
+        .trim_end_matches(".md")
+        .to_string();
+
+    let parsed = parse_skill_content(&raw_content, &fallback_name)
+        .map_err(|e| format!("Failed to parse skill: {}", e))?;
+
+    Ok(FetchedSkill {
+        name: parsed.name,
+        description: parsed.description,
+        content: raw_content,
+        source_url: Some(url),
+        files: vec![],
+    })
+}
+
+/// Parse skill content from raw markdown text (for file imports)
+#[tauri::command]
+pub fn parse_skill_file_content(content: String, filename: String) -> Result<FetchedSkill, String> {
+    let fallback_name = filename
+        .trim_end_matches(".md")
+        .trim_end_matches("/SKILL")
+        .rsplit('/')
+        .next()
+        .unwrap_or("imported-skill")
+        .to_string();
+
+    let parsed = parse_skill_content(&content, &fallback_name)
+        .map_err(|e| format!("Failed to parse skill: {}", e))?;
+
+    Ok(FetchedSkill {
+        name: parsed.name,
+        description: parsed.description,
+        content,
+        source_url: None,
+        files: vec![],
+    })
+}
+
+/// Read and parse a skill file from disk (for file picker imports)
+#[tauri::command]
+pub fn read_skill_file(path: String) -> Result<FetchedSkill, String> {
+    let path_buf = PathBuf::from(&path);
+    let content = std::fs::read_to_string(&path_buf)
+        .map_err(|e| format!("Failed to read file: {}", e))?;
+
+    let filename = path_buf
+        .file_name()
+        .map(|n| n.to_string_lossy().to_string())
+        .unwrap_or_else(|| "SKILL.md".to_string());
+
+    // Use parent dir name as fallback skill name (matching how the scanner works)
+    let fallback_name = path_buf
+        .parent()
+        .and_then(|p| p.file_name())
+        .map(|n| n.to_string_lossy().to_string())
+        .unwrap_or_else(|| {
+            filename
+                .trim_end_matches(".md")
+                .to_string()
+        });
+
+    let parsed = parse_skill_content(&content, &fallback_name)
+        .map_err(|e| format!("Failed to parse skill: {}", e))?;
+
+    Ok(FetchedSkill {
+        name: parsed.name,
+        description: parsed.description,
+        content,
+        source_url: None,
+        files: vec![],
+    })
+}
+
 /// Install a skill to all selected tools
 #[tauri::command]
 pub fn install_skill_to_tools(request: InstallSkillRequest) -> Result<WriteResult, String> {
@@ -409,9 +984,21 @@ pub fn install_skill_to_tools(request: InstallSkillRequest) -> Result<WriteResul
     let mut errors = Vec::new();
 
     for tool in &request.target_tools {
-        match skill_writer::write_skill(&validated_name, &request.content, tool) {
-            Ok(path) => modified_files.push(path),
-            Err(e) => errors.push(format!("{}: {}", tool, e)),
+        if request.files.is_empty() {
+            match skill_writer::write_skill(&validated_name, &request.content, tool) {
+                Ok(path) => modified_files.push(path),
+                Err(e) => errors.push(format!("{}: {}", tool, e)),
+            }
+        } else {
+            match skill_writer::write_skill_with_files(
+                &validated_name,
+                &request.content,
+                &request.files,
+                tool,
+            ) {
+                Ok(paths) => modified_files.extend(paths),
+                Err(e) => errors.push(format!("{}: {}", tool, e)),
+            }
         }
     }
 
@@ -502,6 +1089,67 @@ mod tests {
         assert_eq!(mcp.mcp_type, "stdio");
         assert_eq!(mcp.command.as_deref(), Some("node"));
         assert_eq!(mcp.args, vec!["server.js"]);
+    }
+
+    #[test]
+    fn test_github_blob_url_conversion() {
+        let url = "https://github.com/anthropics/skills/blob/main/commit/SKILL.md";
+        let raw = github_to_raw_url(url).unwrap();
+        assert_eq!(
+            raw,
+            "https://raw.githubusercontent.com/anthropics/skills/main/commit/SKILL.md"
+        );
+    }
+
+    #[test]
+    fn test_github_tree_url_conversion() {
+        let url = "https://github.com/anthropics/skills/tree/main/skills/algorithmic-art";
+        let raw = github_to_raw_url(url).unwrap();
+        assert_eq!(
+            raw,
+            "https://raw.githubusercontent.com/anthropics/skills/main/skills/algorithmic-art/SKILL.md"
+        );
+    }
+
+    #[test]
+    fn test_github_repo_url_conversion() {
+        let url = "https://github.com/anthropics/skills";
+        let raw = github_to_raw_url(url).unwrap();
+        assert_eq!(
+            raw,
+            "https://raw.githubusercontent.com/anthropics/skills/main/SKILL.md"
+        );
+    }
+
+    #[test]
+    fn test_github_repo_url_with_trailing_slash() {
+        let url = "https://github.com/anthropics/skills/";
+        let raw = github_to_raw_url(url).unwrap();
+        assert_eq!(
+            raw,
+            "https://raw.githubusercontent.com/anthropics/skills/main/SKILL.md"
+        );
+    }
+
+    #[test]
+    fn test_non_github_url_returns_none() {
+        let url = "https://example.com/skill.md";
+        assert!(github_to_raw_url(url).is_none());
+    }
+
+    #[test]
+    fn test_parse_skill_file_content_with_frontmatter() {
+        let content = "---\nname: test-skill\ndescription: A test\n---\n\nContent here".to_string();
+        let result = parse_skill_file_content(content, "test.md".to_string()).unwrap();
+        assert_eq!(result.name, "test-skill");
+        assert_eq!(result.description, "A test");
+    }
+
+    #[test]
+    fn test_parse_skill_file_content_without_frontmatter() {
+        let content = "# My Skill\n\nDo the thing.".to_string();
+        let result = parse_skill_file_content(content, "my-skill/SKILL.md".to_string()).unwrap();
+        assert_eq!(result.name, "my-skill");
     }
 
     #[test]
