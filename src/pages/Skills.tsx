@@ -5,7 +5,7 @@ import { useWorkspaceStore } from "@/stores/workspaceStore";
 import { scanSkills } from "@/lib/api/skills";
 import { SkillList, ConflictWarning } from "@/components/skills";
 import { FilterBar, SearchBar } from "@/components/filters";
-import { InstallSkillDialog, ImportSkillDialog } from "@/components/sync";
+import { ImportSkillDialog } from "@/components/sync";
 import { Button } from "@/components/ui/button";
 import { useInfiniteList } from "@/hooks/useInfiniteList";
 import type { SourceTool } from "@/types";
@@ -14,7 +14,6 @@ import { cn } from "@/lib/utils";
 
 export function Skills() {
   const { current } = useWorkspaceStore();
-  const [showInstallDialog, setShowInstallDialog] = useState(false);
   const [showImportDialog, setShowImportDialog] = useState(false);
   const [droppedFile, setDroppedFile] = useState<{
     content: string;
@@ -129,15 +128,7 @@ export function Skills() {
           </p>
         </div>
         <div className="flex gap-2">
-          <Button
-            variant="outline"
-            size="sm"
-            onClick={() => setShowImportDialog(true)}
-          >
-            <Download className="mr-2 h-4 w-4" />
-            Import
-          </Button>
-          <Button size="sm" onClick={() => setShowInstallDialog(true)}>
+          <Button size="sm" onClick={() => setShowImportDialog(true)}>
             <Plus className="mr-2 h-4 w-4" />
             Install Skill
           </Button>
@@ -226,9 +217,6 @@ export function Skills() {
             </span>
           )}
         </p>
-      )}
-      {showInstallDialog && (
-        <InstallSkillDialog onClose={() => setShowInstallDialog(false)} />
       )}
       {showImportDialog && (
         <ImportSkillDialog
