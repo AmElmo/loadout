@@ -1,8 +1,9 @@
-import { useState } from "react";
+import { useMemo, useState } from "react";
 import { X, Plus, Trash2, Loader2 } from "lucide-react";
-import { useMutation, useQueryClient } from "@tanstack/react-query";
+import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import type { AddMCPRequest, MCPType, SourceTool, PreviewConfig } from "@/types";
 import { addMCPToTools, previewMCPConfigs } from "@/lib/api/sync";
+import { detectInstalledTools } from "@/lib/api/detection";
 import { Button } from "@/components/ui/button";
 import { ToolSelector } from "./ToolSelector";
 import { ConfigPreview } from "./ConfigPreview";
@@ -14,6 +15,30 @@ interface AddMCPDialogProps {
 
 export function AddMCPDialog({ onClose }: AddMCPDialogProps) {
   const queryClient = useQueryClient();
+
+  // Detect installed tools — only show these in the selector
+  const {
+    data: detectionResult,
+    error: detectionError,
+    isPending: isDetectingTools,
+  } = useQuery({
+    queryKey: ["installed-tools"],
+    queryFn: detectInstalledTools,
+  });
+
+  const installedToolIds = useMemo(
+    () =>
+      detectionResult
+        ? (detectionResult.tools.map((t) => t.id) as SourceTool[])
+        : [],
+    [detectionResult]
+  );
+
+  const detectionErrorMessage = detectionError
+    ? detectionError instanceof Error
+      ? detectionError.message
+      : String(detectionError)
+    : null;
 
   // Form state
   const [name, setName] = useState("");
@@ -28,8 +53,9 @@ export function AddMCPDialog({ onClose }: AddMCPDialogProps) {
   // Preview state
   const [previews, setPreviews] = useState<PreviewConfig[]>([]);
   const isHttpMCP = mcpType === "http";
-  const disabledTools: SourceTool[] = [];
-  const effectiveTargetTools = targetTools;
+  const effectiveTargetTools = targetTools.filter((tool) =>
+    installedToolIds.includes(tool)
+  );
 
   const buildRequest = (): AddMCPRequest => ({
     name: name.trim(),
@@ -60,10 +86,12 @@ export function AddMCPDialog({ onClose }: AddMCPDialogProps) {
   });
 
   const handlePreview = () => {
+    if (detectionErrorMessage) return;
     previewMutation.mutate(buildRequest());
   };
 
   const handleSubmit = () => {
+    if (detectionErrorMessage) return;
     writeMutation.mutate(buildRequest());
   };
 
@@ -97,6 +125,7 @@ export function AddMCPDialog({ onClose }: AddMCPDialogProps) {
   };
 
   const isValid =
+    !detectionErrorMessage &&
     name.trim() &&
     effectiveTargetTools.length > 0 &&
     (!isHttpMCP ? command.trim() : url.trim());
@@ -139,6 +168,14 @@ export function AddMCPDialog({ onClose }: AddMCPDialogProps) {
               {writeMutation.error instanceof Error
                 ? writeMutation.error.message
                 : String(writeMutation.error)}
+            </div>
+          )}
+          {detectionErrorMessage && (
+            <div className="rounded-md border border-red-500/20 bg-red-500/5 px-3 py-2 text-sm text-red-600">
+              Could not detect installed tools. Sync is blocked until detection
+              succeeds.
+              <br />
+              <span className="text-xs">{detectionErrorMessage}</span>
             </div>
           )}
 
@@ -292,12 +329,16 @@ export function AddMCPDialog({ onClose }: AddMCPDialogProps) {
           )}
 
           {/* Tool Selector */}
+          {isDetectingTools && !detectionErrorMessage && (
+            <p className="text-xs text-muted-foreground">
+              Detecting installed tools...
+            </p>
+          )}
           <ToolSelector
             selectedTools={effectiveTargetTools}
             onToolsChange={setTargetTools}
             type="mcp"
-            disabledTools={disabledTools}
-            disabledReason="Codex CLI only supports stdio MCP servers"
+            availableTools={installedToolIds}
           />
 
           {/* Preview */}
