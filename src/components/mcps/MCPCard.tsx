@@ -3,6 +3,7 @@ import { useState } from "react";
 import type { MCPItem } from "@/types";
 import { cn } from "@/lib/utils";
 import { syncMCPToTools } from "@/lib/api/sync";
+import { ALL_TOOLS } from "@/config/tools";
 import { SyncDialog } from "@/components/sync";
 import { Button } from "@/components/ui/button";
 import { OpenPathButton } from "@/components/ui/open-path-button";
@@ -10,7 +11,6 @@ import { HealthBadge } from "./HealthBadge";
 import { MCPIcon } from "./MCPIcon";
 import { TestHealthDialog } from "./TestHealthDialog";
 import { ToolBadges } from "./ToolBadge";
-import { ALL_TOOLS } from "@/config/tools";
 
 interface MCPCardProps {
   mcp: MCPItem;
@@ -24,9 +24,7 @@ export function MCPCard({ mcp }: MCPCardProps) {
   const envKeys = Object.keys(mcp.env);
   const hasEnv = envKeys.length > 0;
   const isHttp = mcp.mcpType === "http";
-  const missingTools = ALL_TOOLS.filter(
-    (tool) => !mcp.configuredIn.includes(tool)
-  );
+  const hasSyncTargets = mcp.configuredIn.length < ALL_TOOLS.length;
 
   // Display string for the card preview
   const displayString = isHttp
@@ -160,7 +158,7 @@ export function MCPCard({ mcp }: MCPCardProps) {
               label="Open Config"
             />
 
-            {missingTools.length > 0 && (
+            {hasSyncTargets && (
               <Button
                 variant="outline"
                 size="sm"
@@ -170,8 +168,7 @@ export function MCPCard({ mcp }: MCPCardProps) {
                 }}
               >
                 <Share2 className="mr-2 h-3.5 w-3.5" />
-                Sync to {missingTools.length} Other Tool
-                {missingTools.length !== 1 ? "s" : ""}
+                Sync to Other Tools
               </Button>
             )}
           </div>
@@ -187,7 +184,6 @@ export function MCPCard({ mcp }: MCPCardProps) {
           type="mcp"
           name={mcp.name}
           existingTools={mcp.configuredIn}
-          availableTools={ALL_TOOLS}
           onSync={(targetTools) =>
             syncMCPToTools({
               name: mcp.name,

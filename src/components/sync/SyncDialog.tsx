@@ -1,19 +1,17 @@
 import { useMemo, useState } from "react";
 import { X, Loader2, Share2 } from "lucide-react";
-import { useMutation, useQueryClient } from "@tanstack/react-query";
+import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import type { SourceTool } from "@/types";
 import { Button } from "@/components/ui/button";
 import { ToolSelector } from "./ToolSelector";
 import { SuccessConfirmation } from "./SuccessConfirmation";
-import { ALL_TOOLS } from "@/config/tools";
+import { detectInstalledTools } from "@/lib/api/detection";
 
 interface SyncDialogProps {
   type: "mcp" | "skill";
   name: string;
   /** Tools that already have this item */
   existingTools: SourceTool[];
-  /** Restrict sync targets for compatibility (defaults to all tools) */
-  availableTools?: SourceTool[];
   /** Called with selected target tools to perform the sync */
   onSync: (targetTools: SourceTool[]) => Promise<{
     success: boolean;
@@ -29,22 +27,43 @@ export function SyncDialog({
   type,
   name,
   existingTools,
-  availableTools,
   onSync,
   onClose,
   queryKey,
 }: SyncDialogProps) {
   const queryClient = useQueryClient();
-  const allowedTools = useMemo(
-    () => availableTools ?? ALL_TOOLS,
-    [availableTools]
+
+  // Only show tools that are actually installed on the user's machine
+  const {
+    data: detectionResult,
+    error: detectionError,
+    isPending: isDetectingTools,
+  } = useQuery({
+    queryKey: ["installed-tools"],
+    queryFn: detectInstalledTools,
+  });
+
+  const installedToolIds = useMemo(
+    () =>
+      detectionResult
+        ? (detectionResult.tools.map((t) => t.id) as SourceTool[])
+        : [],
+    [detectionResult]
   );
-  const disabledTools = ALL_TOOLS.filter((t) => !allowedTools.includes(t));
-  const missingTools = allowedTools.filter((t) => !existingTools.includes(t));
-  const [targetTools, setTargetTools] = useState<SourceTool[]>(missingTools);
-  const effectiveTargetTools = targetTools.filter((tool) =>
-    allowedTools.includes(tool)
+  const detectionErrorMessage = detectionError
+    ? detectionError instanceof Error
+      ? detectionError.message
+      : String(detectionError)
+    : null;
+
+  // Default to nothing selected — the user picks where to sync
+  const [targetTools, setTargetTools] = useState<SourceTool[]>([]);
+  const effectiveTargetTools = targetTools.filter(
+    (tool) => installedToolIds.includes(tool) && !existingTools.includes(tool)
   );
+  const allSynced =
+    installedToolIds.length > 0 &&
+    installedToolIds.every((t) => existingTools.includes(t));
 
   const syncMutation = useMutation({
     mutationFn: () => onSync(effectiveTargetTools),
@@ -96,28 +115,36 @@ export function SyncDialog({
                 : String(syncMutation.error)}
             </div>
           )}
+          {detectionErrorMessage && (
+            <div className="rounded-md border border-red-500/20 bg-red-500/5 px-3 py-2 text-sm text-red-600">
+              Could not detect installed tools. Sync is blocked until detection
+              succeeds.
+              <br />
+              <span className="text-xs">{detectionErrorMessage}</span>
+            </div>
+          )}
 
           <p className="text-sm">
             Sync <span className="font-semibold">{name}</span> to other tools:
           </p>
 
+          {isDetectingTools && !detectionErrorMessage && (
+            <p className="text-xs text-muted-foreground">
+              Detecting installed tools...
+            </p>
+          )}
           <ToolSelector
             selectedTools={effectiveTargetTools}
             onToolsChange={setTargetTools}
             type={type}
             existingTools={existingTools}
-            disabledTools={disabledTools}
-            disabledReason={
-              type === "mcp"
-                ? "stdio only"
-                : undefined
-            }
+            availableTools={installedToolIds}
           />
 
-          {missingTools.length === 0 && (
+          {allSynced && (
             <p className="text-sm text-muted-foreground">
               This {type === "mcp" ? "MCP" : "skill"} is already configured in
-              all tools.
+              all your installed tools.
             </p>
           )}
         </div>
@@ -130,9 +157,10 @@ export function SyncDialog({
           <Button
             onClick={() => syncMutation.mutate()}
             disabled={
+              !!detectionErrorMessage ||
               effectiveTargetTools.length === 0 ||
               syncMutation.isPending ||
-              missingTools.length === 0
+              allSynced
             }
           >
             {syncMutation.isPending && (

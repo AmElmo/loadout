@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useMemo, useState } from "react";
 import { X, Loader2 } from "lucide-react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import type { InstallSkillRequest, SourceTool } from "@/types";
@@ -20,18 +20,30 @@ export function InstallSkillDialog({ onClose }: InstallSkillDialogProps) {
   const [instructions, setInstructions] = useState("");
   const [targetTools, setTargetTools] = useState<SourceTool[]>([]);
 
-  // Detect installed tools to pre-select only those
-  const { data: detectionResult } = useQuery({
+  // Detect installed tools — only show these in the selector
+  const {
+    data: detectionResult,
+    error: detectionError,
+    isPending: isDetectingTools,
+  } = useQuery({
     queryKey: ["installed-tools"],
     queryFn: detectInstalledTools,
   });
-
-  // Set default selected tools once detection completes
-  useEffect(() => {
-    if (detectionResult && targetTools.length === 0) {
-      setTargetTools(detectionResult.tools.map((t) => t.id as SourceTool));
-    }
-  }, [detectionResult, targetTools.length]);
+  const installedToolIds = useMemo(
+    () =>
+      detectionResult
+        ? (detectionResult.tools.map((t) => t.id) as SourceTool[])
+        : [],
+    [detectionResult]
+  );
+  const detectionErrorMessage = detectionError
+    ? detectionError instanceof Error
+      ? detectionError.message
+      : String(detectionError)
+    : null;
+  const effectiveTargetTools = targetTools.filter((tool) =>
+    installedToolIds.includes(tool)
+  );
 
   const buildContent = (): string => {
     const lines = [];
@@ -49,7 +61,7 @@ export function InstallSkillDialog({ onClose }: InstallSkillDialogProps) {
   const buildRequest = (): InstallSkillRequest => ({
     name: name.trim(),
     content: buildContent(),
-    targetTools,
+    targetTools: effectiveTargetTools,
     files: [],
   });
 
@@ -61,11 +73,15 @@ export function InstallSkillDialog({ onClose }: InstallSkillDialogProps) {
   });
 
   const handleSubmit = () => {
+    if (detectionErrorMessage) return;
     writeMutation.mutate(buildRequest());
   };
 
   const isValid =
-    name.trim() && instructions.trim() && targetTools.length > 0;
+    !detectionErrorMessage &&
+    name.trim() &&
+    instructions.trim() &&
+    effectiveTargetTools.length > 0;
 
   // Show success state
   if (writeMutation.isSuccess && writeMutation.data) {
@@ -105,6 +121,14 @@ export function InstallSkillDialog({ onClose }: InstallSkillDialogProps) {
               {writeMutation.error instanceof Error
                 ? writeMutation.error.message
                 : String(writeMutation.error)}
+            </div>
+          )}
+          {detectionErrorMessage && (
+            <div className="rounded-md border border-red-500/20 bg-red-500/5 px-3 py-2 text-sm text-red-600">
+              Could not detect installed tools. Skill installation is blocked
+              until detection succeeds.
+              <br />
+              <span className="text-xs">{detectionErrorMessage}</span>
             </div>
           )}
 
@@ -157,15 +181,16 @@ export function InstallSkillDialog({ onClose }: InstallSkillDialogProps) {
           </div>
 
           {/* Tool Selector */}
+          {isDetectingTools && !detectionErrorMessage && (
+            <p className="text-xs text-muted-foreground">
+              Detecting installed tools...
+            </p>
+          )}
           <ToolSelector
-            selectedTools={targetTools}
+            selectedTools={effectiveTargetTools}
             onToolsChange={setTargetTools}
             type="skill"
-            availableTools={
-              detectionResult
-                ? (detectionResult.tools.map((t) => t.id) as SourceTool[])
-                : undefined
-            }
+            availableTools={installedToolIds}
           />
         </div>
 
