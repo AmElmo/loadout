@@ -1,16 +1,21 @@
 import { useMemo, useState } from "react";
-import { RefreshCw, AlertCircle, FolderOpen } from "lucide-react";
+import { RefreshCw, AlertCircle, FolderOpen, FolderSearch, Loader2 } from "lucide-react";
 import { useQuery } from "@tanstack/react-query";
 import { useWorkspaceStore } from "@/stores/workspaceStore";
 import { scanRules } from "@/lib/api/config";
-import { PromptsSection } from "@/components/config";
+import { scanReposWithoutRules } from "@/lib/api/repos";
+import { PromptsSection, RepoScanResults } from "@/components/config";
 import { SearchBar } from "@/components/filters";
 import { Button } from "@/components/ui/button";
 import { useInfiniteList } from "@/hooks/useInfiniteList";
+import type { RepoScanResult } from "@/types";
 
 export function Rules() {
   const { current } = useWorkspaceStore();
   const [searchQuery, setSearchQuery] = useState("");
+  const [scanning, setScanning] = useState(false);
+  const [scanResult, setScanResult] = useState<RepoScanResult | null>(null);
+  const [scanError, setScanError] = useState<string | null>(null);
 
   const {
     data: result,
@@ -34,6 +39,19 @@ export function Rules() {
 
   const { visibleItems, hasMore, sentinelRef } = useInfiniteList(filteredPrompts);
 
+  const handleScanRepos = async () => {
+    setScanning(true);
+    setScanError(null);
+    try {
+      const result = await scanReposWithoutRules();
+      setScanResult(result);
+    } catch (e) {
+      setScanError(e instanceof Error ? e.message : String(e));
+    } finally {
+      setScanning(false);
+    }
+  };
+
   return (
     <div className="p-6">
       <div className="mb-6 flex items-start justify-between">
@@ -43,18 +61,43 @@ export function Rules() {
             System instructions across tools (CLAUDE.md, AGENTS.md, GEMINI.md)
           </p>
         </div>
-        <Button
-          variant="outline"
-          size="sm"
-          onClick={() => refetch()}
-          disabled={isLoading || isRefetching}
-        >
-          <RefreshCw
-            className={`mr-2 h-4 w-4 ${isRefetching ? "animate-spin" : ""}`}
-          />
-          Refresh
-        </Button>
+        <div className="flex items-center gap-2">
+          <Button
+            variant="outline"
+            size="sm"
+            onClick={handleScanRepos}
+            disabled={scanning}
+          >
+            {scanning ? (
+              <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+            ) : (
+              <FolderSearch className="mr-2 h-4 w-4" />
+            )}
+            {scanning ? "Scanning repos..." : "Scan repos without rules"}
+          </Button>
+          <Button
+            variant="outline"
+            size="sm"
+            onClick={() => refetch()}
+            disabled={isLoading || isRefetching}
+          >
+            <RefreshCw
+              className={`mr-2 h-4 w-4 ${isRefetching ? "animate-spin" : ""}`}
+            />
+            Refresh
+          </Button>
+        </div>
       </div>
+
+      {scanError && (
+        <div className="mb-4 rounded-lg border border-red-500/20 bg-red-500/5 p-4">
+          <div className="flex items-center gap-2 text-red-600">
+            <AlertCircle className="h-5 w-5" />
+            <span className="font-medium">Failed to scan repos</span>
+          </div>
+          <p className="mt-1 text-sm text-muted-foreground">{scanError}</p>
+        </div>
+      )}
 
       {!current && (
         <div className="mb-4 flex items-center gap-2 rounded-lg border border-border bg-muted/50 px-3 py-2 text-sm text-muted-foreground">
@@ -102,6 +145,13 @@ export function Rules() {
           />
           {hasMore && <div ref={sentinelRef} className="h-4" />}
         </>
+      )}
+
+      {scanResult && (
+        <RepoScanResults
+          result={scanResult}
+          onClose={() => setScanResult(null)}
+        />
       )}
     </div>
   );
