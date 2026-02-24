@@ -4,6 +4,7 @@ import type { PromptFile } from "@/types";
 import { ToolBadge } from "@/components/mcps/ToolBadge";
 import { TokenBadge } from "@/components/context";
 import { Button } from "@/components/ui/button";
+import { MarkdownPreview } from "@/components/ui/markdown-preview";
 import { OpenPathButton } from "@/components/ui/open-path-button";
 
 interface RuleViewerProps {
@@ -81,8 +82,8 @@ export function RuleViewer({ rule, onClose }: RuleViewerProps) {
         )}
 
         {/* Content */}
-        <div className="relative min-h-[4rem] flex-1 overflow-auto">
-          <div className="absolute right-2 top-2 z-10">
+        <div className="relative min-h-[4rem] flex-1 overflow-hidden">
+          <div className="absolute right-2 top-[3.25rem] z-10">
             <Button
               variant="outline"
               size="sm"
@@ -97,9 +98,10 @@ export function RuleViewer({ rule, onClose }: RuleViewerProps) {
               {copied ? "Copied" : "Copy"}
             </Button>
           </div>
-          <pre className="h-full overflow-auto whitespace-pre-wrap p-4 font-mono text-sm">
-            {rule.content}
-          </pre>
+          <MarkdownPreview
+            content={rule.content}
+            className="h-full"
+          />
         </div>
 
         {/* Footer */}

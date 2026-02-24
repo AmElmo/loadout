@@ -7,6 +7,7 @@ import { TokenBadge } from "@/components/context";
 import { SyncDialog } from "@/components/sync";
 import { MaturityBadge } from "./MaturityBadge";
 import { Button } from "@/components/ui/button";
+import { MarkdownPreview } from "@/components/ui/markdown-preview";
 import { OpenPathButton } from "@/components/ui/open-path-button";
 import { ALL_TOOLS } from "@/config/tools";
 import { cn } from "@/lib/utils";
@@ -119,8 +120,8 @@ export function SkillViewer({ group, onClose }: SkillViewerProps) {
         )}
 
         {/* Content */}
-        <div className="relative flex-1 overflow-auto">
-          <div className="absolute right-2 top-2 z-10">
+        <div className="relative flex-1 overflow-hidden">
+          <div className="absolute right-2 top-[3.25rem] z-10">
             <Button
               variant="outline"
               size="sm"
@@ -135,9 +136,10 @@ export function SkillViewer({ group, onClose }: SkillViewerProps) {
               {copied ? "Copied" : "Copy"}
             </Button>
           </div>
-          <pre className="h-full overflow-auto whitespace-pre-wrap p-4 font-mono text-sm">
-            {activeVariant.content}
-          </pre>
+          <MarkdownPreview
+            content={activeVariant.content}
+            className="h-full"
+          />
         </div>
 
         {/* Footer */}
