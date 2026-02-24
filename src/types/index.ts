@@ -157,6 +157,21 @@ export interface SkillItem {
 }
 
 /**
+ * Skills grouped by name + scope across multiple tools
+ */
+export interface GroupedSkill {
+  groupKey: string;
+  name: string;
+  description: string;
+  scope: SkillScope;
+  maturity: Maturity;
+  installedTools: SourceTool[];
+  primary: SkillItem;
+  variants: SkillItem[];
+  hasContentDrift: boolean;
+}
+
+/**
  * Conflict information when same skill name has different content
  */
 export interface SkillConflict {

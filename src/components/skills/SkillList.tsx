@@ -1,17 +1,17 @@
 import { Filter, Sparkles } from "lucide-react";
 import { useState } from "react";
-import type { SkillItem } from "@/types";
+import type { GroupedSkill } from "@/types";
 import { SkillCard } from "./SkillCard";
 import { SkillViewer } from "./SkillViewer";
 
 interface SkillListProps {
-  skills: SkillItem[];
+  skills: GroupedSkill[];
   hasActiveFilters?: boolean;
   onClearFilters?: () => void;
 }
 
 export function SkillList({ skills, hasActiveFilters, onClearFilters }: SkillListProps) {
-  const [selectedSkill, setSelectedSkill] = useState<SkillItem | null>(null);
+  const [selectedSkill, setSelectedSkill] = useState<GroupedSkill | null>(null);
 
   if (skills.length === 0) {
     if (hasActiveFilters) {
@@ -73,18 +73,18 @@ export function SkillList({ skills, hasActiveFilters, onClearFilters }: SkillLis
   return (
     <>
       <div className="space-y-3">
-        {skills.map((skill) => (
+        {skills.map((group) => (
           <SkillCard
-            key={skill.id}
-            skill={skill}
-            onClick={() => setSelectedSkill(skill)}
+            key={group.groupKey}
+            group={group}
+            onClick={() => setSelectedSkill(group)}
           />
         ))}
       </div>
 
       {selectedSkill && (
         <SkillViewer
-          skill={selectedSkill}
+          group={selectedSkill}
           onClose={() => setSelectedSkill(null)}
         />
       )}

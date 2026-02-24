@@ -10,6 +10,7 @@ import { Button } from "@/components/ui/button";
 import { useInfiniteList } from "@/hooks/useInfiniteList";
 import type { SourceTool } from "@/types";
 import { ALL_TOOLS } from "@/config/tools";
+import { groupSkills } from "@/lib/groupSkills";
 import { cn } from "@/lib/utils";
 
 export function Skills() {
@@ -39,29 +40,34 @@ export function Skills() {
     queryFn: () => scanSkills(current?.repo_root ?? current?.path),
   });
 
-  const availableTools = useMemo(() => {
+  const groupedSkills = useMemo(() => {
     if (!result) return [];
-    const tools = new Set<SourceTool>();
-    for (const skill of result.skills) tools.add(skill.sourceTool);
-    return ALL_TOOLS.filter((t) => tools.has(t));
+    return groupSkills(result.skills);
   }, [result]);
 
+  const availableTools = useMemo(() => {
+    const tools = new Set<SourceTool>();
+    for (const group of groupedSkills) {
+      for (const t of group.installedTools) tools.add(t);
+    }
+    return ALL_TOOLS.filter((t) => tools.has(t));
+  }, [groupedSkills]);
+
   const filteredSkills = useMemo(() => {
-    if (!result) return [];
     const query = searchQuery.toLowerCase();
-    return result.skills.filter((skill) => {
-      if (activeTools.length > 0 && !activeTools.includes(skill.sourceTool)) {
+    return groupedSkills.filter((group) => {
+      if (activeTools.length > 0 && !group.installedTools.some((t) => activeTools.includes(t))) {
         return false;
       }
-      if (activeScopes.length > 0 && !activeScopes.includes(skill.scope)) {
+      if (activeScopes.length > 0 && !activeScopes.includes(group.scope)) {
         return false;
       }
-      if (query && !skill.name.toLowerCase().includes(query) && !skill.description?.toLowerCase().includes(query)) {
+      if (query && !group.name.toLowerCase().includes(query) && !group.description?.toLowerCase().includes(query)) {
         return false;
       }
       return true;
     });
-  }, [result, activeTools, activeScopes, searchQuery]);
+  }, [groupedSkills, activeTools, activeScopes, searchQuery]);
 
   const { visibleItems, hasMore, sentinelRef } = useInfiniteList(filteredSkills);
 
@@ -156,7 +162,7 @@ export function Skills() {
         </div>
       )}
 
-      {result && result.skills.length > 0 && (
+      {result && groupedSkills.length > 0 && (
         <div className="mb-4 flex items-center gap-4">
           <SearchBar
             value={searchQuery}
@@ -204,11 +210,11 @@ export function Skills() {
         </>
       )}
 
-      {result && result.skills.length > 0 && (
+      {result && groupedSkills.length > 0 && (
         <p className="mt-4 text-center text-xs text-muted-foreground">
-          {filteredSkills.length === result.skills.length
-            ? `Found ${result.skills.length} skill${result.skills.length !== 1 ? "s" : ""} across your configured tools`
-            : `Showing ${filteredSkills.length} of ${result.skills.length} skill${result.skills.length !== 1 ? "s" : ""}`}
+          {filteredSkills.length === groupedSkills.length
+            ? `Found ${groupedSkills.length} skill${groupedSkills.length !== 1 ? "s" : ""} across your configured tools`
+            : `Showing ${filteredSkills.length} of ${groupedSkills.length} skill${groupedSkills.length !== 1 ? "s" : ""}`}
           {result.conflicts.length > 0 && (
             <span className="text-yellow-600">
               {" "}
