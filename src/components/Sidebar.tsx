@@ -184,6 +184,9 @@ export function Sidebar() {
                 placeholder="Filter workspaces..."
                 value={filter}
                 onChange={(e) => setFilter(e.target.value)}
+                autoCorrect="off"
+                autoCapitalize="off"
+                spellCheck={false}
                 className="w-full bg-transparent text-sm outline-none placeholder:text-muted-foreground"
                 autoFocus
               />
