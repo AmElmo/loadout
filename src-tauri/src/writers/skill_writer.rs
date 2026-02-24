@@ -209,10 +209,6 @@ pub fn link_skill(
                 match copy_result {
                     Ok(paths) => {
                         modified_files.extend(paths);
-                        errors.push(format!(
-                            "{}: symlink failed ({}), fell back to copy",
-                            tool, link_err
-                        ));
                     }
                     Err(e) => {
                         errors.push(format!(
@@ -252,10 +248,21 @@ fn create_symlink(target: &Path, link_path: &Path) -> Result<(), String> {
             // It's already a symlink — check if it points to the right target
             match fs::read_link(link_path) {
                 Ok(existing_target) => {
-                    // Canonicalize both to compare (handles relative vs absolute)
-                    let canon_target = fs::canonicalize(target).unwrap_or_else(|_| target.to_path_buf());
-                    let canon_existing = fs::canonicalize(&existing_target)
-                        .unwrap_or_else(|_| existing_target.clone());
+                    // Resolve relative targets against the link's parent before canonicalizing.
+                    let existing_target_resolved = if existing_target.is_relative() {
+                        link_path
+                            .parent()
+                            .map(|p| p.join(&existing_target))
+                            .unwrap_or_else(|| existing_target.clone())
+                    } else {
+                        existing_target.clone()
+                    };
+
+                    // Canonicalize both to compare (handles relative vs absolute).
+                    let canon_target =
+                        fs::canonicalize(target).unwrap_or_else(|_| target.to_path_buf());
+                    let canon_existing = fs::canonicalize(&existing_target_resolved)
+                        .unwrap_or(existing_target_resolved);
 
                     if canon_target == canon_existing {
                         // Already correctly linked — nothing to do
@@ -271,12 +278,12 @@ fn create_symlink(target: &Path, link_path: &Path) -> Result<(), String> {
                 .map_err(|e| format!("Failed to remove existing symlink: {}", e))?;
         } else if file_type.is_dir() {
             // Existing real directory — backup before replacing
-            let _ = backup_directory(link_path);
+            backup_directory(link_path)?;
             fs::remove_dir_all(link_path)
                 .map_err(|e| format!("Failed to remove existing directory: {}", e))?;
         } else {
             // Existing file (unexpected shape) — backup before replacing
-            let _ = create_backup(link_path);
+            create_backup(link_path)?;
             fs::remove_file(link_path)
                 .map_err(|e| format!("Failed to remove existing file: {}", e))?;
         }
@@ -314,7 +321,8 @@ fn compute_relative_target(target: &Path, link_path: &Path) -> PathBuf {
 
     // Use canonical paths for reliable relative computation
     let abs_target = fs::canonicalize(target).unwrap_or_else(|_| target.to_path_buf());
-    let abs_link_parent = fs::canonicalize(link_parent).unwrap_or_else(|_| link_parent.to_path_buf());
+    let abs_link_parent =
+        fs::canonicalize(link_parent).unwrap_or_else(|_| link_parent.to_path_buf());
 
     pathdiff::diff_paths(&abs_target, &abs_link_parent).unwrap_or_else(|| target.to_path_buf())
 }
@@ -361,6 +369,8 @@ fn copy_dir_recursive(src: &Path, dst: &Path) -> std::io::Result<()> {
 mod tests {
     use super::*;
     use std::fs;
+    #[cfg(unix)]
+    use std::os::unix::fs::MetadataExt;
     use tempfile::TempDir;
 
     #[test]
@@ -493,5 +503,27 @@ mod tests {
         let rel = compute_relative_target(&target, &link);
         // Should be a relative path containing ".."
         assert!(rel.to_string_lossy().contains(".."));
+    }
+
+    #[test]
+    #[cfg(unix)]
+    fn test_create_symlink_detects_matching_relative_target_without_replacing() {
+        let dir = TempDir::new().unwrap();
+        let target = dir.path().join("canonical").join("my-skill");
+        fs::create_dir_all(&target).unwrap();
+        fs::write(target.join("SKILL.md"), "content").unwrap();
+
+        let link_parent = dir.path().join("tool").join("skills");
+        fs::create_dir_all(&link_parent).unwrap();
+        let link = link_parent.join("my-skill");
+
+        let rel_target = pathdiff::diff_paths(&target, &link_parent).unwrap();
+        std::os::unix::fs::symlink(&rel_target, &link).unwrap();
+
+        let inode_before = fs::symlink_metadata(&link).unwrap().ino();
+        create_symlink(&target, &link).unwrap();
+        let inode_after = fs::symlink_metadata(&link).unwrap().ino();
+
+        assert_eq!(inode_before, inode_after);
     }
 }

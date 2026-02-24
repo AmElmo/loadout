@@ -27,10 +27,13 @@ export function SuccessConfirmation({
           {type === "mcp" ? "MCP Added" : "Skill Installed"}
         </h3>
         {isLinkMode && result.canonicalPath && (
-          <p className="mt-1 flex items-center justify-center gap-1 text-sm text-muted-foreground">
-            <Link2 className="h-3.5 w-3.5" />
-            Linked from{" "}
-            <code className="rounded bg-muted px-1 text-xs">
+          <p
+            className="mx-auto mt-1 flex max-w-sm items-center justify-center gap-1 text-sm text-muted-foreground"
+            title={normalizePath(result.canonicalPath)}
+          >
+            <Link2 className="h-3.5 w-3.5 shrink-0" />
+            <span className="shrink-0">Linked from</span>
+            <code className="truncate rounded bg-muted px-1 text-xs">
               {normalizePath(result.canonicalPath)}
             </code>
           </p>
@@ -54,7 +57,7 @@ export function SuccessConfirmation({
               ) : (
                 <FolderOpen className="h-3.5 w-3.5 shrink-0 text-green-600" />
               )}
-              <span className="truncate font-mono" title={file}>
+              <span className="min-w-0 truncate font-mono" title={normalizePath(file)}>
                 {normalizePath(file)}
               </span>
             </div>
