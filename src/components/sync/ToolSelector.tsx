@@ -1,5 +1,5 @@
-import { AlertTriangle, Check } from "lucide-react";
-import type { SourceTool } from "@/types";
+import { AlertTriangle, Check, Link2 } from "lucide-react";
+import type { InstallMethod, SourceTool } from "@/types";
 import { cn } from "@/lib/utils";
 import { ToolLogo } from "@/components/ToolLogo";
 import { ALL_TOOLS, TOOL_CONFIG } from "@/config/tools";
@@ -13,6 +13,8 @@ interface ToolSelectorProps {
   disabledReason?: string;
   /** If provided, only these tools will be shown. Otherwise all tools are shown. */
   availableTools?: SourceTool[];
+  /** Install method (link or copy). When "link", Codex gets a special hint. */
+  installMethod?: InstallMethod;
 }
 
 const allToolItems = ALL_TOOLS.map((id) => ({
@@ -29,6 +31,7 @@ export function ToolSelector({
   disabledTools = [],
   disabledReason,
   availableTools,
+  installMethod,
 }: ToolSelectorProps) {
   const tools = availableTools
     ? allToolItems.filter(({ id }) => availableTools.includes(id))
@@ -51,6 +54,10 @@ export function ToolSelector({
     ({ id }) => !existingTools.includes(id)
   );
 
+  // In link mode, Codex reads from ~/.agents/skills/ natively
+  const isCodexCoveredByLink =
+    type === "skill" && installMethod === "link";
+
   return (
     <div className="space-y-4">
       {/* Already installed section */}
@@ -71,6 +78,19 @@ export function ToolSelector({
               </div>
             ))}
           </div>
+        </div>
+      )}
+
+      {/* Codex covered hint in link mode */}
+      {isCodexCoveredByLink && (
+        <div className="flex items-center gap-2 rounded-md bg-blue-500/10 px-3 py-2 text-xs text-blue-700">
+          <Link2 className="h-3.5 w-3.5 shrink-0" />
+          <ToolLogo tool="codex" size={12} />
+          Codex already reads from{" "}
+          <code className="rounded bg-blue-500/20 px-1">
+            ~/.agents/skills/
+          </code>{" "}
+          — no extra install needed
         </div>
       )}
 

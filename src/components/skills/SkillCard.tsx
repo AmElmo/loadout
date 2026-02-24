@@ -1,23 +1,25 @@
 import { useState } from "react";
 import { Sparkles, EyeOff, ChevronRight, Share2 } from "lucide-react";
-import type { SkillItem } from "@/types";
+import type { GroupedSkill } from "@/types";
 import { cn } from "@/lib/utils";
 import { installSkillToTools } from "@/lib/api/sync";
-import { ToolBadge } from "@/components/mcps/ToolBadge";
+import { ToolBadges } from "@/components/mcps/ToolBadge";
 import { SyncDialog } from "@/components/sync";
 import { MaturityBadge } from "./MaturityBadge";
 import { ALL_TOOLS } from "@/config/tools";
 
 interface SkillCardProps {
-  skill: SkillItem;
+  group: GroupedSkill;
   onClick: () => void;
 }
 
-export function SkillCard({ skill, onClick }: SkillCardProps) {
+export function SkillCard({ group, onClick }: SkillCardProps) {
   const [showSync, setShowSync] = useState(false);
 
-  const missingTools = ALL_TOOLS.filter((t) => t !== skill.sourceTool);
+  const missingTools = ALL_TOOLS.filter((t) => !group.installedTools.includes(t));
   const hasMissingTools = missingTools.length > 0;
+  // When variants drift across tools, force users to choose a specific variant in the viewer.
+  const canQuickSyncFromCard = hasMissingTools && !group.hasContentDrift;
 
   return (
     <>
@@ -25,7 +27,7 @@ export function SkillCard({ skill, onClick }: SkillCardProps) {
         onClick={onClick}
         className={cn(
           "flex w-full items-center gap-3 rounded-lg border border-border bg-card p-4 text-left transition-colors hover:bg-muted/50",
-          skill.isShadowed && "opacity-60"
+          group.primary.isShadowed && "opacity-60"
         )}
       >
         {/* Icon */}
@@ -36,16 +38,16 @@ export function SkillCard({ skill, onClick }: SkillCardProps) {
         {/* Content */}
         <div className="min-w-0 flex-1">
           <div className="flex items-center gap-2">
-            <h3 className="truncate font-medium">{skill.name}</h3>
-            <ToolBadge tool={skill.sourceTool} />
-            <MaturityBadge maturity={skill.maturity} />
+            <h3 className="truncate font-medium">{group.name}</h3>
+            <ToolBadges tools={group.installedTools} />
+            <MaturityBadge maturity={group.maturity} />
             <span className="rounded bg-muted px-1.5 py-0.5 text-[10px] font-medium uppercase text-muted-foreground">
-              {skill.scope}
+              {group.scope}
             </span>
-            {skill.isShadowed && (
+            {group.primary.isShadowed && (
               <span
                 className="flex items-center gap-1 rounded bg-muted px-1.5 py-0.5 text-[10px] font-medium text-muted-foreground"
-                title={`Shadowed by: ${skill.shadowedBy}`}
+                title={`Shadowed by: ${group.primary.shadowedBy}`}
               >
                 <EyeOff className="h-3 w-3" />
                 Shadowed
@@ -53,12 +55,12 @@ export function SkillCard({ skill, onClick }: SkillCardProps) {
             )}
           </div>
           <p className="mt-0.5 truncate text-sm text-muted-foreground">
-            {skill.description}
+            {group.description}
           </p>
         </div>
 
         {/* Sync button */}
-        {hasMissingTools && (
+        {canQuickSyncFromCard && (
           <div
             className="shrink-0"
             onClick={(e) => {
@@ -80,13 +82,14 @@ export function SkillCard({ skill, onClick }: SkillCardProps) {
       {showSync && (
         <SyncDialog
           type="skill"
-          name={skill.name}
-          existingTools={[skill.sourceTool]}
-          onSync={(targetTools) =>
+          name={group.name}
+          existingTools={group.installedTools}
+          onSync={(targetTools, method) =>
             installSkillToTools({
-              name: skill.name,
-              content: skill.content,
+              name: group.name,
+              content: group.primary.content,
               targetTools,
+              method: method ?? "link",
               files: [],
             })
           }

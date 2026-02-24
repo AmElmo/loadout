@@ -1,12 +1,13 @@
 import { useMemo, useState } from "react";
 import { X, Loader2 } from "lucide-react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import type { InstallSkillRequest, SourceTool } from "@/types";
+import type { InstallMethod, InstallSkillRequest, SourceTool } from "@/types";
 import { installSkillToTools } from "@/lib/api/sync";
 import { detectInstalledTools } from "@/lib/api/detection";
 import { Button } from "@/components/ui/button";
 import { ToolSelector } from "./ToolSelector";
 import { SuccessConfirmation } from "./SuccessConfirmation";
+import { InstallMethodSelector } from "./InstallMethodSelector";
 
 interface InstallSkillDialogProps {
   onClose: () => void;
@@ -19,6 +20,7 @@ export function InstallSkillDialog({ onClose }: InstallSkillDialogProps) {
   const [description, setDescription] = useState("");
   const [instructions, setInstructions] = useState("");
   const [targetTools, setTargetTools] = useState<SourceTool[]>([]);
+  const [method, setMethod] = useState<InstallMethod>("link");
 
   // Detect installed tools — only show these in the selector
   const {
@@ -62,6 +64,7 @@ export function InstallSkillDialog({ onClose }: InstallSkillDialogProps) {
     name: name.trim(),
     content: buildContent(),
     targetTools: effectiveTargetTools,
+    method,
     files: [],
   });
 
@@ -143,11 +146,22 @@ export function InstallSkillDialog({ onClose }: InstallSkillDialogProps) {
               className="w-full rounded-md border border-border bg-background px-3 py-2 text-sm focus:border-primary focus:outline-none focus:ring-1 focus:ring-primary"
             />
             <p className="text-xs text-muted-foreground">
-              This will be used as the directory name (e.g.,{" "}
-              <code className="rounded bg-muted px-1">
-                ~/.claude/skills/{name || "name"}/SKILL.md
-              </code>
-              )
+              {method === "link" ? (
+                <>
+                  Canonical location:{" "}
+                  <code className="rounded bg-muted px-1">
+                    ~/.agents/skills/{name || "name"}/SKILL.md
+                  </code>
+                </>
+              ) : (
+                <>
+                  Directory name (e.g.,{" "}
+                  <code className="rounded bg-muted px-1">
+                    ~/.claude/skills/{name || "name"}/SKILL.md
+                  </code>
+                  )
+                </>
+              )}
             </p>
           </div>
 
@@ -180,6 +194,9 @@ export function InstallSkillDialog({ onClose }: InstallSkillDialogProps) {
             />
           </div>
 
+          {/* Install Method */}
+          <InstallMethodSelector method={method} onChange={setMethod} />
+
           {/* Tool Selector */}
           {isDetectingTools && !detectionErrorMessage && (
             <p className="text-xs text-muted-foreground">
@@ -191,6 +208,7 @@ export function InstallSkillDialog({ onClose }: InstallSkillDialogProps) {
             onToolsChange={setTargetTools}
             type="skill"
             availableTools={installedToolIds}
+            installMethod={method}
           />
         </div>
 

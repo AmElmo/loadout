@@ -30,8 +30,15 @@ pub struct InstallSkillRequest {
     pub name: String,
     pub content: String,
     pub target_tools: Vec<String>,
+    /// Install method: "link" (default) or "copy"
+    #[serde(default = "default_method")]
+    pub method: String,
     #[serde(default)]
     pub files: Vec<SkillFile>,
+}
+
+fn default_method() -> String {
+    "link".to_string()
 }
 
 /// Request to sync an existing MCP to other tools
@@ -51,6 +58,12 @@ pub struct WriteResult {
     pub success: bool,
     pub modified_files: Vec<String>,
     pub errors: Vec<String>,
+    /// Install method used: "link" or "copy"
+    pub method: String,
+    /// Path to the canonical skill directory (for link mode)
+    pub canonical_path: Option<String>,
+    /// True if symlink creation failed and fell back to copy
+    pub symlink_failed: bool,
 }
 
 /// A companion file within a skill directory
@@ -270,6 +283,9 @@ fn write_mcp_to_target_tools(
         success: errors.is_empty(),
         modified_files,
         errors,
+        method: "copy".to_string(),
+        canonical_path: None,
+        symlink_failed: false,
     })
 }
 
@@ -980,33 +996,60 @@ pub fn install_skill_to_tools(request: InstallSkillRequest) -> Result<WriteResul
     }
 
     let validated_name = skill_writer::validate_skill_name(&request.name)?;
-    let mut modified_files = Vec::new();
-    let mut errors = Vec::new();
-
-    for tool in &request.target_tools {
-        if request.files.is_empty() {
-            match skill_writer::write_skill(&validated_name, &request.content, tool) {
-                Ok(path) => modified_files.push(path),
-                Err(e) => errors.push(format!("{}: {}", tool, e)),
-            }
-        } else {
-            match skill_writer::write_skill_with_files(
+    match request.method.as_str() {
+        "link" => {
+            // Link mode: write canonical to ~/.agents/skills/<name>, then symlink per tool
+            let link_result = skill_writer::link_skill(
                 &validated_name,
                 &request.content,
                 &request.files,
-                tool,
-            ) {
-                Ok(paths) => modified_files.extend(paths),
-                Err(e) => errors.push(format!("{}: {}", tool, e)),
-            }
-        }
-    }
+                &request.target_tools,
+            )?;
 
-    Ok(WriteResult {
-        success: errors.is_empty(),
-        modified_files,
-        errors,
-    })
+            Ok(WriteResult {
+                success: link_result.errors.is_empty(),
+                modified_files: link_result.modified_files,
+                errors: link_result.errors,
+                method: "link".to_string(),
+                canonical_path: Some(link_result.canonical_path),
+                symlink_failed: link_result.symlink_failed,
+            })
+        }
+        "copy" => {
+            // Copy mode: per-tool independent copies (existing behavior)
+            let mut modified_files = Vec::new();
+            let mut errors = Vec::new();
+
+            for tool in &request.target_tools {
+                if request.files.is_empty() {
+                    match skill_writer::write_skill(&validated_name, &request.content, tool) {
+                        Ok(path) => modified_files.push(path),
+                        Err(e) => errors.push(format!("{}: {}", tool, e)),
+                    }
+                } else {
+                    match skill_writer::write_skill_with_files(
+                        &validated_name,
+                        &request.content,
+                        &request.files,
+                        tool,
+                    ) {
+                        Ok(paths) => modified_files.extend(paths),
+                        Err(e) => errors.push(format!("{}: {}", tool, e)),
+                    }
+                }
+            }
+
+            Ok(WriteResult {
+                success: errors.is_empty(),
+                modified_files,
+                errors,
+                method: "copy".to_string(),
+                canonical_path: None,
+                symlink_failed: false,
+            })
+        }
+        _ => Err("Install method must be either 'link' or 'copy'".to_string()),
+    }
 }
 
 #[cfg(test)]
@@ -1014,6 +1057,23 @@ mod tests {
     use super::*;
     use std::fs;
     use tempfile::NamedTempFile;
+
+    #[test]
+    fn test_install_skill_rejects_unknown_method() {
+        let result = install_skill_to_tools(InstallSkillRequest {
+            name: "my-skill".to_string(),
+            content: "---\nname: my-skill\n---\n\ncontent".to_string(),
+            target_tools: vec!["codex".to_string()],
+            method: "invalid".to_string(),
+            files: vec![],
+        });
+
+        assert!(result.is_err());
+        assert_eq!(
+            result.unwrap_err(),
+            "Install method must be either 'link' or 'copy'"
+        );
+    }
 
     #[test]
     fn test_read_mcp_from_claude_source_path() {

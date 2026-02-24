@@ -148,6 +148,27 @@ export interface SkillItem {
   isShadowed: boolean;
   /** Path of the skill that shadows this one */
   shadowedBy: string | null;
+  /** True if the skill directory is a symlink */
+  isSymlinked: boolean;
+  /** Resolved target path if the skill directory is a symlink */
+  symlinkTarget: string | null;
+  /** True if the skill directory is a broken symlink */
+  isBrokenSymlink: boolean;
+}
+
+/**
+ * Skills grouped by name + scope across multiple tools
+ */
+export interface GroupedSkill {
+  groupKey: string;
+  name: string;
+  description: string;
+  scope: SkillScope;
+  maturity: Maturity;
+  installedTools: SourceTool[];
+  primary: SkillItem;
+  variants: SkillItem[];
+  hasContentDrift: boolean;
 }
 
 /**
@@ -317,12 +338,19 @@ export interface SkillFile {
 }
 
 /**
+ * Install method for skills
+ */
+export type InstallMethod = "link" | "copy";
+
+/**
  * Request to install a skill to one or more tools
  */
 export interface InstallSkillRequest {
   name: string;
   content: string;
   targetTools: SourceTool[];
+  /** Install method: "link" (symlink from canonical) or "copy" (independent copies) */
+  method: InstallMethod;
   files: SkillFile[];
 }
 
@@ -344,6 +372,12 @@ export interface WriteResult {
   success: boolean;
   modifiedFiles: string[];
   errors: string[];
+  /** Install method used: "link" or "copy" */
+  method: InstallMethod;
+  /** Path to the canonical skill directory (for link mode) */
+  canonicalPath: string | null;
+  /** True if symlink creation failed and fell back to copy */
+  symlinkFailed: boolean;
 }
 
 /**

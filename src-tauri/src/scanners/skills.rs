@@ -72,6 +72,12 @@ pub struct SkillItem {
     pub is_shadowed: bool,
     /// Path of the skill that shadows this one
     pub shadowed_by: Option<String>,
+    /// True if the skill directory is a symlink
+    pub is_symlinked: bool,
+    /// Resolved target path if the skill directory is a symlink
+    pub symlink_target: Option<String>,
+    /// True if the skill directory is a broken symlink
+    pub is_broken_symlink: bool,
 }
 
 /// Conflict information when same skill name has different content
@@ -106,6 +112,9 @@ struct RawSkillEntry {
     source_tool: SkillSourceTool,
     scope: SkillScope,
     path: String,
+    is_symlinked: bool,
+    symlink_target: Option<String>,
+    is_broken_symlink: bool,
 }
 
 /// Scan all skills across all tools
@@ -208,26 +217,121 @@ pub fn scan_all_skills(workspace_path: Option<&str>) -> Result<SkillScanResult, 
     Ok(SkillScanResult { skills, conflicts })
 }
 
-/// Scan a directory for SKILL.md files
+/// Scan a directory for SKILL.md files.
+///
+/// Handles both regular directories and symlinked skill directories.
+/// Also detects broken symlinks and surfaces them as entries.
 fn scan_skill_directory(
     base_path: &PathBuf,
     source_tool: SkillSourceTool,
     scope: SkillScope,
     entries: &mut Vec<RawSkillEntry>,
 ) {
+    // Check if the base path itself exists (even as a symlink target)
+    // Use symlink_metadata to detect the base path even if it's a broken symlink
+    if std::fs::symlink_metadata(base_path).is_err() {
+        return;
+    }
     if !base_path.exists() {
         return;
     }
 
-    // Walk the directory looking for SKILL.md files
+    // First pass: scan for symlinked skill directories and broken symlinks
+    // at depth 1 (the skill name directories like ~/.claude/skills/<name>)
+    if let Ok(dir_entries) = std::fs::read_dir(base_path) {
+        for dir_entry in dir_entries.filter_map(|e| e.ok()) {
+            let child_path = dir_entry.path();
+
+            // Check if this child is a symlink using symlink_metadata
+            let sym_meta = match std::fs::symlink_metadata(&child_path) {
+                Ok(m) => m,
+                Err(_) => continue,
+            };
+
+            if sym_meta.file_type().is_symlink() {
+                let symlink_target = std::fs::read_link(&child_path)
+                    .ok()
+                    .map(|t| {
+                        // Resolve relative targets against the parent
+                        if t.is_relative() {
+                            child_path.parent()
+                                .map(|p| p.join(&t))
+                                .unwrap_or(t)
+                        } else {
+                            t
+                        }
+                    });
+
+                let target_str = symlink_target.as_ref()
+                    .map(|t| t.to_string_lossy().to_string());
+
+                // Check if the symlink is broken (target doesn't exist)
+                if !child_path.exists() {
+                    // Broken symlink — surface it with minimal info
+                    let skill_name = child_path.file_name()
+                        .map(|n| n.to_string_lossy().to_string())
+                        .unwrap_or_else(|| "unknown".to_string());
+
+                    entries.push(RawSkillEntry {
+                        name: skill_name,
+                        description: String::new(),
+                        content: String::new(),
+                        content_hash: 0,
+                        source_tool,
+                        scope,
+                        path: child_path.to_string_lossy().to_string(),
+                        is_symlinked: true,
+                        symlink_target: target_str,
+                        is_broken_symlink: true,
+                    });
+                    continue;
+                }
+
+                // Valid symlink — resolve and parse the SKILL.md through the symlink
+                let skill_md_path = child_path.join("SKILL.md");
+                if skill_md_path.exists() {
+                    if let Ok(skill) = parse_skill_md(&skill_md_path) {
+                        let content_hash = hash_content(&skill.content);
+                        entries.push(RawSkillEntry {
+                            name: skill.name,
+                            description: skill.description,
+                            content: skill.content,
+                            content_hash,
+                            source_tool,
+                            scope,
+                            path: skill_md_path.to_string_lossy().to_string(),
+                            is_symlinked: true,
+                            symlink_target: target_str,
+                            is_broken_symlink: false,
+                        });
+                    }
+                }
+                // Already handled this directory — skip it in the WalkDir pass below
+            }
+        }
+    }
+
+    // Second pass: walk for regular (non-symlinked) SKILL.md files
+    // WalkDir follows symlinks by default, so we check to avoid double-counting
     for entry in WalkDir::new(base_path)
         .min_depth(2)
         .max_depth(2)
+        .follow_links(true)
         .into_iter()
         .filter_map(|e| e.ok())
     {
         let path = entry.path();
         if path.file_name().map(|n| n == "SKILL.md").unwrap_or(false) {
+            // Check if the parent skill directory is a symlink — if so, skip
+            // (we already handled it in the first pass)
+            if let Some(skill_dir) = path.parent() {
+                if let Ok(meta) = std::fs::symlink_metadata(skill_dir) {
+                    if meta.file_type().is_symlink() {
+                        continue;
+                    }
+                }
+            }
+
             if let Ok(skill) = parse_skill_md(path) {
                 let content_hash = hash_content(&skill.content);
                 entries.push(RawSkillEntry {
@@ -238,6 +342,9 @@ fn scan_skill_directory(
                     source_tool,
                     scope,
                     path: path.to_string_lossy().to_string(),
+                    is_symlinked: false,
+                    symlink_target: None,
+                    is_broken_symlink: false,
                 });
             }
         }
@@ -282,6 +389,9 @@ fn scan_command_directory(
                         source_tool,
                         scope,
                         path: path.to_string_lossy().to_string(),
+                        is_symlinked: false,
+                        symlink_target: None,
+                        is_broken_symlink: false,
                     });
                 }
             }
@@ -403,6 +513,9 @@ fn process_skill_entries(entries: Vec<RawSkillEntry>) -> (Vec<SkillItem>, Vec<Sk
             active_tokens,
             is_shadowed,
             shadowed_by,
+            is_symlinked: entry.is_symlinked,
+            symlink_target: entry.symlink_target,
+            is_broken_symlink: entry.is_broken_symlink,
         });
     }
 
@@ -459,6 +572,9 @@ mod tests {
                 source_tool: SkillSourceTool::Claude,
                 scope: SkillScope::User,
                 path: "/test/path".to_string(),
+                is_symlinked: false,
+                symlink_target: None,
+                is_broken_symlink: false,
             },
             RawSkillEntry {
                 name: "test2".to_string(),
@@ -468,6 +584,9 @@ mod tests {
                 source_tool: SkillSourceTool::Gemini,
                 scope: SkillScope::User,
                 path: "/test/path2".to_string(),
+                is_symlinked: false,
+                symlink_target: None,
+                is_broken_symlink: false,
             },
         ];
 
@@ -491,6 +610,9 @@ mod tests {
                 source_tool: SkillSourceTool::Claude,
                 scope: SkillScope::User,
                 path: "/claude/path".to_string(),
+                is_symlinked: false,
+                symlink_target: None,
+                is_broken_symlink: false,
             },
             RawSkillEntry {
                 name: "shared".to_string(),
@@ -500,6 +622,9 @@ mod tests {
                 source_tool: SkillSourceTool::Codex,
                 scope: SkillScope::User,
                 path: "/codex/path".to_string(),
+                is_symlinked: false,
+                symlink_target: None,
+                is_broken_symlink: false,
             },
         ];
 
@@ -521,6 +646,9 @@ mod tests {
                 source_tool: SkillSourceTool::Codex,
                 scope: SkillScope::Project,
                 path: "/project/.codex/skills/myskill/SKILL.md".to_string(),
+                is_symlinked: false,
+                symlink_target: None,
+                is_broken_symlink: false,
             },
             RawSkillEntry {
                 name: "myskill".to_string(),
@@ -530,6 +658,9 @@ mod tests {
                 source_tool: SkillSourceTool::Codex,
                 scope: SkillScope::User,
                 path: "/home/.agents/skills/myskill/SKILL.md".to_string(),
+                is_symlinked: false,
+                symlink_target: None,
+                is_broken_symlink: false,
             },
         ];
 
