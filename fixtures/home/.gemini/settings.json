@@ -4,27 +4,27 @@
       "type": "stdio",
       "command": "npx",
       "args": ["-y", "@sentry/mcp-server"],
-      "env": { "SENTRY_AUTH_TOKEN": "sntrys_Pm7Kx2vQ9wR4" }
+      "env": { "SENTRY_AUTH_TOKEN": "sntrys_FAKE_TOKEN_FOR_TESTING" }
     },
     "datadog": {
       "type": "stdio",
       "command": "npx",
       "args": ["-y", "@datadog/mcp-server"],
       "env": {
-        "DD_API_KEY": "dd_api_8f3k9m2p7v",
-        "DD_APP_KEY": "dd_app_Rx4Wn6Lq1T"
+        "DD_API_KEY": "dd_api_FAKE_TOKEN_FOR_TESTING",
+        "DD_APP_KEY": "dd_app_FAKE_TOKEN_FOR_TESTING"
       }
     },
     "jira": {
       "type": "http",
       "url": "https://mcp.atlassian.com/jira/sse",
-      "headers": { "Authorization": "Bearer atlassian_Yq8Pm3Kx7v" }
+      "headers": { "Authorization": "Bearer atlassian_FAKE_TOKEN_FOR_TESTING" }
     },
     "github": {
       "type": "stdio",
       "command": "npx",
       "args": ["-y", "@modelcontextprotocol/server-github"],
-      "env": { "GITHUB_TOKEN": "ghp_A1b2C3d4E5f6G7h8I9j0" }
+      "env": { "GITHUB_TOKEN": "ghp_FAKE_TOKEN_FOR_TESTING_000" }
     }
   },
   "experiments": { "enableHooks": true },

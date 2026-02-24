@@ -10,7 +10,7 @@ command = "npx"
 args = ["-y", "@modelcontextprotocol/server-slack"]
 
 [mcp_servers.slack.env]
-SLACK_BOT_TOKEN = "xoxb-8192736450-Tm4nP2qR7vW3"
+SLACK_BOT_TOKEN = "xoxb-FAKE-TOKEN-FOR-TESTING"
 SLACK_TEAM_ID = "T01ACME"
 
 [mcp_servers.redis]
@@ -22,4 +22,4 @@ command = "npx"
 args = ["-y", "@modelcontextprotocol/server-github"]
 
 [mcp_servers.github.env]
-GITHUB_TOKEN = "ghp_A1b2C3d4E5f6G7h8I9j0"
+GITHUB_TOKEN = "ghp_FAKE_TOKEN_FOR_TESTING_000"
