@@ -118,11 +118,12 @@ export function SkillViewer({ skill, onClose }: SkillViewerProps) {
           type="skill"
           name={skill.name}
           existingTools={[skill.sourceTool]}
-          onSync={(targetTools) =>
+          onSync={(targetTools, method) =>
             installSkillToTools({
               name: skill.name,
               content: skill.content,
               targetTools,
+              method: method ?? "link",
               files: [],
             })
           }

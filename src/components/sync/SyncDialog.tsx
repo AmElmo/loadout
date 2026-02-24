@@ -1,10 +1,11 @@
 import { useMemo, useState } from "react";
 import { X, Loader2, Share2 } from "lucide-react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import type { SourceTool } from "@/types";
+import type { InstallMethod, SourceTool, WriteResult } from "@/types";
 import { Button } from "@/components/ui/button";
 import { ToolSelector } from "./ToolSelector";
 import { SuccessConfirmation } from "./SuccessConfirmation";
+import { InstallMethodSelector } from "./InstallMethodSelector";
 import { detectInstalledTools } from "@/lib/api/detection";
 
 interface SyncDialogProps {
@@ -12,12 +13,11 @@ interface SyncDialogProps {
   name: string;
   /** Tools that already have this item */
   existingTools: SourceTool[];
-  /** Called with selected target tools to perform the sync */
-  onSync: (targetTools: SourceTool[]) => Promise<{
-    success: boolean;
-    modifiedFiles: string[];
-    errors: string[];
-  }>;
+  /** Called with selected target tools and method to perform the sync */
+  onSync: (
+    targetTools: SourceTool[],
+    method?: InstallMethod
+  ) => Promise<WriteResult>;
   onClose: () => void;
   /** Query key to invalidate on success */
   queryKey: string;
@@ -58,6 +58,7 @@ export function SyncDialog({
 
   // Default to nothing selected — the user picks where to sync
   const [targetTools, setTargetTools] = useState<SourceTool[]>([]);
+  const [method, setMethod] = useState<InstallMethod>("link");
   const effectiveTargetTools = targetTools.filter(
     (tool) => installedToolIds.includes(tool) && !existingTools.includes(tool)
   );
@@ -66,7 +67,8 @@ export function SyncDialog({
     installedToolIds.every((t) => existingTools.includes(t));
 
   const syncMutation = useMutation({
-    mutationFn: () => onSync(effectiveTargetTools),
+    mutationFn: () =>
+      onSync(effectiveTargetTools, type === "skill" ? method : undefined),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: [queryKey] });
     },
@@ -86,6 +88,11 @@ export function SyncDialog({
     );
   }
 
+  const title =
+    type === "mcp"
+      ? "Sync MCP to Other Tools"
+      : "Add Skill to Other Tools";
+
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4">
       <div className="w-full max-w-md rounded-lg border border-border bg-background shadow-xl">
@@ -93,9 +100,7 @@ export function SyncDialog({
         <div className="flex items-center justify-between border-b border-border px-4 py-3">
           <div className="flex items-center gap-2">
             <Share2 className="h-4 w-4" />
-            <h2 className="text-lg font-semibold">
-              Sync {type === "mcp" ? "MCP" : "Skill"} to Other Tools
-            </h2>
+            <h2 className="text-lg font-semibold">{title}</h2>
           </div>
           <button
             onClick={onClose}
@@ -125,8 +130,13 @@ export function SyncDialog({
           )}
 
           <p className="text-sm">
-            Sync <span className="font-semibold">{name}</span> to other tools:
+            Add <span className="font-semibold">{name}</span> to other tools:
           </p>
+
+          {/* Install method selector for skills */}
+          {type === "skill" && (
+            <InstallMethodSelector method={method} onChange={setMethod} />
+          )}
 
           {isDetectingTools && !detectionErrorMessage && (
             <p className="text-xs text-muted-foreground">
@@ -139,6 +149,7 @@ export function SyncDialog({
             type={type}
             existingTools={existingTools}
             availableTools={installedToolIds}
+            installMethod={type === "skill" ? method : undefined}
           />
 
           {allSynced && (
@@ -166,7 +177,7 @@ export function SyncDialog({
             {syncMutation.isPending && (
               <Loader2 className="mr-2 h-4 w-4 animate-spin" />
             )}
-            Sync to {effectiveTargetTools.length} Tool
+            Add to {effectiveTargetTools.length} Tool
             {effectiveTargetTools.length !== 1 ? "s" : ""}
           </Button>
         </div>

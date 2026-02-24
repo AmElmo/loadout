@@ -1,7 +1,26 @@
 //! Skill writer — installs SKILL.md files to the correct path per tool
+//!
+//! Supports two modes:
+//! - **Copy**: writes independent copies to each tool's skill directory (legacy behavior)
+//! - **Link**: writes a canonical copy to `~/.agents/skills/<name>/` and creates
+//!   symlinks from each tool's path to the canonical directory
 
 use crate::writers::atomic::atomic_write;
-use std::path::PathBuf;
+use crate::writers::backup::create_backup;
+use std::fs;
+use std::path::{Path, PathBuf};
+
+/// Result of a link-mode skill install
+pub struct LinkResult {
+    /// Canonical directory path (e.g. ~/.agents/skills/<name>)
+    pub canonical_path: String,
+    /// All modified/created paths (canonical files + symlink paths)
+    pub modified_files: Vec<String>,
+    /// Errors per tool (non-fatal: fallback to copy)
+    pub errors: Vec<String>,
+    /// True if at least one symlink creation failed and fell back to copy
+    pub symlink_failed: bool,
+}
 
 /// Validate a skill name before using it as a directory name.
 ///
@@ -114,6 +133,230 @@ pub fn write_skill_with_files(
     Ok(written_paths)
 }
 
+/// Install a skill in Link mode:
+/// 1. Write canonical files to `~/.agents/skills/<name>/`
+/// 2. Create symlinks from each tool's skill path to the canonical directory
+/// 3. Skip codex (it already reads from `~/.agents/skills/`)
+/// 4. Fall back to copy if symlink creation fails for any tool
+pub fn link_skill(
+    name: &str,
+    content: &str,
+    files: &[crate::commands::sync::SkillFile],
+    target_tools: &[String],
+) -> Result<LinkResult, String> {
+    let home = crate::helpers::effective_home().ok_or("Could not determine home directory")?;
+
+    // Canonical location is always ~/.agents/skills/<name>
+    let canonical_dir = home.join(".agents").join("skills").join(name);
+
+    // Step 1: Write canonical files
+    let skill_path = canonical_dir.join("SKILL.md");
+    atomic_write(&skill_path, content)?;
+
+    let mut modified_files = vec![skill_path.to_string_lossy().to_string()];
+
+    // Write companion files to canonical
+    for file in files {
+        validate_relative_path(&file.relative_path)?;
+        let file_path = canonical_dir.join(&file.relative_path);
+        atomic_write(&file_path, &file.content)?;
+        modified_files.push(file_path.to_string_lossy().to_string());
+    }
+
+    let canonical_path = canonical_dir.to_string_lossy().to_string();
+    let mut errors = Vec::new();
+    let mut symlink_failed = false;
+
+    // Step 2: Create symlinks for each target tool
+    for tool in target_tools {
+        // Codex reads from ~/.agents/skills/ natively — no symlink needed
+        if tool == "codex" {
+            continue;
+        }
+
+        let tool_skills_dir = match skill_dir_for_tool(tool) {
+            Ok(d) => d,
+            Err(e) => {
+                errors.push(format!("{}: {}", tool, e));
+                continue;
+            }
+        };
+        let tool_skill_path = tool_skills_dir.join(name);
+
+        // Ensure parent directory exists
+        if let Err(e) = fs::create_dir_all(&tool_skills_dir) {
+            errors.push(format!("{}: Failed to create skills dir: {}", tool, e));
+            continue;
+        }
+
+        // Try to create symlink; fall back to copy on failure
+        match create_symlink(&canonical_dir, &tool_skill_path) {
+            Ok(()) => {
+                modified_files.push(format!(
+                    "{} -> {}",
+                    tool_skill_path.to_string_lossy(),
+                    canonical_path
+                ));
+            }
+            Err(link_err) => {
+                // Symlink failed — fall back to copy for this tool
+                symlink_failed = true;
+                let copy_result = if files.is_empty() {
+                    write_skill(name, content, tool).map(|p| vec![p])
+                } else {
+                    write_skill_with_files(name, content, files, tool)
+                };
+                match copy_result {
+                    Ok(paths) => {
+                        modified_files.extend(paths);
+                        errors.push(format!(
+                            "{}: symlink failed ({}), fell back to copy",
+                            tool, link_err
+                        ));
+                    }
+                    Err(e) => {
+                        errors.push(format!(
+                            "{}: symlink failed ({}) and copy also failed: {}",
+                            tool, link_err, e
+                        ));
+                    }
+                }
+            }
+        }
+    }
+
+    Ok(LinkResult {
+        canonical_path,
+        modified_files,
+        errors,
+        symlink_failed,
+    })
+}
+
+/// Safely create a symlink from `link_path` to `target` (the canonical directory).
+///
+/// Handles existing content at `link_path`:
+/// - Existing valid symlink pointing to the same target: no-op
+/// - Existing valid symlink pointing elsewhere: remove and re-create
+/// - Existing broken symlink: remove and re-create
+/// - Existing directory (real, not symlink): backup then remove and create symlink
+/// - Existing file: backup then remove and create symlink
+fn create_symlink(target: &Path, link_path: &Path) -> Result<(), String> {
+    // Check what currently exists at link_path
+    let link_meta = fs::symlink_metadata(link_path);
+
+    if let Ok(meta) = link_meta {
+        let file_type = meta.file_type();
+
+        if file_type.is_symlink() {
+            // It's already a symlink — check if it points to the right target
+            match fs::read_link(link_path) {
+                Ok(existing_target) => {
+                    // Canonicalize both to compare (handles relative vs absolute)
+                    let canon_target = fs::canonicalize(target).unwrap_or_else(|_| target.to_path_buf());
+                    let canon_existing = fs::canonicalize(&existing_target)
+                        .unwrap_or_else(|_| existing_target.clone());
+
+                    if canon_target == canon_existing {
+                        // Already correctly linked — nothing to do
+                        return Ok(());
+                    }
+                }
+                Err(_) => {
+                    // Can't read the symlink (broken) — will remove below
+                }
+            }
+            // Remove existing symlink (wrong target or broken)
+            fs::remove_file(link_path)
+                .map_err(|e| format!("Failed to remove existing symlink: {}", e))?;
+        } else if file_type.is_dir() {
+            // Existing real directory — backup before replacing
+            let _ = backup_directory(link_path);
+            fs::remove_dir_all(link_path)
+                .map_err(|e| format!("Failed to remove existing directory: {}", e))?;
+        } else {
+            // Existing file (unexpected shape) — backup before replacing
+            let _ = create_backup(link_path);
+            fs::remove_file(link_path)
+                .map_err(|e| format!("Failed to remove existing file: {}", e))?;
+        }
+    }
+
+    // Create the symlink (directory symlink)
+    #[cfg(unix)]
+    {
+        // Use relative symlink target when possible
+        let link_target = compute_relative_target(target, link_path);
+        std::os::unix::fs::symlink(&link_target, link_path)
+            .map_err(|e| format!("symlink creation failed: {}", e))?;
+    }
+
+    #[cfg(windows)]
+    {
+        std::os::windows::fs::symlink_dir(target, link_path)
+            .map_err(|e| format!("symlink creation failed: {}", e))?;
+    }
+
+    Ok(())
+}
+
+/// Compute a relative path from `link_path`'s parent to `target`.
+///
+/// For example, if target = `/Users/x/.agents/skills/foo` and
+/// link_path = `/Users/x/.claude/skills/foo`, the result is `../../.agents/skills/foo`.
+///
+/// Falls back to the absolute `target` path if relative computation fails.
+fn compute_relative_target(target: &Path, link_path: &Path) -> PathBuf {
+    let link_parent = match link_path.parent() {
+        Some(p) => p,
+        None => return target.to_path_buf(),
+    };
+
+    // Use canonical paths for reliable relative computation
+    let abs_target = fs::canonicalize(target).unwrap_or_else(|_| target.to_path_buf());
+    let abs_link_parent = fs::canonicalize(link_parent).unwrap_or_else(|_| link_parent.to_path_buf());
+
+    pathdiff::diff_paths(&abs_target, &abs_link_parent).unwrap_or_else(|| target.to_path_buf())
+}
+
+/// Backup an existing directory by copying it to the backup location
+fn backup_directory(dir_path: &Path) -> Result<(), String> {
+    let backup_dir = crate::helpers::effective_home()
+        .ok_or("Could not determine home directory")?
+        .join(".loadout")
+        .join("backups");
+    fs::create_dir_all(&backup_dir)
+        .map_err(|e| format!("Failed to create backup directory: {}", e))?;
+
+    let dir_name = dir_path
+        .file_name()
+        .ok_or("Invalid directory path")?
+        .to_string_lossy();
+    let timestamp = chrono::Utc::now().format("%Y%m%d_%H%M%S");
+    let backup_dest = backup_dir.join(format!("{}_{}", dir_name, timestamp));
+
+    copy_dir_recursive(dir_path, &backup_dest)
+        .map_err(|e| format!("Failed to backup directory: {}", e))?;
+
+    Ok(())
+}
+
+/// Recursively copy a directory
+fn copy_dir_recursive(src: &Path, dst: &Path) -> std::io::Result<()> {
+    fs::create_dir_all(dst)?;
+    for entry in fs::read_dir(src)? {
+        let entry = entry?;
+        let ty = entry.file_type()?;
+        let dest_path = dst.join(entry.file_name());
+        if ty.is_dir() {
+            copy_dir_recursive(&entry.path(), &dest_path)?;
+        } else {
+            fs::copy(entry.path(), &dest_path)?;
+        }
+    }
+    Ok(())
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
@@ -154,8 +397,6 @@ mod tests {
 
     #[test]
     fn test_write_skill_creates_file() {
-        // We can't easily test write_skill directly since it uses home_dir,
-        // but we can test the atomic_write portion with a temp dir
         let dir = TempDir::new().unwrap();
         let skill_path = dir.path().join("my-skill").join("SKILL.md");
         let content = "---\nname: my-skill\ndescription: A test skill\n---\n\n# Instructions\nDo something useful.\n";
@@ -165,5 +406,92 @@ mod tests {
         assert!(skill_path.exists());
         let written = fs::read_to_string(&skill_path).unwrap();
         assert_eq!(written, content);
+    }
+
+    #[test]
+    fn test_create_symlink_new() {
+        let dir = TempDir::new().unwrap();
+        let target = dir.path().join("canonical").join("my-skill");
+        fs::create_dir_all(&target).unwrap();
+        fs::write(target.join("SKILL.md"), "content").unwrap();
+
+        let link = dir.path().join("tool").join("skills").join("my-skill");
+        fs::create_dir_all(link.parent().unwrap()).unwrap();
+
+        create_symlink(&target, &link).unwrap();
+
+        assert!(link.is_symlink());
+        assert!(link.join("SKILL.md").exists());
+        let content = fs::read_to_string(link.join("SKILL.md")).unwrap();
+        assert_eq!(content, "content");
+    }
+
+    #[test]
+    fn test_create_symlink_replaces_existing_symlink() {
+        let dir = TempDir::new().unwrap();
+        let old_target = dir.path().join("old-target");
+        fs::create_dir_all(&old_target).unwrap();
+        let new_target = dir.path().join("new-target");
+        fs::create_dir_all(&new_target).unwrap();
+        fs::write(new_target.join("SKILL.md"), "new").unwrap();
+
+        let link = dir.path().join("link");
+        #[cfg(unix)]
+        std::os::unix::fs::symlink(&old_target, &link).unwrap();
+
+        create_symlink(&new_target, &link).unwrap();
+
+        assert!(link.is_symlink());
+        let _resolved = fs::read_link(&link).unwrap();
+        // The resolved path should point to new_target (possibly relative)
+        let canonical_resolved = fs::canonicalize(&link).unwrap();
+        let canonical_new = fs::canonicalize(&new_target).unwrap();
+        assert_eq!(canonical_resolved, canonical_new);
+    }
+
+    #[test]
+    fn test_create_symlink_replaces_existing_dir() {
+        let dir = TempDir::new().unwrap();
+        let target = dir.path().join("canonical");
+        fs::create_dir_all(&target).unwrap();
+        fs::write(target.join("SKILL.md"), "canonical").unwrap();
+
+        let link = dir.path().join("existing-dir");
+        fs::create_dir_all(&link).unwrap();
+        fs::write(link.join("SKILL.md"), "old copy").unwrap();
+
+        create_symlink(&target, &link).unwrap();
+
+        assert!(link.is_symlink());
+        let content = fs::read_to_string(link.join("SKILL.md")).unwrap();
+        assert_eq!(content, "canonical");
+    }
+
+    #[test]
+    fn test_create_symlink_idempotent() {
+        let dir = TempDir::new().unwrap();
+        let target = dir.path().join("target");
+        fs::create_dir_all(&target).unwrap();
+
+        let link = dir.path().join("link");
+        create_symlink(&target, &link).unwrap();
+        // Call again — should be no-op
+        create_symlink(&target, &link).unwrap();
+
+        assert!(link.is_symlink());
+    }
+
+    #[test]
+    fn test_compute_relative_target() {
+        let dir = TempDir::new().unwrap();
+        let target = dir.path().join("a").join("b").join("target");
+        fs::create_dir_all(&target).unwrap();
+        let link_parent = dir.path().join("c").join("d");
+        fs::create_dir_all(&link_parent).unwrap();
+        let link = link_parent.join("link");
+
+        let rel = compute_relative_target(&target, &link);
+        // Should be a relative path containing ".."
+        assert!(rel.to_string_lossy().contains(".."));
     }
 }

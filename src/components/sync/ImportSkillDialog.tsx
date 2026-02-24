@@ -2,7 +2,7 @@ import { useEffect, useMemo, useState } from "react";
 import { X, Loader2, Globe, FileUp, AlertCircle, FileText, FolderOpen } from "lucide-react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { open } from "@tauri-apps/plugin-dialog";
-import type { FetchedSkill, SourceTool } from "@/types";
+import type { FetchedSkill, InstallMethod, SourceTool } from "@/types";
 import {
   fetchSkillFromUrl,
   parseSkillFileContent,
@@ -13,6 +13,7 @@ import { detectInstalledTools } from "@/lib/api/detection";
 import { Button } from "@/components/ui/button";
 import { ToolSelector } from "./ToolSelector";
 import { SuccessConfirmation } from "./SuccessConfirmation";
+import { InstallMethodSelector } from "./InstallMethodSelector";
 import { cn } from "@/lib/utils";
 
 function formatFileSize(bytes: number): string {
@@ -45,6 +46,7 @@ export function ImportSkillDialog({
   const [preview, setPreview] = useState<FetchedSkill | null>(null);
   const [editedName, setEditedName] = useState("");
   const [targetTools, setTargetTools] = useState<SourceTool[]>([]);
+  const [method, setMethod] = useState<InstallMethod>("link");
 
   // Detect installed tools — only show these in the selector
   const {
@@ -144,6 +146,7 @@ export function ImportSkillDialog({
       name: editedName.trim(),
       content: preview.content,
       targetTools: effectiveTargetTools,
+      method,
       files: preview.files,
     });
   };
@@ -326,11 +329,22 @@ export function ImportSkillDialog({
                   className="w-full rounded-md border border-border bg-background px-3 py-2 text-sm focus:border-primary focus:outline-none focus:ring-1 focus:ring-primary"
                 />
                 <p className="text-xs text-muted-foreground">
-                  Directory name for the skill (e.g.,{" "}
-                  <code className="rounded bg-muted px-1">
-                    ~/.claude/skills/{editedName || "name"}/SKILL.md
-                  </code>
-                  )
+                  {method === "link" ? (
+                    <>
+                      Canonical location:{" "}
+                      <code className="rounded bg-muted px-1">
+                        ~/.agents/skills/{editedName || "name"}/SKILL.md
+                      </code>
+                    </>
+                  ) : (
+                    <>
+                      Directory name (e.g.,{" "}
+                      <code className="rounded bg-muted px-1">
+                        ~/.claude/skills/{editedName || "name"}/SKILL.md
+                      </code>
+                      )
+                    </>
+                  )}
                 </p>
               </div>
 
@@ -391,6 +405,9 @@ export function ImportSkillDialog({
                 </pre>
               </div>
 
+              {/* Install Method */}
+              <InstallMethodSelector method={method} onChange={setMethod} />
+
               {/* Tool Selector */}
               {isDetectingTools && !detectionErrorMessage && (
                 <p className="text-xs text-muted-foreground">
@@ -402,6 +419,7 @@ export function ImportSkillDialog({
                 onToolsChange={setTargetTools}
                 type="skill"
                 availableTools={installedToolIds}
+                installMethod={method}
               />
 
               {/* Reset button */}
