@@ -176,7 +176,8 @@ export function SkillViewer({ group, onClose }: SkillViewerProps) {
           onSync={(targetTools, method) =>
             installSkillToTools({
               name: group.name,
-              content: group.primary.content,
+              // Sync the currently selected variant to avoid propagating the wrong version.
+              content: activeVariant.content,
               targetTools,
               method: method ?? "link",
               files: [],

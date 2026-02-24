@@ -18,6 +18,8 @@ export function SkillCard({ group, onClick }: SkillCardProps) {
 
   const missingTools = ALL_TOOLS.filter((t) => !group.installedTools.includes(t));
   const hasMissingTools = missingTools.length > 0;
+  // When variants drift across tools, force users to choose a specific variant in the viewer.
+  const canQuickSyncFromCard = hasMissingTools && !group.hasContentDrift;
 
   return (
     <>
@@ -58,7 +60,7 @@ export function SkillCard({ group, onClick }: SkillCardProps) {
         </div>
 
         {/* Sync button */}
-        {hasMissingTools && (
+        {canQuickSyncFromCard && (
           <div
             className="shrink-0"
             onClick={(e) => {
