@@ -6,6 +6,7 @@ import { ToolBadges, ToolBadge } from "@/components/mcps/ToolBadge";
 import { TokenBadge } from "@/components/context";
 import { SyncDialog } from "@/components/sync";
 import { MaturityBadge } from "./MaturityBadge";
+import { SkillIcon } from "./SkillIcon";
 import { Button } from "@/components/ui/button";
 import { OpenPathButton } from "@/components/ui/open-path-button";
 import { ALL_TOOLS } from "@/config/tools";
@@ -40,6 +41,7 @@ export function SkillViewer({ group, onClose }: SkillViewerProps) {
         {/* Header */}
         <div className="flex items-center justify-between border-b border-border px-4 py-3">
           <div className="flex items-center gap-3">
+            <SkillIcon name={group.name} size="md" />
             <h2 className="text-lg font-semibold">{group.name}</h2>
             <ToolBadges tools={group.installedTools} />
             <MaturityBadge maturity={group.maturity} />
