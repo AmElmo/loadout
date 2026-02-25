@@ -1,3 +1,4 @@
+pub mod agents;
 pub mod hooks;
 pub mod mcps;
 pub mod prompts;

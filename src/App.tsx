@@ -3,6 +3,7 @@ import { Header } from "@/components/Header";
 import { Home } from "@/pages/Home";
 import { MCPs } from "@/pages/MCPs";
 import { Skills } from "@/pages/Skills";
+import { Agents } from "@/pages/Agents";
 import { Rules } from "@/pages/Rules";
 import { Hooks } from "@/pages/Hooks";
 import { Context } from "@/pages/Context";
@@ -26,6 +27,8 @@ function App() {
         return <MCPs />;
       case "skills":
         return <Skills />;
+      case "agents":
+        return <Agents />;
       case "rules":
         return <Rules />;
       case "hooks":
