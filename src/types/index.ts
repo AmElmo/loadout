@@ -417,3 +417,36 @@ export interface MCPToolsResult {
   idleTokens: number;
   tools: MCPToolInfo[];
 }
+
+// === Repo Scan Types ===
+
+/**
+ * A git repo that has no AI rules files
+ */
+export interface RepoWithoutRules {
+  /** Absolute path to the repo root */
+  path: string;
+  /** Short name (last path component) */
+  name: string;
+  /** ISO 8601 date of the most recent commit */
+  lastCommitDate: string | null;
+  /** First line of the most recent commit message */
+  lastCommitMessage: string | null;
+  /** Author of the most recent commit */
+  lastCommitAuthor: string | null;
+  /** Approximate commit count */
+  commitCount: number | null;
+  /** Current branch name */
+  currentBranch: string | null;
+}
+
+/**
+ * Result of scanning repos for missing rules
+ */
+export interface RepoScanResult {
+  repos: RepoWithoutRules[];
+  totalReposScanned: number;
+  reposWithRules: number;
+  reposWithoutRules: number;
+  scanDurationMs: number;
+}

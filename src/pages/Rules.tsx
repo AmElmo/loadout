@@ -1,9 +1,9 @@
 import { useMemo, useState } from "react";
-import { RefreshCw, AlertCircle, FolderOpen } from "lucide-react";
+import { RefreshCw, AlertCircle, FolderOpen, FolderSearch } from "lucide-react";
 import { useQuery } from "@tanstack/react-query";
 import { useWorkspaceStore } from "@/stores/workspaceStore";
 import { scanRules } from "@/lib/api/config";
-import { PromptsSection } from "@/components/config";
+import { PromptsSection, RepoScanModal } from "@/components/config";
 import { SearchBar } from "@/components/filters";
 import { Button } from "@/components/ui/button";
 import { useInfiniteList } from "@/hooks/useInfiniteList";
@@ -11,6 +11,7 @@ import { useInfiniteList } from "@/hooks/useInfiniteList";
 export function Rules() {
   const { current } = useWorkspaceStore();
   const [searchQuery, setSearchQuery] = useState("");
+  const [showScanModal, setShowScanModal] = useState(false);
 
   const {
     data: result,
@@ -43,18 +44,32 @@ export function Rules() {
             System instructions across tools (CLAUDE.md, AGENTS.md, GEMINI.md)
           </p>
         </div>
-        <Button
-          variant="outline"
-          size="sm"
-          onClick={() => refetch()}
-          disabled={isLoading || isRefetching}
-        >
-          <RefreshCw
-            className={`mr-2 h-4 w-4 ${isRefetching ? "animate-spin" : ""}`}
-          />
-          Refresh
-        </Button>
+        <div className="flex items-center gap-2">
+          <Button
+            variant="outline"
+            size="sm"
+            onClick={() => setShowScanModal(true)}
+          >
+            <FolderSearch className="mr-2 h-4 w-4" />
+            Scan repos without rules
+          </Button>
+          <Button
+            variant="outline"
+            size="sm"
+            onClick={() => refetch()}
+            disabled={isLoading || isRefetching}
+          >
+            <RefreshCw
+              className={`mr-2 h-4 w-4 ${isRefetching ? "animate-spin" : ""}`}
+            />
+            Refresh
+          </Button>
+        </div>
       </div>
+
+      {showScanModal && (
+        <RepoScanModal onClose={() => setShowScanModal(false)} />
+      )}
 
       {!current && (
         <div className="mb-4 flex items-center gap-2 rounded-lg border border-border bg-muted/50 px-3 py-2 text-sm text-muted-foreground">
