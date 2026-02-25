@@ -3,7 +3,7 @@
 use chrono::Utc;
 use std::collections::HashMap;
 use std::fs;
-use std::hash::{Hash, Hasher};
+use std::hash::Hasher;
 use std::path::{Path, PathBuf};
 use std::time::{Duration, SystemTime};
 
@@ -22,15 +22,44 @@ fn ensure_backup_dir() -> Result<PathBuf, String> {
     Ok(backup_dir)
 }
 
+/// A minimal FNV-1a hasher operating on raw bytes.
+/// Unlike `DefaultHasher`, the algorithm is fully specified here and will never
+/// change across Rust toolchain versions, making the backup filename format stable.
+struct Fnv1aHasher(u64);
+
+impl Fnv1aHasher {
+    const BASIS: u64 = 0xcbf29ce484222325;
+    const PRIME: u64 = 0x00000100000001B3;
+
+    fn new() -> Self {
+        Self(Self::BASIS)
+    }
+}
+
+impl Hasher for Fnv1aHasher {
+    fn write(&mut self, bytes: &[u8]) {
+        for &b in bytes {
+            self.0 ^= b as u64;
+            self.0 = self.0.wrapping_mul(Self::PRIME);
+        }
+    }
+    fn finish(&self) -> u64 {
+        self.0
+    }
+}
+
 /// Produce a 6-character hex hash of a path to disambiguate files with the same
 /// basename from different directories (e.g. `~/.claude/settings.json` vs
 /// `~/.gemini/settings.json`).
+///
+/// Uses FNV-1a over the canonical path bytes so the result is stable across
+/// Rust toolchain versions.
 fn path_hash(path: &Path) -> String {
     let canonical = path
         .canonicalize()
         .unwrap_or_else(|_| path.to_path_buf());
-    let mut hasher = std::collections::hash_map::DefaultHasher::new();
-    canonical.hash(&mut hasher);
+    let mut hasher = Fnv1aHasher::new();
+    hasher.write(canonical.as_os_str().as_encoded_bytes());
     let hash = hasher.finish();
     format!("{:06x}", hash & 0xFFFFFF)
 }
