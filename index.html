@@ -1,11 +1,25 @@
 <!doctype html>
-<html lang="en">
+<html lang="en" class="dark">
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>Loadout</title>
     <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
     <link rel="icon" type="image/x-icon" href="/favicon.ico" />
+    <script>
+      // Apply saved theme before first paint to prevent flash
+      (function() {
+        try {
+          var stored = JSON.parse(localStorage.getItem('loadout-theme') || '{}');
+          var theme = stored.state && stored.state.theme || 'system';
+          var isDark = theme === 'system'
+            ? window.matchMedia('(prefers-color-scheme: dark)').matches
+            : theme === 'dark';
+          document.documentElement.classList.toggle('dark', isDark);
+          document.documentElement.classList.toggle('light', !isDark);
+        } catch(e) {}
+      })();
+    </script>
   </head>
   <body>
     <div id="root"></div>

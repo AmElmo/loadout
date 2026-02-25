@@ -1,11 +1,13 @@
 @import "tailwindcss";
-@import "highlight.js/styles/github-dark.min.css";
+
+/* Use class-based dark mode so `dark:` variants respond to .dark on <html> */
+@custom-variant dark (&:where(.dark, .dark *));
 
 @theme {
   --font-sans: ui-sans-serif, system-ui, sans-serif, "Apple Color Emoji", "Segoe UI Emoji", "Segoe UI Symbol", "Noto Color Emoji";
   --font-mono: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", "Courier New", monospace;
 
-  /* Custom colors for Loadout */
+  /* Custom colors for Loadout — dark mode defaults */
   --color-background: #0a0a0f;
   --color-foreground: #fafafa;
   --color-card: #18181b;
@@ -33,8 +35,41 @@
   --color-warning: #f59e0b;
   --color-error: #ef4444;
 
+  /* Code block background */
+  --color-code-bg: #27272a;
+
   /* Radii */
   --radius: 0.5rem;
+}
+
+/* ─── Light mode overrides ─── */
+html.light {
+  --color-background: #ffffff;
+  --color-foreground: #0f172a;
+  --color-card: #f8fafc;
+  --color-card-foreground: #0f172a;
+  --color-primary: #2563eb;
+  --color-primary-foreground: #ffffff;
+  --color-secondary: #f1f5f9;
+  --color-secondary-foreground: #1e293b;
+  --color-muted: #f1f5f9;
+  --color-muted-foreground: #64748b;
+  --color-accent: #f1f5f9;
+  --color-accent-foreground: #0f172a;
+  --color-border: #e2e8f0;
+  --color-ring: #2563eb;
+
+  --color-sidebar: #f8fafc;
+  --color-sidebar-foreground: #0f172a;
+  --color-sidebar-border: #e2e8f0;
+  --color-sidebar-accent: #e2e8f0;
+  --color-sidebar-accent-foreground: #0f172a;
+
+  --color-success: #16a34a;
+  --color-warning: #d97706;
+  --color-error: #dc2626;
+
+  --color-code-bg: #f1f5f9;
 }
 
 body {
@@ -57,6 +92,44 @@ body {
 .scrollbar-hide::-webkit-scrollbar {
   display: none;
 }
+
+/* ─── Highlight.js — Dark theme (GitHub Dark) ─── */
+.dark pre code.hljs{display:block;overflow-x:auto;padding:1em}
+.dark code.hljs{padding:3px 5px}
+.dark .hljs{color:#c9d1d9;background:#0d1117}
+.dark .hljs-doctag,.dark .hljs-keyword,.dark .hljs-meta .hljs-keyword,.dark .hljs-template-tag,.dark .hljs-template-variable,.dark .hljs-type,.dark .hljs-variable.language_{color:#ff7b72}
+.dark .hljs-title,.dark .hljs-title.class_,.dark .hljs-title.class_.inherited__,.dark .hljs-title.function_{color:#d2a8ff}
+.dark .hljs-attr,.dark .hljs-attribute,.dark .hljs-literal,.dark .hljs-meta,.dark .hljs-number,.dark .hljs-operator,.dark .hljs-selector-attr,.dark .hljs-selector-class,.dark .hljs-selector-id,.dark .hljs-variable{color:#79c0ff}
+.dark .hljs-meta .hljs-string,.dark .hljs-regexp,.dark .hljs-string{color:#a5d6ff}
+.dark .hljs-built_in,.dark .hljs-symbol{color:#ffa657}
+.dark .hljs-code,.dark .hljs-comment,.dark .hljs-formula{color:#8b949e}
+.dark .hljs-name,.dark .hljs-quote,.dark .hljs-selector-pseudo,.dark .hljs-selector-tag{color:#7ee787}
+.dark .hljs-subst{color:#c9d1d9}
+.dark .hljs-section{color:#1f6feb;font-weight:700}
+.dark .hljs-bullet{color:#f2cc60}
+.dark .hljs-emphasis{color:#c9d1d9;font-style:italic}
+.dark .hljs-strong{color:#c9d1d9;font-weight:700}
+.dark .hljs-addition{color:#aff5b4;background-color:#033a16}
+.dark .hljs-deletion{color:#ffdcd7;background-color:#67060c}
+
+/* ─── Highlight.js — Light theme (GitHub) ─── */
+.light pre code.hljs{display:block;overflow-x:auto;padding:1em}
+.light code.hljs{padding:3px 5px}
+.light .hljs{color:#24292e;background:#fff}
+.light .hljs-doctag,.light .hljs-keyword,.light .hljs-meta .hljs-keyword,.light .hljs-template-tag,.light .hljs-template-variable,.light .hljs-type,.light .hljs-variable.language_{color:#d73a49}
+.light .hljs-title,.light .hljs-title.class_,.light .hljs-title.class_.inherited__,.light .hljs-title.function_{color:#6f42c1}
+.light .hljs-attr,.light .hljs-attribute,.light .hljs-literal,.light .hljs-meta,.light .hljs-number,.light .hljs-operator,.light .hljs-selector-attr,.light .hljs-selector-class,.light .hljs-selector-id,.light .hljs-variable{color:#005cc5}
+.light .hljs-meta .hljs-string,.light .hljs-regexp,.light .hljs-string{color:#032f62}
+.light .hljs-built_in,.light .hljs-symbol{color:#e36209}
+.light .hljs-code,.light .hljs-comment,.light .hljs-formula{color:#6a737d}
+.light .hljs-name,.light .hljs-quote,.light .hljs-selector-pseudo,.light .hljs-selector-tag{color:#22863a}
+.light .hljs-subst{color:#24292e}
+.light .hljs-section{color:#005cc5;font-weight:700}
+.light .hljs-bullet{color:#735c0f}
+.light .hljs-emphasis{color:#24292e;font-style:italic}
+.light .hljs-strong{color:#24292e;font-weight:700}
+.light .hljs-addition{color:#22863a;background-color:#f0fff4}
+.light .hljs-deletion{color:#b31d28;background-color:#ffeef0}
 
 /* ─── Markdown preview ─── */
 

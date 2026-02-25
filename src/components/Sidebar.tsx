@@ -22,6 +22,7 @@ import { useQuery } from "@tanstack/react-query";
 import type { DiscoveredWorkspace, SourceTool } from "@/types";
 import { ToolLogo } from "@/components/ToolLogo";
 import { TOOL_CONFIG, toolTextColor } from "@/config/tools";
+import { ThemeToggle } from "@/components/ThemeToggle";
 
 const navItems = [
   { id: "home" as const, label: "Home", icon: Home },
@@ -315,9 +316,10 @@ export function Sidebar() {
         </button>
       </nav>
 
-      {/* Version */}
-      <div className="border-t border-sidebar-border p-4">
+      {/* Footer: theme + version */}
+      <div className="flex items-center justify-between border-t border-sidebar-border px-4 py-3">
         <p className="text-xs text-muted-foreground">v0.1.0</p>
+        <ThemeToggle />
       </div>
     </aside>
   );
