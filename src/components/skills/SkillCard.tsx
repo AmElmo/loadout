@@ -1,10 +1,11 @@
 import { useState } from "react";
-import { Sparkles, EyeOff, ChevronRight, Share2 } from "lucide-react";
+import { EyeOff, ChevronRight, Share2 } from "lucide-react";
 import type { GroupedSkill } from "@/types";
 import { cn } from "@/lib/utils";
 import { installSkillToTools } from "@/lib/api/sync";
 import { ToolBadges } from "@/components/mcps/ToolBadge";
 import { SyncDialog } from "@/components/sync";
+import { SkillIcon } from "./SkillIcon";
 import { MaturityBadge } from "./MaturityBadge";
 import { ALL_TOOLS } from "@/config/tools";
 
@@ -31,9 +32,7 @@ export function SkillCard({ group, onClick }: SkillCardProps) {
         )}
       >
         {/* Icon */}
-        <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-lg bg-primary/10">
-          <Sparkles className="h-5 w-5 text-primary" />
-        </div>
+        <SkillIcon name={group.name} />
 
         {/* Content */}
         <div className="min-w-0 flex-1">

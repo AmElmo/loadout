@@ -1,9 +1,12 @@
 import { X, Copy, Check, FolderOpen, Crosshair } from "lucide-react";
 import { useState } from "react";
+import { useQueryClient } from "@tanstack/react-query";
 import type { PromptFile } from "@/types";
 import { ToolBadge } from "@/components/mcps/ToolBadge";
 import { TokenBadge } from "@/components/context";
+import { saveFileContent } from "@/lib/api/system";
 import { Button } from "@/components/ui/button";
+import { MarkdownPreview } from "@/components/ui/markdown-preview";
 import { OpenPathButton } from "@/components/ui/open-path-button";
 
 interface RuleViewerProps {
@@ -12,7 +15,13 @@ interface RuleViewerProps {
 }
 
 export function RuleViewer({ rule, onClose }: RuleViewerProps) {
+  const queryClient = useQueryClient();
   const [copied, setCopied] = useState(false);
+
+  const handleSave = async (content: string) => {
+    await saveFileContent(rule.path, content);
+    queryClient.invalidateQueries({ queryKey: ["rules"] });
+  };
 
   const handleCopy = async () => {
     await navigator.clipboard.writeText(rule.content);
@@ -22,7 +31,7 @@ export function RuleViewer({ rule, onClose }: RuleViewerProps) {
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4">
-      <div className="flex max-h-[90vh] w-full max-w-3xl flex-col rounded-lg border border-border bg-background shadow-xl">
+      <div className="flex h-[85vh] w-full max-w-3xl flex-col rounded-lg border border-border bg-background shadow-xl">
         {/* Header */}
         <div className="flex items-center justify-between border-b border-border px-4 py-3">
           <div className="flex items-center gap-3">
@@ -81,8 +90,8 @@ export function RuleViewer({ rule, onClose }: RuleViewerProps) {
         )}
 
         {/* Content */}
-        <div className="relative min-h-[4rem] flex-1 overflow-auto">
-          <div className="absolute right-2 top-2 z-10">
+        <div className="relative min-h-[4rem] flex-1 overflow-hidden">
+          <div className="absolute right-2 top-[3.25rem] z-10">
             <Button
               variant="outline"
               size="sm"
@@ -97,9 +106,11 @@ export function RuleViewer({ rule, onClose }: RuleViewerProps) {
               {copied ? "Copied" : "Copy"}
             </Button>
           </div>
-          <pre className="h-full overflow-auto whitespace-pre-wrap p-4 font-mono text-sm">
-            {rule.content}
-          </pre>
+          <MarkdownPreview
+            content={rule.content}
+            className="h-full"
+            onSave={handleSave}
+          />
         </div>
 
         {/* Footer */}

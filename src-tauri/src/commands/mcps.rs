@@ -6,7 +6,7 @@ use crate::parsers::{
 use crate::scanners::mcps::{scan_all_mcps, HealthStatus, MCPItem};
 use crate::scanners::tokens::estimate_tokens;
 use serde::{Deserialize, Serialize};
-use std::collections::HashMap;
+use std::collections::{HashMap, HashSet};
 use std::path::Path;
 use std::time::Duration;
 use tokio::io::{AsyncBufReadExt, AsyncWriteExt, BufReader};
@@ -491,7 +491,7 @@ async fn fetch_stdio_mcp_tools(
 }
 
 /// Read real (unmasked) headers from the config file for a specific MCP.
-/// Also interpolates ${VAR} references using system environment variables.
+/// Interpolates ${VAR} references, restricted to env vars declared in the MCP's own env block.
 fn read_real_headers(name: &str, config_path: &str) -> HashMap<String, String> {
     let path = Path::new(config_path);
     if !path.exists() {
@@ -499,53 +499,80 @@ fn read_real_headers(name: &str, config_path: &str) -> HashMap<String, String> {
     }
 
     let ext = path.extension().and_then(|e| e.to_str()).unwrap_or("");
-    let raw_headers = match ext {
+    let (raw_headers, allowed_vars) = match ext {
         "json" => {
             let file_name = path.file_name().and_then(|f| f.to_str()).unwrap_or("");
             if file_name == "settings.json" {
                 parse_gemini_config(path)
                     .ok()
-                    .and_then(|c| c.mcp_servers.get(name).map(|s| s.headers.clone()))
+                    .and_then(|c| {
+                        c.mcp_servers
+                            .get(name)
+                            .map(|s| (s.headers.clone(), s.env.keys().cloned().collect()))
+                    })
                     .unwrap_or_default()
             } else if file_name == "opencode.json" {
                 parse_opencode_config(path)
                     .ok()
-                    .and_then(|c| c.mcp.get(name).map(|s| s.headers.clone()))
+                    .and_then(|c| {
+                        c.mcp
+                            .get(name)
+                            .map(|s| (s.headers.clone(), s.env.keys().cloned().collect()))
+                    })
                     .unwrap_or_default()
             } else {
                 parse_claude_config(path)
                     .ok()
-                    .and_then(|c| c.mcp_servers.get(name).map(|s| s.headers.clone()))
+                    .and_then(|c| {
+                        c.mcp_servers
+                            .get(name)
+                            .map(|s| (s.headers.clone(), s.env.keys().cloned().collect()))
+                    })
                     .unwrap_or_default()
             }
         }
-        _ => HashMap::new(),
+        _ => (HashMap::new(), HashSet::new()),
     };
 
-    // Interpolate ${VAR} references
+    // Interpolate ${VAR} references — only vars declared in the MCP's own env block
     raw_headers
         .into_iter()
         .map(|(k, v)| {
-            let resolved = interpolate_env_vars(&v);
+            let resolved = interpolate_env_vars(&v, &allowed_vars);
             (k, resolved)
         })
         .collect()
 }
 
-/// Interpolate ${VAR} references in a string using system env vars
-fn interpolate_env_vars(value: &str) -> String {
+/// Interpolate ${VAR} references in a string, restricted to an allowlist of env var names.
+/// Only resolves variables that are explicitly declared in the MCP's own env config block.
+/// Logs a warning and leaves the reference unresolved for vars not in the allowlist.
+fn interpolate_env_vars(value: &str, allowed_vars: &HashSet<String>) -> String {
     let mut result = value.to_string();
-    // Find all ${VAR} patterns and replace with env var values
-    while let Some(start) = result.find("${") {
+    let mut search_from = 0;
+    // Find all ${VAR} patterns and replace only if allowed
+    while let Some(rel_start) = result[search_from..].find("${") {
+        let start = search_from + rel_start;
         if let Some(end) = result[start..].find('}') {
             let var_name = &result[start + 2..start + end];
-            let replacement = std::env::var(var_name).unwrap_or_default();
-            result = format!(
-                "{}{}{}",
-                &result[..start],
-                replacement,
-                &result[start + end + 1..]
-            );
+            if allowed_vars.contains(var_name) {
+                let replacement = std::env::var(var_name).unwrap_or_default();
+                result = format!(
+                    "{}{}{}",
+                    &result[..start],
+                    replacement,
+                    &result[start + end + 1..]
+                );
+                // Continue searching from after the replacement
+                search_from = start + replacement.len();
+            } else {
+                log::warn!(
+                    "Skipping interpolation of ${{{}}} — not declared in this MCP's env block",
+                    var_name
+                );
+                // Skip past this reference to avoid infinite loop
+                search_from = start + end + 1;
+            }
         } else {
             break;
         }
@@ -798,7 +825,8 @@ async fn test_http_mcp(url: Option<String>) -> Result<HealthTestResult, String> 
 
 #[cfg(test)]
 mod tests {
-    use super::resolve_command;
+    use super::{interpolate_env_vars, resolve_command};
+    use std::collections::HashSet;
 
     #[test]
     fn resolve_command_parses_quoted_args() {
@@ -824,5 +852,34 @@ mod tests {
         let (bin, args) = resolve_command(r#"npx "-y"#, &[]).unwrap();
         assert_eq!(bin, "npx");
         assert_eq!(args, vec![r#""-y"#]);
+    }
+
+    #[test]
+    fn interpolate_resolves_allowed_vars() {
+        std::env::set_var("TEST_ALLOWED_VAR", "secret123");
+        let allowed: HashSet<String> = ["TEST_ALLOWED_VAR"].iter().map(|s| s.to_string()).collect();
+        let result = interpolate_env_vars("Bearer ${TEST_ALLOWED_VAR}", &allowed);
+        assert_eq!(result, "Bearer secret123");
+        std::env::remove_var("TEST_ALLOWED_VAR");
+    }
+
+    #[test]
+    fn interpolate_skips_disallowed_vars() {
+        std::env::set_var("TEST_SECRET_VAR", "should_not_appear");
+        let allowed: HashSet<String> = HashSet::new();
+        let result = interpolate_env_vars("Bearer ${TEST_SECRET_VAR}", &allowed);
+        assert_eq!(result, "Bearer ${TEST_SECRET_VAR}");
+        std::env::remove_var("TEST_SECRET_VAR");
+    }
+
+    #[test]
+    fn interpolate_mixed_allowed_and_disallowed() {
+        std::env::set_var("TEST_OK_VAR", "good");
+        std::env::set_var("TEST_BAD_VAR", "bad");
+        let allowed: HashSet<String> = ["TEST_OK_VAR"].iter().map(|s| s.to_string()).collect();
+        let result = interpolate_env_vars("${TEST_OK_VAR}:${TEST_BAD_VAR}", &allowed);
+        assert_eq!(result, "good:${TEST_BAD_VAR}");
+        std::env::remove_var("TEST_OK_VAR");
+        std::env::remove_var("TEST_BAD_VAR");
     }
 }

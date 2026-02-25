@@ -7,4 +7,4 @@ args = ["-y", "@supabase/mcp-server"]
 
 [mcp_servers.supabase.env]
 SUPABASE_URL = "https://xyzacme.supabase.co"
-SUPABASE_SERVICE_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.xxxxx"
+SUPABASE_SERVICE_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.FAKE_TOKEN_FOR_TESTING"

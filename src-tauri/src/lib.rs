@@ -13,8 +13,9 @@ mod writers;
 use commands::{
     add_mcp_to_tools, create_rules_with_cli, detect_installed_tools, fetch_mcp_tools,
     fetch_skill_from_url, install_skill_to_tools, parse_skill_file_content, preview_mcp_configs,
-    read_skill_file, reveal_in_file_manager, scan_hooks, scan_mcps, scan_repos_without_rules,
-    scan_rules, scan_skills, sync_mcp_to_tools, test_mcp_health,
+    read_skill_file, reveal_in_file_manager, save_file_content, save_skill_content, scan_hooks,
+    scan_mcps, scan_repos_without_rules, scan_rules, scan_skills, sync_mcp_to_tools,
+    test_mcp_health,
 };
 use scanners::workspaces::{discover_workspaces, DiscoveryResult};
 
@@ -98,6 +99,10 @@ pub fn run() {
                         .build(),
                 )?;
             }
+
+            // Silent housekeeping: prune old backups on startup
+            writers::backup::cleanup_old_backups();
+
             Ok(())
         })
         .invoke_handler(tauri::generate_handler![
@@ -122,6 +127,8 @@ pub fn run() {
             parse_skill_file_content,
             read_skill_file,
             reveal_in_file_manager,
+            save_file_content,
+            save_skill_content,
         ])
         .run(tauri::generate_context!())
         .expect("error while running tauri application");

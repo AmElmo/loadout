@@ -1,12 +1,16 @@
 import { X, Copy, Check, FolderOpen, Share2, Link2, AlertTriangle } from "lucide-react";
 import { useState } from "react";
+import { useQueryClient } from "@tanstack/react-query";
 import type { GroupedSkill, SkillItem } from "@/types";
 import { installSkillToTools } from "@/lib/api/sync";
+import { saveSkillContent } from "@/lib/api/system";
 import { ToolBadges, ToolBadge } from "@/components/mcps/ToolBadge";
 import { TokenBadge } from "@/components/context";
 import { SyncDialog } from "@/components/sync";
 import { MaturityBadge } from "./MaturityBadge";
+import { SkillIcon } from "./SkillIcon";
 import { Button } from "@/components/ui/button";
+import { MarkdownPreview } from "@/components/ui/markdown-preview";
 import { OpenPathButton } from "@/components/ui/open-path-button";
 import { ALL_TOOLS } from "@/config/tools";
 import { cn } from "@/lib/utils";
@@ -17,9 +21,15 @@ interface SkillViewerProps {
 }
 
 export function SkillViewer({ group, onClose }: SkillViewerProps) {
+  const queryClient = useQueryClient();
   const [copied, setCopied] = useState(false);
   const [showSync, setShowSync] = useState(false);
   const [activeVariant, setActiveVariant] = useState<SkillItem>(group.primary);
+
+  const handleSave = async (body: string) => {
+    await saveSkillContent(activeVariant.path, body);
+    queryClient.invalidateQueries({ queryKey: ["skills"] });
+  };
 
   const missingTools = ALL_TOOLS.filter((t) => !group.installedTools.includes(t));
   const showVariantTabs = group.hasContentDrift && group.variants.length > 1;
@@ -36,10 +46,11 @@ export function SkillViewer({ group, onClose }: SkillViewerProps) {
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4">
-      <div className="flex max-h-[90vh] w-full max-w-3xl flex-col rounded-lg border border-border bg-background shadow-xl">
+      <div className="flex h-[85vh] w-full max-w-3xl flex-col rounded-lg border border-border bg-background shadow-xl">
         {/* Header */}
         <div className="flex items-center justify-between border-b border-border px-4 py-3">
           <div className="flex items-center gap-3">
+            <SkillIcon name={group.name} size="md" />
             <h2 className="text-lg font-semibold">{group.name}</h2>
             <ToolBadges tools={group.installedTools} />
             <MaturityBadge maturity={group.maturity} />
@@ -119,8 +130,8 @@ export function SkillViewer({ group, onClose }: SkillViewerProps) {
         )}
 
         {/* Content */}
-        <div className="relative flex-1 overflow-auto">
-          <div className="absolute right-2 top-2 z-10">
+        <div className="relative flex-1 overflow-hidden">
+          <div className="absolute right-2 top-[3.25rem] z-10">
             <Button
               variant="outline"
               size="sm"
@@ -135,9 +146,11 @@ export function SkillViewer({ group, onClose }: SkillViewerProps) {
               {copied ? "Copied" : "Copy"}
             </Button>
           </div>
-          <pre className="h-full overflow-auto whitespace-pre-wrap p-4 font-mono text-sm">
-            {activeVariant.content}
-          </pre>
+          <MarkdownPreview
+            content={activeVariant.content}
+            className="h-full"
+            onSave={handleSave}
+          />
         </div>
 
         {/* Footer */}
