@@ -22,6 +22,14 @@ pub struct CreateRulesResult {
     pub error: Option<String>,
 }
 
+/// A single line of CLI output, scoped to a repo path
+#[derive(Debug, Clone, Serialize, Deserialize)]
+#[serde(rename_all = "camelCase")]
+pub struct CliOutputLine {
+    pub repo_path: String,
+    pub line: String,
+}
+
 /// Spawn a CLI tool to generate rules for a repo, streaming output via events
 #[tauri::command]
 pub async fn create_rules_with_cli(
@@ -75,11 +83,15 @@ pub async fn create_rules_with_cli(
     // Stream stdout
     if let Some(stdout) = child.stdout.take() {
         let app_clone = app.clone();
+        let rp = repo_path.clone();
         std::thread::spawn(move || {
             let reader = BufReader::new(stdout);
             for line in reader.lines() {
                 if let Ok(line) = line {
-                    let _ = app_clone.emit("cli-output", line);
+                    let _ = app_clone.emit("cli-output", CliOutputLine {
+                        repo_path: rp.clone(),
+                        line,
+                    });
                 }
             }
         });
@@ -88,11 +100,15 @@ pub async fn create_rules_with_cli(
     // Stream stderr
     if let Some(stderr) = child.stderr.take() {
         let app_clone = app.clone();
+        let rp = repo_path.clone();
         std::thread::spawn(move || {
             let reader = BufReader::new(stderr);
             for line in reader.lines() {
                 if let Ok(line) = line {
-                    let _ = app_clone.emit("cli-output", line);
+                    let _ = app_clone.emit("cli-output", CliOutputLine {
+                        repo_path: rp.clone(),
+                        line,
+                    });
                 }
             }
         });

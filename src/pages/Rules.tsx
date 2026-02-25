@@ -1,21 +1,17 @@
 import { useMemo, useState } from "react";
-import { RefreshCw, AlertCircle, FolderOpen, FolderSearch, Loader2 } from "lucide-react";
+import { RefreshCw, AlertCircle, FolderOpen, FolderSearch } from "lucide-react";
 import { useQuery } from "@tanstack/react-query";
 import { useWorkspaceStore } from "@/stores/workspaceStore";
 import { scanRules } from "@/lib/api/config";
-import { scanReposWithoutRules } from "@/lib/api/repos";
-import { PromptsSection, RepoScanResults, RepoScanLoading } from "@/components/config";
+import { PromptsSection, RepoScanModal } from "@/components/config";
 import { SearchBar } from "@/components/filters";
 import { Button } from "@/components/ui/button";
 import { useInfiniteList } from "@/hooks/useInfiniteList";
-import type { RepoScanResult } from "@/types";
 
 export function Rules() {
   const { current } = useWorkspaceStore();
   const [searchQuery, setSearchQuery] = useState("");
-  const [scanning, setScanning] = useState(false);
-  const [scanResult, setScanResult] = useState<RepoScanResult | null>(null);
-  const [scanError, setScanError] = useState<string | null>(null);
+  const [showScanModal, setShowScanModal] = useState(false);
 
   const {
     data: result,
@@ -39,24 +35,6 @@ export function Rules() {
 
   const { visibleItems, hasMore, sentinelRef } = useInfiniteList(filteredPrompts);
 
-  const handleScanRepos = async () => {
-    setScanResult(null);
-    setScanError(null);
-    setScanning(true);
-    try {
-      // Run scan and enforce a minimum loading time so the animation is visible
-      const [result] = await Promise.all([
-        scanReposWithoutRules(),
-        new Promise((r) => setTimeout(r, 1200)),
-      ]);
-      setScanResult(result);
-    } catch (e) {
-      setScanError(e instanceof Error ? e.message : String(e));
-    } finally {
-      setScanning(false);
-    }
-  };
-
   return (
     <div className="p-6">
       <div className="mb-6 flex items-start justify-between">
@@ -70,15 +48,10 @@ export function Rules() {
           <Button
             variant="outline"
             size="sm"
-            onClick={handleScanRepos}
-            disabled={scanning}
+            onClick={() => setShowScanModal(true)}
           >
-            {scanning ? (
-              <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-            ) : (
-              <FolderSearch className="mr-2 h-4 w-4" />
-            )}
-            {scanning ? "Scanning..." : "Scan repos without rules"}
+            <FolderSearch className="mr-2 h-4 w-4" />
+            Scan repos without rules
           </Button>
           <Button
             variant="outline"
@@ -94,25 +67,8 @@ export function Rules() {
         </div>
       </div>
 
-      {/* Inline scan loading animation */}
-      {scanning && <RepoScanLoading />}
-
-      {/* Inline scan results */}
-      {scanResult && !scanning && (
-        <RepoScanResults
-          result={scanResult}
-          onClose={() => setScanResult(null)}
-        />
-      )}
-
-      {scanError && !scanning && (
-        <div className="mb-4 rounded-lg border border-red-500/20 bg-red-500/5 p-4">
-          <div className="flex items-center gap-2 text-red-600">
-            <AlertCircle className="h-5 w-5" />
-            <span className="font-medium">Failed to scan repos</span>
-          </div>
-          <p className="mt-1 text-sm text-muted-foreground">{scanError}</p>
-        </div>
+      {showScanModal && (
+        <RepoScanModal onClose={() => setShowScanModal(false)} />
       )}
 
       {!current && (
