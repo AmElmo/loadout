@@ -1,4 +1,4 @@
-import { useMemo, useState } from "react";
+import { useCallback, useMemo, useState } from "react";
 import { X, Loader2, Share2 } from "lucide-react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import type { InstallMethod, SourceTool, WriteResult } from "@/types";
@@ -7,6 +7,7 @@ import { ToolSelector } from "./ToolSelector";
 import { SuccessConfirmation } from "./SuccessConfirmation";
 import { InstallMethodSelector } from "./InstallMethodSelector";
 import { detectInstalledTools } from "@/lib/api/detection";
+import { useEscapeKey } from "@/hooks/useEscapeKey";
 
 interface SyncDialogProps {
   type: "mcp" | "skill";
@@ -32,6 +33,8 @@ export function SyncDialog({
   queryKey,
 }: SyncDialogProps) {
   const queryClient = useQueryClient();
+  const stableOnClose = useCallback(() => onClose(), [onClose]);
+  useEscapeKey(stableOnClose);
 
   // Only show tools that are actually installed on the user's machine
   const {

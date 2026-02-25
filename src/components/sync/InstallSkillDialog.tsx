@@ -1,4 +1,4 @@
-import { useMemo, useState } from "react";
+import { useCallback, useMemo, useState } from "react";
 import { X, Loader2 } from "lucide-react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import type { InstallMethod, InstallSkillRequest, SourceTool } from "@/types";
@@ -8,6 +8,7 @@ import { Button } from "@/components/ui/button";
 import { ToolSelector } from "./ToolSelector";
 import { SuccessConfirmation } from "./SuccessConfirmation";
 import { InstallMethodSelector } from "./InstallMethodSelector";
+import { useEscapeKey } from "@/hooks/useEscapeKey";
 
 interface InstallSkillDialogProps {
   onClose: () => void;
@@ -15,6 +16,8 @@ interface InstallSkillDialogProps {
 
 export function InstallSkillDialog({ onClose }: InstallSkillDialogProps) {
   const queryClient = useQueryClient();
+  const stableOnClose = useCallback(() => onClose(), [onClose]);
+  useEscapeKey(stableOnClose);
 
   const [name, setName] = useState("");
   const [description, setDescription] = useState("");

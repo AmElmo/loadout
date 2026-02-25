@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import {
   X,
   GitBranch,
@@ -20,6 +20,7 @@ import { ToolLogo } from "@/components/ToolLogo";
 import { invoke } from "@tauri-apps/api/core";
 import { listen } from "@tauri-apps/api/event";
 import { scanReposWithoutRules } from "@/lib/api/repos";
+import { useEscapeKey } from "@/hooks/useEscapeKey";
 
 /** CLI tools that can generate rules files */
 interface CliTool {
@@ -353,6 +354,8 @@ interface RepoScanModalProps {
  * then shows results. Closes cleanly — nothing persists on the Rules page.
  */
 export function RepoScanModal({ onClose }: RepoScanModalProps) {
+  const stableOnClose = useCallback(() => onClose(), [onClose]);
+  useEscapeKey(stableOnClose);
   const [loading, setLoading] = useState(true);
   const [result, setResult] = useState<RepoScanResult | null>(null);
   const [repos, setRepos] = useState<RepoWithoutRules[]>([]);

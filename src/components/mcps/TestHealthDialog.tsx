@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useCallback, useState } from "react";
 import {
   X,
   Loader2,
@@ -10,6 +10,7 @@ import { useMutation, useQueryClient } from "@tanstack/react-query";
 import type { MCPItem, HealthTestResult } from "@/types";
 import { testMCPHealth } from "@/lib/api/mcps";
 import { Button } from "@/components/ui/button";
+import { useEscapeKey } from "@/hooks/useEscapeKey";
 
 interface TestHealthDialogProps {
   mcp: MCPItem;
@@ -19,6 +20,8 @@ interface TestHealthDialogProps {
 export function TestHealthDialog({ mcp, onClose }: TestHealthDialogProps) {
   const queryClient = useQueryClient();
   const [result, setResult] = useState<HealthTestResult | null>(null);
+  const stableOnClose = useCallback(() => onClose(), [onClose]);
+  useEscapeKey(stableOnClose);
 
   const isHttp = mcp.mcpType === "http";
   const commandDisplay = isHttp
