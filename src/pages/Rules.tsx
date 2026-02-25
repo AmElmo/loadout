@@ -44,7 +44,11 @@ export function Rules() {
     setScanError(null);
     setScanning(true);
     try {
-      const result = await scanReposWithoutRules();
+      // Run scan and enforce a minimum loading time so the animation is visible
+      const [result] = await Promise.all([
+        scanReposWithoutRules(),
+        new Promise((r) => setTimeout(r, 1200)),
+      ]);
       setScanResult(result);
     } catch (e) {
       setScanError(e instanceof Error ? e.message : String(e));
