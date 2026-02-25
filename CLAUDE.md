@@ -44,4 +44,17 @@ pnpm tauri build         # Build full application
 - Use `camelCase` for JSON/TypeScript, `snake_case` for Rust with `#[serde(rename_all = "camelCase")]`
 - Mask sensitive environment variables with `***` in UI
 - Use Conventional Commits (`feat:`, `fix:`, `chore:`)
+- Branch names follow `type/LOA-ISSUE-description` format (see Branch Naming section)
+- Version is tracked in 3 files that must stay in sync: `package.json`, `src-tauri/tauri.conf.json`, `src-tauri/Cargo.toml`
+- Releases are cut manually via `pnpm release [patch|minor|major]` — never auto-version
 - Always include `<ToolLogo>` from `src/components/ToolLogo.tsx` next to AI tool names (Claude, Codex, Gemini) in the UI — in badges, filters, selectors, and tables. Keep logos small (10-14px) and use alongside text, never as sole identifier.
+
+## Branch Naming
+
+Use the format `type/LOA-ISSUE_NUMBER-short-description` for branches:
+- `feat/LOA-42-add-updater` — new features
+- `fix/LOA-57-version-mismatch` — bug fixes
+- `chore/LOA-63-update-deps` — maintenance
+- `refactor/LOA-71-simplify-scanner` — refactoring
+
+The `type/` prefix must match the conventional commit type used in the PR merge commit. The `LOA-XX` identifier ensures Linear auto-links the branch to the issue.
