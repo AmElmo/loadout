@@ -1,6 +1,6 @@
 //! Tauri commands for interacting with the host system shell.
 
-use std::path::{Path, PathBuf};
+use std::path::{Component, Path, PathBuf};
 use std::process::Command;
 
 fn nearest_existing_path(path: &Path) -> Option<PathBuf> {
@@ -19,15 +19,43 @@ fn nearest_existing_path(path: &Path) -> Option<PathBuf> {
     None
 }
 
+/// Normalize a path by resolving `.` and `..` components lexically (without touching the filesystem).
+/// Returns `None` if the path tries to escape its root (more `..` than real components).
+fn normalize_path(path: &Path) -> Option<PathBuf> {
+    let mut parts: Vec<Component> = Vec::new();
+    for component in path.components() {
+        match component {
+            Component::ParentDir => {
+                // Only pop Normal components; reject attempts to escape root/prefix
+                if matches!(parts.last(), Some(Component::Normal(_))) {
+                    parts.pop();
+                } else {
+                    return None; // would escape beyond the root
+                }
+            }
+            Component::CurDir => {} // skip "."
+            other => parts.push(other),
+        }
+    }
+    Some(parts.iter().collect())
+}
+
 /// Check whether a path is within known safe directories for the reveal command.
 /// Allows AI config directories under the home dir and discovered workspace paths.
+/// The path is normalized first to prevent `..` traversal bypasses.
 fn is_safe_reveal_path(path: &Path) -> bool {
+    // Normalize to eliminate .. traversal before any prefix check
+    let path = match normalize_path(path) {
+        Some(p) => p,
+        None => return false,
+    };
+
     let home = match crate::helpers::effective_home() {
         Some(h) => h,
         None => return false,
     };
 
-    // Known AI config directories under home
+    // Known AI config directories under home (synced with workspace scanner signals)
     let allowed_prefixes = [
         home.join(".claude"),
         home.join(".codex"),
@@ -40,6 +68,8 @@ fn is_safe_reveal_path(path: &Path) -> bool {
         home.join(".cline"),
         home.join(".kilocode"),
         home.join(".opencode"),
+        home.join(".vscode"),  // Copilot MCP config
+        home.join(".github"),  // Copilot instructions
     ];
 
     if allowed_prefixes
@@ -56,7 +86,8 @@ fn is_safe_reveal_path(path: &Path) -> bool {
 
     // Allow paths within any project that contains AI config directories
     // (i.e., has .claude/, .codex/, .gemini/, .mcp.json, CLAUDE.md, etc.)
-    // Walk up from the path to find a project root with AI signals
+    // Walk up from the path to find a project root with AI signals.
+    // This list is kept in sync with SIGNAL_NAMES in scanners/workspaces.rs.
     let ai_signals = [
         ".claude",
         ".codex",
@@ -66,13 +97,23 @@ fn is_safe_reveal_path(path: &Path) -> bool {
         "CLAUDE.md",
         "AGENTS.md",
         "GEMINI.md",
+        "AGENT.md",
         ".cursor",
+        ".github",
+        ".vscode",
         ".windsurf",
+        ".roo",
+        ".roorules",
+        ".roomodes",
+        ".cline",
+        ".clinerules",
+        ".kilocode",
+        ".kilocoderules",
         ".opencode",
         "opencode.json",
     ];
 
-    let mut candidate = Some(path);
+    let mut candidate = Some(path.as_path());
     while let Some(dir) = candidate {
         if dir == home {
             break; // Don't check home dir itself
@@ -99,15 +140,22 @@ fn is_safe_reveal_path(path: &Path) -> bool {
 pub fn reveal_in_file_manager(path: String) -> Result<(), String> {
     let requested = PathBuf::from(&path);
 
-    // Validate path is within safe scope
-    if !is_safe_reveal_path(&requested) {
+    // Normalize first to resolve .. segments, then validate scope
+    let normalized = normalize_path(&requested).ok_or_else(|| {
+        format!(
+            "Path contains invalid traversal components: {}",
+            path
+        )
+    })?;
+
+    if !is_safe_reveal_path(&normalized) {
         return Err(format!(
             "Path is outside the allowed scope for reveal: {}",
             path
         ));
     }
 
-    let target = nearest_existing_path(&requested)
+    let target = nearest_existing_path(&normalized)
         .ok_or_else(|| format!("Path does not exist and no parent found: {}", path))?;
     let is_file = target.is_file();
 
@@ -204,5 +252,45 @@ mod tests {
         std::fs::write(&target, "fn main() {}").unwrap();
 
         assert!(is_safe_reveal_path(&target));
+    }
+
+    #[test]
+    fn safe_path_rejects_dotdot_traversal() {
+        // ~/.claude/../Documents/secret should NOT pass
+        let home = crate::helpers::effective_home().unwrap();
+        let traversal = home.join(".claude").join("..").join("Documents").join("secret");
+        assert!(!is_safe_reveal_path(&traversal));
+    }
+
+    #[test]
+    fn safe_path_allows_vscode_config() {
+        let home = crate::helpers::effective_home().unwrap();
+        let path = home.join(".vscode").join("mcp.json");
+        assert!(is_safe_reveal_path(&path));
+    }
+
+    #[test]
+    fn safe_path_allows_github_config() {
+        let home = crate::helpers::effective_home().unwrap();
+        let path = home.join(".github").join("copilot-instructions.md");
+        assert!(is_safe_reveal_path(&path));
+    }
+
+    #[test]
+    fn normalize_resolves_dotdot() {
+        let normalized = normalize_path(Path::new("/a/b/../c")).unwrap();
+        assert_eq!(normalized, PathBuf::from("/a/c"));
+    }
+
+    #[test]
+    fn normalize_resolves_dot() {
+        let normalized = normalize_path(Path::new("/a/./b")).unwrap();
+        assert_eq!(normalized, PathBuf::from("/a/b"));
+    }
+
+    #[test]
+    fn normalize_rejects_escape_beyond_root() {
+        // Trying to go above root should fail
+        assert!(normalize_path(Path::new("/a/../../b")).is_none());
     }
 }
