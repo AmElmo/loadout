@@ -1,0 +1,56 @@
+<svg viewBox="0 0 900 320" xmlns="http://www.w3.org/2000/svg">
+  <defs>
+    <!-- Background gradient -->
+    <radialGradient id="bgGlow" cx="50%" cy="45%" r="65%" fx="50%" fy="40%">
+      <stop offset="0%" stop-color="#1a2744"/>
+      <stop offset="100%" stop-color="#0c1220"/>
+    </radialGradient>
+    <!-- Blue glow behind icon -->
+    <radialGradient id="iconGlow" cx="50%" cy="50%" r="50%">
+      <stop offset="0%" stop-color="#3B82F6" stop-opacity="0.3"/>
+      <stop offset="70%" stop-color="#3B82F6" stop-opacity="0.05"/>
+      <stop offset="100%" stop-color="#3B82F6" stop-opacity="0"/>
+    </radialGradient>
+    <!-- Accent line gradient -->
+    <linearGradient id="lineGrad" x1="0%" y1="0%" x2="100%" y2="0%">
+      <stop offset="0%" stop-color="#3B82F6" stop-opacity="0"/>
+      <stop offset="30%" stop-color="#3B82F6" stop-opacity="1"/>
+      <stop offset="70%" stop-color="#60A5FA" stop-opacity="1"/>
+      <stop offset="100%" stop-color="#3B82F6" stop-opacity="0"/>
+    </linearGradient>
+  </defs>
+
+  <!-- Background -->
+  <rect width="900" height="320" rx="16" fill="url(#bgGlow)"/>
+
+  <!-- Subtle border -->
+  <rect width="900" height="320" rx="16" fill="none" stroke="#1e3a5f" stroke-width="1" stroke-opacity="0.5"/>
+
+  <!-- Glow behind icon -->
+  <circle cx="450" cy="105" r="100" fill="url(#iconGlow)"/>
+
+  <!-- Icon mark - scaled from official loadout-mark-on-dark.svg (64x64 viewBox, centered at 32,32) -->
+  <!-- Scale factor: 46/24 ≈ 1.917 to make r=24 → r=46 -->
+  <g transform="translate(450, 105) scale(1.917)">
+    <circle cx="0" cy="0" r="24" fill="none" stroke="#3B82F6" stroke-width="5"/>
+    <line x1="0" y1="-24" x2="0" y2="24" stroke="#3B82F6" stroke-width="3"/>
+    <line x1="-21" y1="-12" x2="21" y2="12" stroke="#3B82F6" stroke-width="3"/>
+    <line x1="21" y1="-12" x2="-21" y2="12" stroke="#3B82F6" stroke-width="3"/>
+    <path d="M0,-24 A24,24 0 0,1 20.8,-12 L0,0 Z" fill="#3B82F6"/>
+  </g>
+
+  <!-- Wordmark -->
+  <text x="450" y="214" font-family="'Space Grotesk', 'Segoe UI', system-ui, -apple-system, sans-serif" font-weight="700" font-size="38" letter-spacing="6" fill="#F0F4FF" text-anchor="middle">LOADOUT</text>
+
+  <!-- Accent line -->
+  <line x1="250" y1="236" x2="650" y2="236" stroke="url(#lineGrad)" stroke-width="1.5"/>
+
+  <!-- Tagline -->
+  <text x="450" y="268" font-family="'Space Grotesk', 'Segoe UI', system-ui, -apple-system, sans-serif" font-weight="400" font-size="18" letter-spacing="1" fill="#94A3B8" text-anchor="middle">Gear up your AI tools</text>
+
+  <!-- Subtle corner accents -->
+  <path d="M16,1 L1,1 L1,16" fill="none" stroke="#3B82F6" stroke-width="1" stroke-opacity="0.3"/>
+  <path d="M884,1 L899,1 L899,16" fill="none" stroke="#3B82F6" stroke-width="1" stroke-opacity="0.3"/>
+  <path d="M1,304 L1,319 L16,319" fill="none" stroke="#3B82F6" stroke-width="1" stroke-opacity="0.3"/>
+  <path d="M899,304 L899,319 L884,319" fill="none" stroke="#3B82F6" stroke-width="1" stroke-opacity="0.3"/>
+</svg>
