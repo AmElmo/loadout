@@ -1,5 +1,5 @@
 import { X, Copy, Check, FolderOpen, Share2, Link2, AlertTriangle } from "lucide-react";
-import { useState } from "react";
+import { useState, useCallback } from "react";
 import { useQueryClient } from "@tanstack/react-query";
 import type { GroupedSkill, SkillItem } from "@/types";
 import { installSkillToTools } from "@/lib/api/sync";
@@ -14,6 +14,7 @@ import { MarkdownPreview } from "@/components/ui/markdown-preview";
 import { OpenPathButton } from "@/components/ui/open-path-button";
 import { ALL_TOOLS } from "@/config/tools";
 import { cn } from "@/lib/utils";
+import { useEscapeKey } from "@/hooks/useEscapeKey";
 
 interface SkillViewerProps {
   group: GroupedSkill;
@@ -24,6 +25,8 @@ export function SkillViewer({ group, onClose }: SkillViewerProps) {
   const queryClient = useQueryClient();
   const [copied, setCopied] = useState(false);
   const [showSync, setShowSync] = useState(false);
+  const stableOnClose = useCallback(() => onClose(), [onClose]);
+  useEscapeKey(stableOnClose);
   const [activeVariant, setActiveVariant] = useState<SkillItem>(group.primary);
 
   const handleSave = async (body: string) => {
@@ -150,6 +153,7 @@ export function SkillViewer({ group, onClose }: SkillViewerProps) {
             content={activeVariant.content}
             className="h-full"
             onSave={handleSave}
+            onClose={onClose}
           />
         </div>
 

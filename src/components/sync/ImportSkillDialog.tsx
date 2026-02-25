@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useState } from "react";
 import { X, Loader2, Globe, FileUp, AlertCircle, FileText, FolderOpen } from "lucide-react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { open } from "@tauri-apps/plugin-dialog";
@@ -15,6 +15,7 @@ import { ToolSelector } from "./ToolSelector";
 import { SuccessConfirmation } from "./SuccessConfirmation";
 import { InstallMethodSelector } from "./InstallMethodSelector";
 import { cn } from "@/lib/utils";
+import { useEscapeKey } from "@/hooks/useEscapeKey";
 
 function formatFileSize(bytes: number): string {
   if (bytes < 1024) return `${bytes} B`;
@@ -38,6 +39,8 @@ export function ImportSkillDialog({
   initialFileName,
 }: ImportSkillDialogProps) {
   const queryClient = useQueryClient();
+  const stableOnClose = useCallback(() => onClose(), [onClose]);
+  useEscapeKey(stableOnClose);
 
   const [mode, setMode] = useState<ImportMode>(
     initialFileContent ? "file" : "url"

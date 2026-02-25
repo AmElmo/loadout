@@ -1,5 +1,5 @@
 import { X, Copy, Check, FolderOpen, Crosshair } from "lucide-react";
-import { useState } from "react";
+import { useState, useCallback } from "react";
 import { useQueryClient } from "@tanstack/react-query";
 import type { PromptFile } from "@/types";
 import { ToolBadge } from "@/components/mcps/ToolBadge";
@@ -8,6 +8,7 @@ import { saveFileContent } from "@/lib/api/system";
 import { Button } from "@/components/ui/button";
 import { MarkdownPreview } from "@/components/ui/markdown-preview";
 import { OpenPathButton } from "@/components/ui/open-path-button";
+import { useEscapeKey } from "@/hooks/useEscapeKey";
 
 interface RuleViewerProps {
   rule: PromptFile;
@@ -17,6 +18,8 @@ interface RuleViewerProps {
 export function RuleViewer({ rule, onClose }: RuleViewerProps) {
   const queryClient = useQueryClient();
   const [copied, setCopied] = useState(false);
+  const stableOnClose = useCallback(() => onClose(), [onClose]);
+  useEscapeKey(stableOnClose);
 
   const handleSave = async (content: string) => {
     await saveFileContent(rule.path, content);

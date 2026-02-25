@@ -1,4 +1,4 @@
-import { useMemo, useState } from "react";
+import { useCallback, useMemo, useState } from "react";
 import { X, Plus, Trash2, Loader2 } from "lucide-react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import type { AddMCPRequest, MCPType, SourceTool, PreviewConfig } from "@/types";
@@ -8,6 +8,7 @@ import { Button } from "@/components/ui/button";
 import { ToolSelector } from "./ToolSelector";
 import { ConfigPreview } from "./ConfigPreview";
 import { SuccessConfirmation } from "./SuccessConfirmation";
+import { useEscapeKey } from "@/hooks/useEscapeKey";
 
 interface AddMCPDialogProps {
   onClose: () => void;
@@ -15,6 +16,8 @@ interface AddMCPDialogProps {
 
 export function AddMCPDialog({ onClose }: AddMCPDialogProps) {
   const queryClient = useQueryClient();
+  const stableOnClose = useCallback(() => onClose(), [onClose]);
+  useEscapeKey(stableOnClose);
 
   // Detect installed tools — only show these in the selector
   const {
