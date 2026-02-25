@@ -98,6 +98,10 @@ pub fn run() {
                         .build(),
                 )?;
             }
+
+            // Silent housekeeping: prune old backups on startup
+            writers::backup::cleanup_old_backups();
+
             Ok(())
         })
         .invoke_handler(tauri::generate_handler![

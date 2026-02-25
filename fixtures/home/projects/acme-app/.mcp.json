@@ -6,19 +6,19 @@
       "args": ["-y", "@supabase/mcp-server"],
       "env": {
         "SUPABASE_URL": "https://xyzacme.supabase.co",
-        "SUPABASE_SERVICE_KEY": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.xxxxx"
+        "SUPABASE_SERVICE_KEY": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.FAKE_TOKEN_FOR_TESTING"
       }
     },
     "stripe": {
       "type": "stdio",
       "command": "npx",
       "args": ["-y", "@stripe/mcp-server"],
-      "env": { "STRIPE_SECRET_KEY": "sk_test_4eC39HqLyjWDarjtT1zdp7dc" }
+      "env": { "STRIPE_SECRET_KEY": "sk_test_FAKE_TOKEN_FOR_TESTING" }
     },
     "resend": {
       "type": "http",
       "url": "https://mcp.resend.com/sse",
-      "headers": { "Authorization": "Bearer re_Pm7Kx2vQ9wR4nL5" }
+      "headers": { "Authorization": "Bearer re_FAKE_TOKEN_FOR_TESTING" }
     }
   }
 }

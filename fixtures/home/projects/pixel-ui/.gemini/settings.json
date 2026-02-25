@@ -4,7 +4,7 @@
       "type": "stdio",
       "command": "npx",
       "args": ["-y", "@anthropic/mcp-server-figma"],
-      "env": { "FIGMA_ACCESS_TOKEN": "figd_Pm7Kx2vQ9wR4nL5xK9" }
+      "env": { "FIGMA_ACCESS_TOKEN": "figd_FAKE_TOKEN_FOR_TESTING" }
     }
   }
 }

@@ -4,12 +4,12 @@
       "type": "stdio",
       "command": "npx",
       "args": ["-y", "@modelcontextprotocol/server-github"],
-      "env": { "GITHUB_TOKEN": "ghp_A1b2C3d4E5f6G7h8I9j0" }
+      "env": { "GITHUB_TOKEN": "ghp_FAKE_TOKEN_FOR_TESTING_000" }
     },
     "linear": {
       "type": "http",
       "url": "https://mcp.linear.app/sse",
-      "headers": { "x-api-key": "lin_api_Kx9mP2qR7vW3" }
+      "headers": { "x-api-key": "lin_api_FAKE_TOKEN_FOR_TESTING" }
     },
     "filesystem": {
       "type": "stdio",
@@ -20,12 +20,12 @@
       "type": "stdio",
       "command": "npx",
       "args": ["-y", "@modelcontextprotocol/server-brave-search"],
-      "env": { "BRAVE_API_KEY": "BSA_xK9mP2qR7vW3nL5" }
+      "env": { "BRAVE_API_KEY": "BSA_FAKE_TOKEN_FOR_TESTING" }
     },
     "notion": {
       "type": "http",
       "url": "https://mcp.notion.so/mcp",
-      "headers": { "Authorization": "Bearer ntn_R7vW3nL5xK9m" }
+      "headers": { "Authorization": "Bearer ntn_FAKE_TOKEN_FOR_TESTING" }
     },
     "memory": {
       "type": "stdio",

@@ -4,7 +4,7 @@
       "type": "stdio",
       "command": "npx",
       "args": ["-y", "@vercel/mcp-server"],
-      "env": { "VERCEL_TOKEN": "vrcl_Pm7Kx2vQ9wR4nL5" }
+      "env": { "VERCEL_TOKEN": "vrcl_FAKE_TOKEN_FOR_TESTING" }
     }
   }
 }
