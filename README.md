@@ -1,9 +1,5 @@
 <p align="center">
-  <img src="brand-assets/svg/loadout-stacked-on-dark.svg" alt="Loadout" width="160" />
-</p>
-
-<p align="center">
-  Unified AI CLI configuration management tool.
+  <img src="brand-assets/svg/readme-hero.svg" alt="Loadout — Gear up your AI tools" width="720" />
 </p>
 
 ---
