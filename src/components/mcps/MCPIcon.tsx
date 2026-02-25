@@ -2,11 +2,13 @@ import { useState } from "react";
 import { Globe } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { getColorForName } from "@/lib/colors";
+import { useNpmFavicon } from "@/hooks/useNpmFavicon";
 
 interface MCPIconProps {
   name: string;
   mcpType: "stdio" | "http";
   url?: string | null;
+  args?: string[];
   className?: string;
 }
 
@@ -29,8 +31,10 @@ function extractRootDomain(url: string): string | null {
   }
 }
 
-export function MCPIcon({ name, mcpType, url, className }: MCPIconProps) {
+export function MCPIcon({ name, mcpType, url, args = [], className }: MCPIconProps) {
   const [faviconError, setFaviconError] = useState(false);
+  const [npmFaviconError, setNpmFaviconError] = useState(false);
+  const npmFaviconUrl = useNpmFavicon(mcpType === "stdio" ? args : []);
 
   const isHttp = mcpType === "http";
   const domain = url ? extractRootDomain(url) : null;
@@ -71,7 +75,26 @@ export function MCPIcon({ name, mcpType, url, className }: MCPIconProps) {
     );
   }
 
-  // For stdio: first letter avatar with consistent color
+  // For stdio with npm favicon resolved: show it
+  if (npmFaviconUrl && !npmFaviconError) {
+    return (
+      <div
+        className={cn(
+          "flex h-10 w-10 shrink-0 items-center justify-center rounded-lg bg-muted",
+          className
+        )}
+      >
+        <img
+          src={npmFaviconUrl}
+          alt=""
+          className="h-5 w-5"
+          onError={() => setNpmFaviconError(true)}
+        />
+      </div>
+    );
+  }
+
+  // Fallback: first letter avatar with consistent color
   const firstLetter = name.charAt(0).toUpperCase();
   const colorClass = getColorForName(name);
 

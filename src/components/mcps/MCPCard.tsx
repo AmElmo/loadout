@@ -42,7 +42,7 @@ export function MCPCard({ mcp }: MCPCardProps) {
         onClick={() => setExpanded(!expanded)}
         className="flex w-full items-center gap-3 p-4 text-left hover:bg-muted/50"
       >
-        <MCPIcon name={mcp.name} mcpType={mcp.mcpType} url={mcp.url} />
+        <MCPIcon name={mcp.name} mcpType={mcp.mcpType} url={mcp.url} args={mcp.args} />
 
         <div className="min-w-0 flex-1">
           <div className="flex items-center gap-2">
