@@ -1,0 +1,254 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Loadout — Brand Identity Preview</title>
+  <link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;600;700&display=swap" rel="stylesheet">
+  <style>
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+    body { font-family: 'Space Grotesk', sans-serif; background: #0C0A14; color: #F0F4FF; }
+    .container { max-width: 1100px; margin: 0 auto; padding: 48px 32px; }
+    h1 { font-size: 36px; font-weight: 700; margin-bottom: 8px; }
+    h1 span { color: #3B82F6; }
+    .subtitle { color: #6B7280; font-size: 16px; margin-bottom: 56px; }
+    h2 { font-size: 20px; font-weight: 600; margin-bottom: 24px; color: #F0F4FF; border-bottom: 1px solid #1E293B; padding-bottom: 12px; }
+    .section { margin-bottom: 56px; }
+
+    /* Logo grid */
+    .logo-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(220px, 1fr)); gap: 20px; }
+    .logo-card { border-radius: 12px; padding: 32px 24px; display: flex; flex-direction: column; align-items: center; gap: 16px; }
+    .logo-card.light { background: #F0F4FF; }
+    .logo-card.dark { background: #1A1A2E; }
+    .logo-card.mid { background: #27272A; }
+    .logo-card img { max-width: 100%; height: auto; }
+    .logo-card .mark { width: 64px; height: 64px; }
+    .logo-card .horizontal { width: 200px; }
+    .logo-card .stacked { width: 120px; }
+    .logo-card .wordmark { width: 160px; }
+    .logo-label { font-size: 11px; color: #6B7280; text-transform: uppercase; letter-spacing: 1px; }
+    .logo-card.light .logo-label { color: #64748B; }
+
+    /* Color palette */
+    .palette { display: flex; gap: 16px; flex-wrap: wrap; }
+    .swatch { width: 140px; border-radius: 12px; overflow: hidden; }
+    .swatch-color { height: 80px; }
+    .swatch-info { padding: 10px 12px; background: #1A1A2E; }
+    .swatch-name { font-size: 13px; font-weight: 600; }
+    .swatch-hex { font-size: 12px; color: #6B7280; font-family: monospace; }
+
+    /* Typography */
+    .type-sample { margin-bottom: 16px; }
+    .type-sample span { color: #6B7280; font-size: 13px; margin-left: 12px; }
+
+    /* Raster grid */
+    .raster-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(140px, 1fr)); gap: 16px; }
+    .raster-card { background: #1A1A2E; border-radius: 10px; padding: 16px; display: flex; flex-direction: column; align-items: center; gap: 10px; }
+    .raster-card img { max-width: 100%; height: auto; border-radius: 4px; }
+    .raster-card .thumb { width: 64px; height: 64px; image-rendering: pixelated; }
+    .raster-label { font-size: 11px; color: #6B7280; text-align: center; }
+
+    /* Social previews */
+    .social-grid { display: grid; grid-template-columns: 1fr; gap: 20px; }
+    .social-card { background: #1A1A2E; border-radius: 10px; overflow: hidden; }
+    .social-card img { width: 100%; height: auto; }
+    .social-meta { padding: 12px 16px; }
+    .social-meta .raster-label { text-align: left; }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <h1>Loadout <span>Brand Kit</span></h1>
+    <p class="subtitle">Weapon Wheel mark &middot; Deep Navy palette &middot; Space Grotesk</p>
+
+    <!-- MARK -->
+    <div class="section">
+      <h2>Mark (Icon Only)</h2>
+      <div class="logo-grid">
+        <div class="logo-card light">
+          <img src="svg/loadout-mark.svg" class="mark" alt="Mark — full color">
+          <span class="logo-label">Full Color</span>
+        </div>
+        <div class="logo-card dark">
+          <img src="svg/loadout-mark-on-dark.svg" class="mark" alt="Mark — on dark">
+          <span class="logo-label">On Dark</span>
+        </div>
+        <div class="logo-card light">
+          <img src="svg/loadout-mark-mono-dark.svg" class="mark" alt="Mark — mono dark">
+          <span class="logo-label">Mono Dark</span>
+        </div>
+        <div class="logo-card dark">
+          <img src="svg/loadout-mark-mono-light.svg" class="mark" alt="Mark — mono light">
+          <span class="logo-label">Mono Light</span>
+        </div>
+        <div class="logo-card light">
+          <img src="svg/loadout-mark-black.svg" class="mark" alt="Mark — black">
+          <span class="logo-label">Black</span>
+        </div>
+        <div class="logo-card dark">
+          <img src="svg/loadout-mark-white.svg" class="mark" alt="Mark — white">
+          <span class="logo-label">White</span>
+        </div>
+      </div>
+    </div>
+
+    <!-- HORIZONTAL -->
+    <div class="section">
+      <h2>Horizontal Lockup</h2>
+      <div class="logo-grid">
+        <div class="logo-card light">
+          <img src="svg/loadout-horizontal.svg" class="horizontal" alt="Horizontal — full color">
+          <span class="logo-label">Full Color</span>
+        </div>
+        <div class="logo-card dark">
+          <img src="svg/loadout-horizontal-on-dark.svg" class="horizontal" alt="Horizontal — on dark">
+          <span class="logo-label">On Dark</span>
+        </div>
+        <div class="logo-card dark">
+          <img src="svg/loadout-horizontal-white.svg" class="horizontal" alt="Horizontal — white">
+          <span class="logo-label">White</span>
+        </div>
+        <div class="logo-card light">
+          <img src="svg/loadout-horizontal-black.svg" class="horizontal" alt="Horizontal — black">
+          <span class="logo-label">Black</span>
+        </div>
+      </div>
+    </div>
+
+    <!-- STACKED -->
+    <div class="section">
+      <h2>Stacked Lockup</h2>
+      <div class="logo-grid">
+        <div class="logo-card light">
+          <img src="svg/loadout-stacked.svg" class="stacked" alt="Stacked — full color">
+          <span class="logo-label">Full Color</span>
+        </div>
+        <div class="logo-card dark">
+          <img src="svg/loadout-stacked-on-dark.svg" class="stacked" alt="Stacked — on dark">
+          <span class="logo-label">On Dark</span>
+        </div>
+        <div class="logo-card dark">
+          <img src="svg/loadout-stacked-white.svg" class="stacked" alt="Stacked — white">
+          <span class="logo-label">White</span>
+        </div>
+      </div>
+    </div>
+
+    <!-- WORDMARK -->
+    <div class="section">
+      <h2>Wordmark</h2>
+      <div class="logo-grid">
+        <div class="logo-card light">
+          <img src="svg/loadout-wordmark.svg" class="wordmark" alt="Wordmark — default">
+          <span class="logo-label">Default</span>
+        </div>
+        <div class="logo-card dark">
+          <img src="svg/loadout-wordmark-white.svg" class="wordmark" alt="Wordmark — white">
+          <span class="logo-label">White</span>
+        </div>
+      </div>
+    </div>
+
+    <!-- COLORS -->
+    <div class="section">
+      <h2>Color Palette</h2>
+      <div class="palette">
+        <div class="swatch">
+          <div class="swatch-color" style="background: #1E40AF;"></div>
+          <div class="swatch-info"><div class="swatch-name">Deep Navy</div><div class="swatch-hex">#1E40AF</div></div>
+        </div>
+        <div class="swatch">
+          <div class="swatch-color" style="background: #1E3A8A;"></div>
+          <div class="swatch-info"><div class="swatch-name">Dark Navy</div><div class="swatch-hex">#1E3A8A</div></div>
+        </div>
+        <div class="swatch">
+          <div class="swatch-color" style="background: #3B82F6;"></div>
+          <div class="swatch-info"><div class="swatch-name">Bright Blue</div><div class="swatch-hex">#3B82F6</div></div>
+        </div>
+        <div class="swatch">
+          <div class="swatch-color" style="background: #0C0A14;"></div>
+          <div class="swatch-info"><div class="swatch-name">Near Black</div><div class="swatch-hex">#0C0A14</div></div>
+        </div>
+        <div class="swatch">
+          <div class="swatch-color" style="background: #F0F4FF;"></div>
+          <div class="swatch-info"><div class="swatch-name">Blue White</div><div class="swatch-hex">#F0F4FF</div></div>
+        </div>
+      </div>
+    </div>
+
+    <!-- TYPOGRAPHY -->
+    <div class="section">
+      <h2>Typography — Space Grotesk</h2>
+      <div class="type-sample"><p style="font-size:42px;font-weight:700;">Loadout<span>H1 Bold 700</span></p></div>
+      <div class="type-sample"><p style="font-size:28px;font-weight:600;">Gear up your AI tools<span>H2 SemiBold 600</span></p></div>
+      <div class="type-sample"><p style="font-size:20px;font-weight:600;">Configuration Management<span>H3 SemiBold 600</span></p></div>
+      <div class="type-sample"><p style="font-size:16px;font-weight:400;">Loadout is a unified AI CLI configuration management tool that scans and manages settings for Claude, Codex, and Gemini.<span>Body Regular 400</span></p></div>
+      <div class="type-sample"><p style="font-size:14px;font-weight:400;color:#6B7280;">Skills, rules, hooks, and MCP servers — all in one place.<span>Caption Regular 400</span></p></div>
+    </div>
+
+    <!-- FAVICONS -->
+    <div class="section">
+      <h2>Favicons</h2>
+      <div class="raster-grid">
+        <div class="raster-card"><img src="favicons/favicon-16x16.png" class="thumb" alt="16x16"><span class="raster-label">16x16</span></div>
+        <div class="raster-card"><img src="favicons/favicon-32x32.png" class="thumb" alt="32x32"><span class="raster-label">32x32</span></div>
+        <div class="raster-card"><img src="favicons/favicon-48x48.png" class="thumb" alt="48x48"><span class="raster-label">48x48</span></div>
+        <div class="raster-card"><img src="favicons/favicon-96x96.png" alt="96x96" style="width:96px;height:96px;"><span class="raster-label">96x96</span></div>
+      </div>
+    </div>
+
+    <!-- APP ICONS -->
+    <div class="section">
+      <h2>App Icons</h2>
+      <div class="raster-grid">
+        <div class="raster-card"><img src="app-icons/apple-touch-icon-120x120.png" alt="120x120" style="width:80px;"><span class="raster-label">iOS 120x120</span></div>
+        <div class="raster-card"><img src="app-icons/apple-touch-icon-152x152.png" alt="152x152" style="width:80px;"><span class="raster-label">iPad 152x152</span></div>
+        <div class="raster-card"><img src="app-icons/apple-touch-icon-180x180.png" alt="180x180" style="width:80px;"><span class="raster-label">iPhone 180x180</span></div>
+        <div class="raster-card"><img src="app-icons/android-chrome-192x192.png" alt="192x192" style="width:80px;"><span class="raster-label">Android 192x192</span></div>
+        <div class="raster-card"><img src="app-icons/android-chrome-512x512.png" alt="512x512" style="width:80px;"><span class="raster-label">Android 512x512</span></div>
+      </div>
+    </div>
+
+    <!-- GENERAL PNGs -->
+    <div class="section">
+      <h2>General PNGs</h2>
+      <div class="raster-grid">
+        <div class="raster-card"><img src="general/logo-64.png" class="thumb" alt="64px"><span class="raster-label">64px</span></div>
+        <div class="raster-card"><img src="general/logo-128.png" alt="128px" style="width:80px;"><span class="raster-label">128px</span></div>
+        <div class="raster-card"><img src="general/logo-256.png" alt="256px" style="width:100px;"><span class="raster-label">256px</span></div>
+      </div>
+    </div>
+
+    <!-- SOCIAL / OG IMAGES -->
+    <div class="section">
+      <h2>Social / OG Images</h2>
+      <div class="social-grid">
+        <div class="social-card">
+          <img src="social/og-image.png" alt="OG Image">
+          <div class="social-meta"><span class="raster-label">og-image.png — 1200x630 (Facebook, LinkedIn, WhatsApp)</span></div>
+        </div>
+        <div class="social-card">
+          <img src="social/twitter-image.png" alt="Twitter Image">
+          <div class="social-meta"><span class="raster-label">twitter-image.png — 1200x675 (Twitter/X)</span></div>
+        </div>
+        <div class="social-card">
+          <img src="social/og-square.png" alt="Square" style="max-width:400px;">
+          <div class="social-meta"><span class="raster-label">og-square.png — 1200x1200 (Instagram, fallback)</span></div>
+        </div>
+      </div>
+    </div>
+
+    <!-- EMAIL -->
+    <div class="section">
+      <h2>Email Signature</h2>
+      <div class="raster-grid">
+        <div class="raster-card" style="grid-column: span 2;">
+          <img src="email/email-sig-logo.png" alt="Email signature" style="width:200px;">
+          <span class="raster-label">email-sig-logo.png (256px horizontal)</span>
+        </div>
+      </div>
+    </div>
+
+  </div>
+</body>
+</html>
