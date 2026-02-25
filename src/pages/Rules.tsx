@@ -4,7 +4,7 @@ import { useQuery } from "@tanstack/react-query";
 import { useWorkspaceStore } from "@/stores/workspaceStore";
 import { scanRules } from "@/lib/api/config";
 import { scanReposWithoutRules } from "@/lib/api/repos";
-import { PromptsSection, RepoScanResults } from "@/components/config";
+import { PromptsSection, RepoScanResults, RepoScanLoading } from "@/components/config";
 import { SearchBar } from "@/components/filters";
 import { Button } from "@/components/ui/button";
 import { useInfiniteList } from "@/hooks/useInfiniteList";
@@ -40,8 +40,9 @@ export function Rules() {
   const { visibleItems, hasMore, sentinelRef } = useInfiniteList(filteredPrompts);
 
   const handleScanRepos = async () => {
-    setScanning(true);
+    setScanResult(null);
     setScanError(null);
+    setScanning(true);
     try {
       const result = await scanReposWithoutRules();
       setScanResult(result);
@@ -73,7 +74,7 @@ export function Rules() {
             ) : (
               <FolderSearch className="mr-2 h-4 w-4" />
             )}
-            {scanning ? "Scanning repos..." : "Scan repos without rules"}
+            {scanning ? "Scanning..." : "Scan repos without rules"}
           </Button>
           <Button
             variant="outline"
@@ -89,7 +90,18 @@ export function Rules() {
         </div>
       </div>
 
-      {scanError && (
+      {/* Inline scan loading animation */}
+      {scanning && <RepoScanLoading />}
+
+      {/* Inline scan results */}
+      {scanResult && !scanning && (
+        <RepoScanResults
+          result={scanResult}
+          onClose={() => setScanResult(null)}
+        />
+      )}
+
+      {scanError && !scanning && (
         <div className="mb-4 rounded-lg border border-red-500/20 bg-red-500/5 p-4">
           <div className="flex items-center gap-2 text-red-600">
             <AlertCircle className="h-5 w-5" />
@@ -145,13 +157,6 @@ export function Rules() {
           />
           {hasMore && <div ref={sentinelRef} className="h-4" />}
         </>
-      )}
-
-      {scanResult && (
-        <RepoScanResults
-          result={scanResult}
-          onClose={() => setScanResult(null)}
-        />
       )}
     </div>
   );

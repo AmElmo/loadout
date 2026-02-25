@@ -12,6 +12,7 @@ import {
   CheckCircle2,
   AlertCircle,
   ChevronDown,
+  FolderSearch,
 } from "lucide-react";
 import type { RepoScanResult, RepoWithoutRules } from "@/types";
 import { Button } from "@/components/ui/button";
@@ -133,7 +134,7 @@ function RepoCard({
 
   if (success) {
     return (
-      <div className="rounded-lg border border-green-500/30 bg-green-500/5 p-4">
+      <div className="animate-in fade-in slide-in-from-top-1 rounded-lg border border-green-500/30 bg-green-500/5 p-4 duration-300">
         <div className="flex items-center gap-2 text-green-600">
           <CheckCircle2 className="h-5 w-5" />
           <span className="font-medium">
@@ -172,7 +173,7 @@ function RepoCard({
   }
 
   return (
-    <div className="flex items-start gap-3 rounded-lg border border-border bg-card p-4">
+    <div className="flex items-start gap-3 rounded-lg border border-border bg-card p-4 transition-colors hover:bg-card/80">
       {/* Icon */}
       <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-lg bg-muted">
         <GitBranch className="h-5 w-5 text-muted-foreground" />
@@ -198,7 +199,7 @@ function RepoCard({
               {formatRelativeTime(repo.lastCommitDate)}
             </span>
             {repo.lastCommitMessage && (
-              <span className="truncate max-w-[200px]" title={repo.lastCommitMessage}>
+              <span className="max-w-[200px] truncate" title={repo.lastCommitMessage}>
                 {repo.lastCommitMessage}
               </span>
             )}
@@ -216,7 +217,7 @@ function RepoCard({
             )}
           </div>
         ) : (
-          <p className="mt-1.5 text-xs text-muted-foreground italic">No commits yet</p>
+          <p className="mt-1.5 text-xs italic text-muted-foreground">No commits yet</p>
         )}
       </div>
 
@@ -244,34 +245,71 @@ function RepoCard({
               className="fixed inset-0 z-40"
               onClick={() => setShowCliMenu(false)}
             />
-            <div className="absolute right-0 top-full z-50 mt-1 w-64 rounded-lg border border-border bg-popover p-1 shadow-lg">
+            <div className="absolute right-0 top-full z-50 mt-1 w-64 overflow-hidden rounded-lg border border-border bg-background shadow-xl">
               {installedClis && installedClis.length === 0 ? (
                 <div className="p-3 text-center text-sm text-muted-foreground">
                   No CLI tools found. Install Claude Code, Codex, or Gemini CLI.
                 </div>
               ) : (
-                CLI_TOOLS.filter(
-                  (t) => !installedClis || installedClis.includes(t.id)
-                ).map((tool) => (
-                  <button
-                    key={tool.id}
-                    onClick={() => handleSelectCli(tool)}
-                    className="flex w-full items-center gap-2 rounded-md px-3 py-2 text-sm hover:bg-muted"
-                  >
-                    <ToolLogo tool={tool.id} size={14} />
-                    <span>
-                      Create with {tool.label}
-                    </span>
-                    <span className="ml-auto text-xs text-muted-foreground">
-                      {tool.generates}
-                    </span>
-                  </button>
-                ))
+                <div className="p-1">
+                  {CLI_TOOLS.filter(
+                    (t) => !installedClis || installedClis.includes(t.id)
+                  ).map((tool) => (
+                    <button
+                      key={tool.id}
+                      onClick={() => handleSelectCli(tool)}
+                      className="flex w-full items-center gap-2.5 rounded-md px-3 py-2.5 text-sm transition-colors hover:bg-muted"
+                    >
+                      <ToolLogo tool={tool.id} size={14} />
+                      <span>
+                        Create with {tool.label}
+                      </span>
+                      <span className="ml-auto font-mono text-[11px] text-muted-foreground">
+                        {tool.generates}
+                      </span>
+                    </button>
+                  ))}
+                </div>
               )}
             </div>
           </>
         )}
       </div>
+    </div>
+  );
+}
+
+/** Inline scanning animation shown while scan is in progress */
+export function RepoScanLoading() {
+  return (
+    <div className="mb-6 overflow-hidden rounded-lg border border-border bg-card">
+      <div className="flex items-center gap-3 px-4 py-3">
+        <div className="relative flex h-8 w-8 items-center justify-center">
+          <FolderSearch className="h-5 w-5 text-primary" />
+          <div className="absolute inset-0 animate-ping rounded-full bg-primary/10" />
+        </div>
+        <div className="flex-1">
+          <p className="text-sm font-medium">Scanning your repos...</p>
+          <p className="text-xs text-muted-foreground">
+            Looking for git repositories without AI rules files
+          </p>
+        </div>
+      </div>
+      {/* Animated progress bar */}
+      <div className="h-0.5 w-full overflow-hidden bg-muted">
+        <div
+          className="h-full w-1/3 animate-[shimmer_1.5s_ease-in-out_infinite] rounded-full bg-primary/60"
+          style={{
+            animation: "shimmer 1.5s ease-in-out infinite",
+          }}
+        />
+      </div>
+      <style>{`
+        @keyframes shimmer {
+          0% { transform: translateX(-100%); }
+          100% { transform: translateX(400%); }
+        }
+      `}</style>
     </div>
   );
 }
@@ -284,64 +322,66 @@ export function RepoScanResults({ result, onClose }: RepoScanResultsProps) {
   };
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4">
-      <div className="flex max-h-[90vh] w-full max-w-3xl flex-col rounded-lg border border-border bg-background shadow-xl">
-        {/* Header */}
-        <div className="flex items-center justify-between border-b border-border px-4 py-3">
+    <div className="mb-6 overflow-hidden rounded-lg border border-border bg-card">
+      {/* Header */}
+      <div className="flex items-center justify-between border-b border-border px-4 py-3">
+        <div className="flex items-center gap-3">
+          <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-primary/10">
+            <FolderSearch className="h-4 w-4 text-primary" />
+          </div>
           <div>
-            <h2 className="text-lg font-semibold">Repos Without Rules</h2>
-            <p className="text-sm text-muted-foreground">
-              Found {result.reposWithoutRules} repos without rules out of{" "}
-              {result.totalReposScanned} total repos
-              <span className="ml-1 text-xs">
-                (scanned in {result.scanDurationMs}ms)
+            <h3 className="text-sm font-semibold">Repos Without Rules</h3>
+            <p className="text-xs text-muted-foreground">
+              {result.reposWithoutRules} of {result.totalReposScanned} repos have no rules
+              <span className="ml-1 opacity-60">
+                ({result.scanDurationMs}ms)
               </span>
             </p>
           </div>
-          <button
-            onClick={onClose}
-            className="rounded-md p-1 hover:bg-muted"
-            aria-label="Close"
-          >
-            <X className="h-5 w-5" />
-          </button>
         </div>
+        <button
+          onClick={onClose}
+          className="rounded-md p-1.5 text-muted-foreground transition-colors hover:bg-muted hover:text-foreground"
+          aria-label="Close"
+        >
+          <X className="h-4 w-4" />
+        </button>
+      </div>
 
-        {/* Content */}
-        <div className="flex-1 overflow-auto p-4">
-          {repos.length === 0 ? (
-            <div className="flex flex-col items-center justify-center py-12 text-center">
-              <PartyPopper className="mb-3 h-10 w-10 text-green-500" />
-              <h3 className="text-lg font-medium">All your repos have rules configured!</h3>
-              <p className="mt-1 text-sm text-muted-foreground">
-                Every git repository on your machine has at least one AI rules file.
-              </p>
-            </div>
-          ) : (
-            <div className="space-y-3">
-              {repos.map((repo) => (
-                <RepoCard
-                  key={repo.path}
-                  repo={repo}
-                  onRemove={handleRemoveRepo}
-                />
-              ))}
-            </div>
-          )}
-        </div>
-
-        {/* Footer */}
-        <div className="flex items-center justify-between border-t border-border px-4 py-2 text-xs text-muted-foreground">
-          <div className="flex items-center gap-2">
-            <FolderOpen className="h-3.5 w-3.5" />
-            <span>
-              {result.reposWithRules} repos already have rules
-            </span>
+      {/* Content */}
+      <div className="max-h-[60vh] overflow-auto p-3">
+        {repos.length === 0 ? (
+          <div className="flex flex-col items-center justify-center py-8 text-center">
+            <PartyPopper className="mb-3 h-8 w-8 text-green-500" />
+            <h3 className="font-medium">All your repos have rules configured!</h3>
+            <p className="mt-1 text-sm text-muted-foreground">
+              Every git repository on your machine has at least one AI rules file.
+            </p>
           </div>
-          <Button variant="outline" size="sm" onClick={onClose}>
-            Done
-          </Button>
+        ) : (
+          <div className="space-y-2">
+            {repos.map((repo) => (
+              <RepoCard
+                key={repo.path}
+                repo={repo}
+                onRemove={handleRemoveRepo}
+              />
+            ))}
+          </div>
+        )}
+      </div>
+
+      {/* Footer */}
+      <div className="flex items-center justify-between border-t border-border px-4 py-2 text-xs text-muted-foreground">
+        <div className="flex items-center gap-2">
+          <FolderOpen className="h-3.5 w-3.5" />
+          <span>
+            {result.reposWithRules} repos already have rules
+          </span>
         </div>
+        <Button variant="ghost" size="sm" onClick={onClose}>
+          Close
+        </Button>
       </div>
     </div>
   );
