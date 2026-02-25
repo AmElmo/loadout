@@ -25,7 +25,8 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
-      - uses: rustsec/audit-check@v2
+      - uses: taiki-e/install-action@v2
         with:
-          token: ${{ github.token }}
-          working-directory: src-tauri
+          tool: cargo-audit
+      - run: cargo audit
+        working-directory: src-tauri
