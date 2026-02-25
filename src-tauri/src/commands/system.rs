@@ -3,6 +3,8 @@
 use std::path::{Path, PathBuf};
 use std::process::Command;
 
+use crate::writers::atomic::atomic_write;
+
 fn nearest_existing_path(path: &Path) -> Option<PathBuf> {
     if path.exists() {
         return Some(path.to_path_buf());
@@ -70,6 +72,48 @@ pub fn reveal_in_file_manager(path: String) -> Result<(), String> {
             status
         ))
     }
+}
+
+/// Save text content to a file, using atomic write for safety.
+#[tauri::command]
+pub fn save_file_content(path: String, content: String) -> Result<(), String> {
+    let file_path = PathBuf::from(&path);
+    if !file_path.exists() {
+        return Err(format!("File does not exist: {}", path));
+    }
+    atomic_write(&file_path, &content)
+}
+
+/// Save skill body content while preserving YAML frontmatter.
+///
+/// Reads the existing file to extract frontmatter, then replaces only the
+/// markdown body while keeping the `---` delimited header intact.
+#[tauri::command]
+pub fn save_skill_content(path: String, body: String) -> Result<(), String> {
+    let file_path = PathBuf::from(&path);
+    if !file_path.exists() {
+        return Err(format!("File does not exist: {}", path));
+    }
+
+    let raw = std::fs::read_to_string(&file_path)
+        .map_err(|e| format!("Failed to read {}: {}", path, e))?;
+
+    let trimmed = raw.trim();
+    let new_content = if trimmed.starts_with("---") {
+        // Preserve frontmatter: everything up to and including the closing ---
+        if let Some(end) = trimmed[3..].find("\n---") {
+            let frontmatter = &trimmed[..3 + end + 4]; // include closing ---
+            format!("{}\n\n{}\n", frontmatter, body.trim())
+        } else {
+            // No valid closing delimiter — write body as-is
+            format!("{}\n", body)
+        }
+    } else {
+        // No frontmatter — the content IS the full file
+        format!("{}\n", body)
+    };
+
+    atomic_write(&file_path, &new_content)
 }
 
 #[cfg(test)]
