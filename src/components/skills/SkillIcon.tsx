@@ -4,16 +4,17 @@ import { matchSkillIcon, ICON_COMPONENTS } from "./skillIconMap";
 
 interface SkillIconProps {
   name: string;
+  description?: string;
   overrideIcon?: string;
   size?: "sm" | "md";
 }
 
-export function SkillIcon({ name, overrideIcon, size = "md" }: SkillIconProps) {
+export function SkillIcon({ name, description, overrideIcon, size = "md" }: SkillIconProps) {
   const colorClass = getColorForName(name);
   const dims = size === "sm" ? "h-8 w-8" : "h-10 w-10";
   const iconSize = size === "sm" ? "h-4 w-4" : "h-5 w-5";
 
-  const iconName = overrideIcon || matchSkillIcon(name);
+  const iconName = overrideIcon || matchSkillIcon(name, description);
   const IconComponent = iconName ? ICON_COMPONENTS[iconName] : null;
 
   if (IconComponent) {

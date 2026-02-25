@@ -31,8 +31,21 @@ import {
   Compass,
   CheckSquare,
   Calendar,
+  Megaphone,
+  Handshake,
+  GraduationCap,
+  Heart,
+  Lightbulb,
+  Scale,
+  Tag,
+  Users,
+  Briefcase,
+  BookOpen,
+  Palette,
+  Puzzle,
 } from "lucide-react";
 import type { LucideIcon } from "lucide-react";
+import { stemmer } from "stemmer";
 
 type IconEntry = {
   keywords: string[];
@@ -40,6 +53,7 @@ type IconEntry = {
 };
 
 // Order matters — first match wins.
+// Keywords are stemmed at load time, so "deploy" also matches "deploying", "deployment", etc.
 export const SKILL_ICON_MAP: IconEntry[] = [
   // Version control
   { keywords: ["commit", "git"], icon: "GitCommit" },
@@ -48,8 +62,8 @@ export const SKILL_ICON_MAP: IconEntry[] = [
 
   // Code & development
   { keywords: ["code", "coding"], icon: "Code" },
-  { keywords: ["debug", "bug"], icon: "Bug" },
-  { keywords: ["test", "spec", "jest", "vitest"], icon: "FlaskConical" },
+  { keywords: ["debug", "bug", "error"], icon: "Bug" },
+  { keywords: ["test", "spec", "jest", "vitest", "verify"], icon: "FlaskConical" },
   { keywords: ["build", "compile"], icon: "Hammer" },
   { keywords: ["deploy", "ship", "release"], icon: "Rocket" },
   { keywords: ["refactor", "clean"], icon: "Recycle" },
@@ -57,13 +71,13 @@ export const SKILL_ICON_MAP: IconEntry[] = [
 
   // Review & analysis
   { keywords: ["review"], icon: "Eye" },
-  { keywords: ["analyze", "analysis"], icon: "BarChart3" },
+  { keywords: ["analyze", "analysis", "evaluate", "assess"], icon: "BarChart3" },
   { keywords: ["audit", "security"], icon: "Shield" },
   { keywords: ["search", "find", "explore"], icon: "Search" },
 
-  // Documentation
+  // Documentation & writing
   { keywords: ["doc", "docs", "document", "readme"], icon: "FileText" },
-  { keywords: ["write", "draft", "blog"], icon: "PenTool" },
+  { keywords: ["write", "draft", "blog", "copy", "content", "deslop"], icon: "PenTool" },
   { keywords: ["translate", "i18n", "locale"], icon: "Languages" },
 
   // Data & API
@@ -80,16 +94,56 @@ export const SKILL_ICON_MAP: IconEntry[] = [
   { keywords: ["email", "mail", "notify"], icon: "Mail" },
   { keywords: ["chat", "message", "slack"], icon: "MessageSquare" },
   { keywords: ["comment", "feedback"], icon: "MessageCircle" },
+  { keywords: ["communicate", "present", "speak", "pitch"], icon: "Megaphone" },
 
   // AI & automation
   { keywords: ["llm", "agent", "prompt"], icon: "Brain" },
   { keywords: ["automate", "workflow", "pipeline"], icon: "Workflow" },
-  { keywords: ["generate", "create", "scaffold"], icon: "Wand2" },
 
-  // Planning
-  { keywords: ["plan", "design", "architect"], icon: "Compass" },
+  // Planning & design
+  { keywords: ["plan", "architect"], icon: "Compass" },
   { keywords: ["task", "todo", "ticket"], icon: "CheckSquare" },
   { keywords: ["schedule", "calendar", "cron"], icon: "Calendar" },
+  { keywords: ["design", "brand", "identity", "logo"], icon: "Palette" },
+
+  // Generation (after design/brand so more specific matches win)
+  { keywords: ["generate", "create", "creator", "scaffold"], icon: "Wand2" },
+
+  // Persuasion & negotiation
+  { keywords: ["convince", "persuade", "negotiate", "influence"], icon: "Handshake" },
+
+  // Learning & teaching
+  { keywords: ["learn", "teach", "tutor", "study", "educate"], icon: "GraduationCap" },
+
+  // Emotion & wellness
+  { keywords: ["emotion", "regulate", "stress", "mindset", "therapy", "wellbeing"], icon: "Heart" },
+
+  // Creativity & ideation
+  { keywords: ["creative", "brainstorm", "ideate", "imagine"], icon: "Lightbulb" },
+
+  // Thinking & judgment
+  { keywords: ["think", "reason", "judge", "judgment", "decide", "decision", "critical"], icon: "Scale" },
+
+  // Naming & tagging
+  { keywords: ["name", "naming", "tag", "label"], icon: "Tag" },
+
+  // Conflict resolution
+  { keywords: ["conflict", "resolve", "mediate", "dispute"], icon: "Puzzle" },
+
+  // People & team
+  { keywords: ["hire", "interview", "team", "people", "collaborate"], icon: "Users" },
+
+  // Reading & reference
+  { keywords: ["read", "book", "reference", "knowledge"], icon: "BookOpen" },
+
+  // Finance & business
+  { keywords: ["finance", "budget", "revenue", "pricing", "business"], icon: "Briefcase" },
+
+  // Problem solving (generic catch-all for "solve", "problem", "fix")
+  { keywords: ["solve", "problem", "fix", "troubleshoot"], icon: "Puzzle" },
+
+  // Action & productivity
+  { keywords: ["action", "execute", "effective", "productive", "prioritize"], icon: "Rocket" },
 ];
 
 // Direct imports only — no wildcard `icons` import
@@ -126,24 +180,87 @@ export const ICON_COMPONENTS: Record<string, LucideIcon> = {
   Compass,
   CheckSquare,
   Calendar,
+  Megaphone,
+  Handshake,
+  GraduationCap,
+  Heart,
+  Lightbulb,
+  Scale,
+  Tag,
+  Users,
+  Briefcase,
+  BookOpen,
+  Palette,
+  Puzzle,
 };
 
-/**
- * Match a skill name against the keyword dictionary.
- * Uses whole-token matching only (no substring matching).
- * Returns the Lucide icon name or null if no match.
- */
-export function matchSkillIcon(name: string): string | null {
-  const tokens = new Set(name.toLowerCase().split(/[-_\s]+/));
+// Pre-stem all keywords at module load for fast matching
+type StemmedEntry = {
+  stemmedKeywords: string[][]; // each keyword split into stemmed parts
+  icon: string;
+};
 
-  for (const entry of SKILL_ICON_MAP) {
-    for (const keyword of entry.keywords) {
-      // Multi-word keywords (e.g., "pull-request") → all parts must be present as tokens
-      const keywordParts = keyword.split("-");
-      if (keywordParts.every((part) => tokens.has(part))) {
+const STEMMED_MAP: StemmedEntry[] = SKILL_ICON_MAP.map((entry) => ({
+  icon: entry.icon,
+  stemmedKeywords: entry.keywords.map((k) =>
+    k.split("-").map((part) => stemmer(part))
+  ),
+}));
+
+/**
+ * Try to match stemmed tokens against the pre-stemmed keyword map.
+ * Returns the Lucide icon name or null.
+ */
+function matchTokens(tokens: Set<string>): string | null {
+  for (const entry of STEMMED_MAP) {
+    for (const stemmedParts of entry.stemmedKeywords) {
+      if (stemmedParts.every((part) => tokens.has(part))) {
         return entry.icon;
       }
     }
   }
+  return null;
+}
+
+/**
+ * Tokenize and stem a string into a set of stemmed tokens.
+ */
+function stemTokens(text: string): Set<string> {
+  return new Set(
+    text
+      .toLowerCase()
+      .split(/[-_\s]+/)
+      .filter((t) => t.length > 0)
+      .map((t) => stemmer(t))
+  );
+}
+
+/**
+ * Extract the first sentence from a description string.
+ */
+function firstSentence(description: string): string {
+  const match = description.match(/^[^.!?]+[.!?]?/);
+  return match ? match[0] : description;
+}
+
+/**
+ * Match a skill against the keyword dictionary.
+ * 1. Stemmed name match (high confidence)
+ * 2. Stemmed first-sentence of description (medium confidence)
+ * Returns the Lucide icon name or null if no match.
+ */
+export function matchSkillIcon(
+  name: string,
+  description?: string
+): string | null {
+  // Try name first
+  const nameResult = matchTokens(stemTokens(name));
+  if (nameResult) return nameResult;
+
+  // Fall back to first sentence of description
+  if (description) {
+    return matchTokens(stemTokens(firstSentence(description)));
+  }
+
   return null;
 }
