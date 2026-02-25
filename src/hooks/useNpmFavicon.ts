@@ -1,6 +1,6 @@
 import { useState, useEffect } from "react";
 
-const CACHE_KEY = "loadout:npm-homepage-cache";
+const CACHE_KEY = "loadout:npm-favicon-cache:v2";
 
 /**
  * Read the npm homepage cache from localStorage.
@@ -45,17 +45,28 @@ export function parseNpmPackage(args: string[]): string | null {
   return null;
 }
 
+/** Code-hosting domains whose favicons are generic (octocat, etc.) */
+const CODE_HOST_DOMAINS = new Set([
+  "github.com",
+  "github.io",
+  "gitlab.com",
+  "gitlab.io",
+  "bitbucket.org",
+  "sourceforge.net",
+  "codeberg.org",
+]);
+
 /**
  * Extract root domain from a URL for favicon fetching.
+ * Returns null for code-hosting domains (their favicons are unhelpful).
  */
-function extractDomain(url: string): string | null {
+function extractUsableDomain(url: string): string | null {
   try {
     const parsed = new URL(url);
     const parts = parsed.hostname.split(".");
-    if (parts.length >= 2) {
-      return parts.slice(-2).join(".");
-    }
-    return parsed.hostname;
+    const root = parts.length >= 2 ? parts.slice(-2).join(".") : parsed.hostname;
+    if (CODE_HOST_DOMAINS.has(root)) return null;
+    return root;
   } catch {
     return null;
   }
@@ -75,7 +86,7 @@ export function useNpmFavicon(args: string[]): string | null {
     const cached = readCache()[pkg];
     if (cached === undefined) return null;
     if (cached === "") return null; // cached "no homepage"
-    const domain = extractDomain(cached);
+    const domain = extractUsableDomain(cached);
     return domain
       ? `https://www.google.com/s2/favicons?domain=${domain}&sz=32`
       : null;
@@ -104,7 +115,7 @@ export function useNpmFavicon(args: string[]): string | null {
         writeCache(updated);
 
         if (homepage) {
-          const domain = extractDomain(homepage);
+          const domain = extractUsableDomain(homepage);
           if (domain) {
             setFaviconUrl(
               `https://www.google.com/s2/favicons?domain=${domain}&sz=32`
