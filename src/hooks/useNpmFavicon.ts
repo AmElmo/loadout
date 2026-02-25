@@ -2,6 +2,9 @@ import { useState, useEffect } from "react";
 
 const CACHE_KEY = "loadout:npm-favicon-cache:v2";
 
+// Clean up old cache key from v1
+localStorage.removeItem("loadout:npm-homepage-cache");
+
 /**
  * Read the npm homepage cache from localStorage.
  * Keys are package names, values are homepage URLs (or "" for no-homepage).
