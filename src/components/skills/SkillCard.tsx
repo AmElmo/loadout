@@ -32,7 +32,7 @@ export function SkillCard({ group, onClick }: SkillCardProps) {
         )}
       >
         {/* Icon */}
-        <SkillIcon name={group.name} />
+        <SkillIcon name={group.name} description={group.description} />
 
         {/* Content */}
         <div className="min-w-0 flex-1">

@@ -50,7 +50,7 @@ export function SkillViewer({ group, onClose }: SkillViewerProps) {
         {/* Header */}
         <div className="flex items-center justify-between border-b border-border px-4 py-3">
           <div className="flex items-center gap-3">
-            <SkillIcon name={group.name} size="md" />
+            <SkillIcon name={group.name} description={group.description} size="md" />
             <h2 className="text-lg font-semibold">{group.name}</h2>
             <ToolBadges tools={group.installedTools} />
             <MaturityBadge maturity={group.maturity} />
