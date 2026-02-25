@@ -13,7 +13,6 @@ import {
   AlertCircle,
   ChevronDown,
   FolderSearch,
-  Terminal,
 } from "lucide-react";
 import type { RepoScanResult, RepoWithoutRules, SourceTool } from "@/types";
 import { Button } from "@/components/ui/button";
@@ -64,21 +63,20 @@ function truncatePath(path: string): string {
 }
 
 /** Terminal-style streaming output that auto-scrolls to bottom */
-function CliOutputStream({ lines }: { lines: string[] }) {
+function CliOutputStream({ text, toolLabel }: { text: string; toolLabel: string }) {
   const scrollRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
     if (scrollRef.current) {
       scrollRef.current.scrollTop = scrollRef.current.scrollHeight;
     }
-  }, [lines]);
+  }, [text]);
 
-  if (lines.length === 0) {
+  if (!text) {
     return (
       <div className="flex items-center gap-2 px-4 py-6 text-xs text-muted-foreground">
-        <Terminal className="h-3.5 w-3.5" />
-        <span>Waiting for output...</span>
-        <span className="inline-block h-3.5 w-[2px] animate-pulse bg-muted-foreground/50" />
+        <Loader2 className="h-3.5 w-3.5 animate-spin" />
+        <span>Starting {toolLabel}...</span>
       </div>
     );
   }
@@ -88,11 +86,7 @@ function CliOutputStream({ lines }: { lines: string[] }) {
       ref={scrollRef}
       className="max-h-48 overflow-auto bg-[#1a1a2e] p-3 font-mono text-xs leading-relaxed text-green-400/90"
     >
-      {lines.map((line, i) => (
-        <div key={i} className="whitespace-pre-wrap break-all">
-          {line || "\u00A0"}
-        </div>
-      ))}
+      <span className="whitespace-pre-wrap break-all">{text}</span>
       <span className="inline-block h-3.5 w-[2px] animate-pulse bg-green-400/70" />
     </div>
   );
@@ -108,7 +102,7 @@ function RepoCard({
   const [showCliMenu, setShowCliMenu] = useState(false);
   const [generating, setGenerating] = useState(false);
   const [generatingTool, setGeneratingTool] = useState<SourceTool | null>(null);
-  const [output, setOutput] = useState<string[]>([]);
+  const [output, setOutput] = useState("");
   const [success, setSuccess] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [installedClis, setInstalledClis] = useState<string[] | null>(null);
@@ -136,7 +130,7 @@ function RepoCard({
     setShowCliMenu(false);
     setGenerating(true);
     setGeneratingTool(tool.id);
-    setOutput([]);
+    setOutput("");
     setError(null);
 
     const prompt = `Analyze this project and generate a ${tool.generates} file. Look at the project structure, tech stack, existing configuration, README, and coding conventions. The rules file should include: project overview and structure, tech stack and key dependencies, build/run/test commands, coding conventions and patterns used, any important architectural decisions visible in the code. Write the file directly to the project root. Be concise and practical — focus on information that would help an AI coding assistant work effectively in this codebase.`;
@@ -144,19 +138,33 @@ function RepoCard({
     try {
       const unlisten = await listen<{ repoPath: string; line: string }>("cli-output", (event) => {
         if (event.payload.repoPath === repo.path) {
-          setOutput((prev) => [...prev, event.payload.line]);
+          const chunk = event.payload.line;
+          setOutput((prev) => {
+            // Tool events (⏵) go on their own line
+            if (chunk.startsWith("⏵")) {
+              return prev + (prev && !prev.endsWith("\n") ? "\n" : "") + chunk + "\n";
+            }
+            // Text deltas are appended directly (they include their own newlines)
+            return prev + chunk;
+          });
         }
       });
 
-      await invoke("create_rules_with_cli", {
+      const result = await invoke<{ success: boolean; fileCreated: string | null; error: string | null }>("create_rules_with_cli", {
         tool: tool.id,
         repoPath: repo.path,
         prompt,
       });
 
       unlisten();
-      setSuccess(true);
-      setTimeout(() => onRemove(repo.path), 2000);
+
+      if (result.success) {
+        setSuccess(true);
+        setTimeout(() => onRemove(repo.path), 2000);
+      } else {
+        setError(result.error ?? `${tool.generates} was not created`);
+        setGenerating(false);
+      }
     } catch (e) {
       const msg = e instanceof Error ? e.message : String(e);
       setError(msg);
@@ -191,7 +199,7 @@ function RepoCard({
         </div>
 
         {/* Terminal output */}
-        <CliOutputStream lines={output} />
+        <CliOutputStream text={output} toolLabel={tool?.label ?? "CLI"} />
 
         {error && (
           <div className="border-t border-red-500/20 bg-red-500/5 px-4 py-2 flex items-center gap-2 text-sm text-red-500">
