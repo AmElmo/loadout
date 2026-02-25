@@ -1,8 +1,10 @@
 import { X, Copy, Check, FolderOpen, Crosshair } from "lucide-react";
 import { useState } from "react";
+import { useQueryClient } from "@tanstack/react-query";
 import type { PromptFile } from "@/types";
 import { ToolBadge } from "@/components/mcps/ToolBadge";
 import { TokenBadge } from "@/components/context";
+import { saveFileContent } from "@/lib/api/system";
 import { Button } from "@/components/ui/button";
 import { MarkdownPreview } from "@/components/ui/markdown-preview";
 import { OpenPathButton } from "@/components/ui/open-path-button";
@@ -13,7 +15,13 @@ interface RuleViewerProps {
 }
 
 export function RuleViewer({ rule, onClose }: RuleViewerProps) {
+  const queryClient = useQueryClient();
   const [copied, setCopied] = useState(false);
+
+  const handleSave = async (content: string) => {
+    await saveFileContent(rule.path, content);
+    queryClient.invalidateQueries({ queryKey: ["rules"] });
+  };
 
   const handleCopy = async () => {
     await navigator.clipboard.writeText(rule.content);
@@ -101,6 +109,7 @@ export function RuleViewer({ rule, onClose }: RuleViewerProps) {
           <MarkdownPreview
             content={rule.content}
             className="h-full"
+            onSave={handleSave}
           />
         </div>
 

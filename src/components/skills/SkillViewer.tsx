@@ -1,7 +1,9 @@
 import { X, Copy, Check, FolderOpen, Share2, Link2, AlertTriangle } from "lucide-react";
 import { useState } from "react";
+import { useQueryClient } from "@tanstack/react-query";
 import type { GroupedSkill, SkillItem } from "@/types";
 import { installSkillToTools } from "@/lib/api/sync";
+import { saveSkillContent } from "@/lib/api/system";
 import { ToolBadges, ToolBadge } from "@/components/mcps/ToolBadge";
 import { TokenBadge } from "@/components/context";
 import { SyncDialog } from "@/components/sync";
@@ -18,9 +20,15 @@ interface SkillViewerProps {
 }
 
 export function SkillViewer({ group, onClose }: SkillViewerProps) {
+  const queryClient = useQueryClient();
   const [copied, setCopied] = useState(false);
   const [showSync, setShowSync] = useState(false);
   const [activeVariant, setActiveVariant] = useState<SkillItem>(group.primary);
+
+  const handleSave = async (body: string) => {
+    await saveSkillContent(activeVariant.path, body);
+    queryClient.invalidateQueries({ queryKey: ["skills"] });
+  };
 
   const missingTools = ALL_TOOLS.filter((t) => !group.installedTools.includes(t));
   const showVariantTabs = group.hasContentDrift && group.variants.length > 1;
@@ -139,6 +147,7 @@ export function SkillViewer({ group, onClose }: SkillViewerProps) {
           <MarkdownPreview
             content={activeVariant.content}
             className="h-full"
+            onSave={handleSave}
           />
         </div>
 
