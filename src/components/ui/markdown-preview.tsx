@@ -95,13 +95,13 @@ export function MarkdownPreview({ content, className, onSave }: MarkdownPreviewP
       </div>
 
       {/* Content */}
-      <div className="flex-1 overflow-auto">
+      <div className="min-h-0 flex-1 overflow-auto">
         {mode === "edit" ? (
           <textarea
             ref={textareaRef}
             value={draft}
             onChange={(e) => setDraft(e.target.value)}
-            className="h-full w-full resize-none bg-transparent p-4 font-mono text-sm outline-none"
+            className="min-h-full w-full resize-none bg-transparent p-4 font-mono text-sm outline-none"
             spellCheck={false}
           />
         ) : (
