@@ -7,10 +7,14 @@ use std::path::Path;
 use std::process::{Command, Stdio};
 use tauri::Emitter;
 
-/// Scan home directory for git repos without any AI rules files
+/// Scan home directory for git repos without any AI rules files.
+/// Runs on a blocking thread so the main thread stays free for UI rendering.
 #[tauri::command]
-pub fn scan_repos_without_rules(max_depth: Option<u32>) -> Result<RepoScanResult, String> {
-    do_scan(max_depth.unwrap_or(5))
+pub async fn scan_repos_without_rules(max_depth: Option<u32>) -> Result<RepoScanResult, String> {
+    let depth = max_depth.unwrap_or(5);
+    tauri::async_runtime::spawn_blocking(move || do_scan(depth))
+        .await
+        .map_err(|e| format!("Task join error: {}", e))?
 }
 
 /// Result of CLI rule generation
