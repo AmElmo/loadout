@@ -138,7 +138,14 @@ export function Sidebar() {
   return (
     <aside className="flex h-full w-[200px] flex-col border-r border-sidebar-border bg-sidebar">
       {/* Logo */}
-      <div className="flex h-14 items-center border-b border-sidebar-border px-4">
+      <div className="flex h-14 items-center gap-2.5 border-b border-sidebar-border px-4">
+        <svg viewBox="0 0 64 64" xmlns="http://www.w3.org/2000/svg" className="h-6 w-6 shrink-0">
+          <circle cx="32" cy="32" r="24" fill="none" stroke="#3B82F6" strokeWidth="5"/>
+          <line x1="32" y1="8" x2="32" y2="56" stroke="#3B82F6" strokeWidth="3"/>
+          <line x1="11" y1="20" x2="53" y2="44" stroke="#3B82F6" strokeWidth="3"/>
+          <line x1="53" y1="20" x2="11" y2="44" stroke="#3B82F6" strokeWidth="3"/>
+          <path d="M32,8 A24,24 0 0,1 52.8,20 L32,32 Z" fill="#3B82F6"/>
+        </svg>
         <h1 className="text-lg font-semibold tracking-tight text-sidebar-foreground">
           Loadout
         </h1>

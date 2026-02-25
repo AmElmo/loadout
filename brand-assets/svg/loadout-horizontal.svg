@@ -1,0 +1,14 @@
+<svg viewBox="0 0 240 64" xmlns="http://www.w3.org/2000/svg">
+  <!-- Mark -->
+  <g id="icon">
+    <circle cx="32" cy="32" r="24" fill="none" stroke="#1E40AF" stroke-width="5"/>
+    <line x1="32" y1="8" x2="32" y2="56" stroke="#1E40AF" stroke-width="3"/>
+    <line x1="11" y1="20" x2="53" y2="44" stroke="#1E40AF" stroke-width="3"/>
+    <line x1="53" y1="20" x2="11" y2="44" stroke="#1E40AF" stroke-width="3"/>
+    <path d="M32,8 A24,24 0 0,1 52.8,20 L32,32 Z" fill="#1E40AF"/>
+  </g>
+  <!-- Wordmark: LOADOUT in Space Grotesk SemiBold -->
+  <g id="text">
+    <text x="76" y="40" font-family="'Space Grotesk', sans-serif" font-weight="600" font-size="26" letter-spacing="2" fill="#0C0A14">LOADOUT</text>
+  </g>
+</svg>
