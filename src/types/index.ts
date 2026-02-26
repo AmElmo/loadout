@@ -184,6 +184,22 @@ export interface SkillConflict {
 }
 
 /**
+ * A single version of a skill for conflict resolution comparison
+ */
+export interface SkillVersion {
+  /** Which tool this version is from */
+  sourceTool: SourceTool;
+  /** Scope level (user or project) */
+  scope: string;
+  /** Absolute path to the skill file */
+  path: string;
+  /** Full file content */
+  content: string;
+  /** ISO 8601 timestamp of last modification */
+  lastModified: string | null;
+}
+
+/**
  * Result of scanning all skills
  */
 export interface SkillScanResult {
@@ -341,6 +357,11 @@ export interface SkillFile {
  * Install method for skills
  */
 export type InstallMethod = "link" | "copy";
+
+export interface ExistingToolInfo {
+  tool: SourceTool;
+  method: InstallMethod;
+}
 
 /**
  * Request to install a skill to one or more tools

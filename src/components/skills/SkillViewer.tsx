@@ -25,9 +25,23 @@ export function SkillViewer({ group, onClose }: SkillViewerProps) {
   const queryClient = useQueryClient();
   const [copied, setCopied] = useState(false);
   const [showSync, setShowSync] = useState(false);
+  const [isDirty, setIsDirty] = useState(false);
   const stableOnClose = useCallback(() => onClose(), [onClose]);
   useEscapeKey(stableOnClose);
   const [activeVariant, setActiveVariant] = useState<SkillItem>(group.primary);
+
+  const switchVariant = useCallback(
+    (variant: SkillItem) => {
+      if (isDirty) {
+        const confirmed = window.confirm(
+          "You have unsaved changes. Discard and switch version?"
+        );
+        if (!confirmed) return;
+      }
+      setActiveVariant(variant);
+    },
+    [isDirty]
+  );
 
   const handleSave = async (body: string) => {
     await saveSkillContent(activeVariant.path, body);
@@ -35,7 +49,13 @@ export function SkillViewer({ group, onClose }: SkillViewerProps) {
   };
 
   const missingTools = ALL_TOOLS.filter((t) => !group.installedTools.includes(t));
+  const hasCopyInstalls = group.variants.some((v) => !v.isSymlinked);
+  const existingToolMethods = group.variants.map((v) => ({
+    tool: v.sourceTool,
+    method: v.isSymlinked ? "link" as const : "copy" as const,
+  }));
   const showVariantTabs = group.hasContentDrift && group.variants.length > 1;
+  const hasMultipleVariants = group.variants.length > 1;
 
   const isLinked = group.variants.some((v) => v.isSymlinked);
   const hasBrokenSymlink = group.variants.some((v) => v.isBrokenSymlink);
@@ -118,7 +138,7 @@ export function SkillViewer({ group, onClose }: SkillViewerProps) {
             {group.variants.map((variant) => (
               <button
                 key={variant.id}
-                onClick={() => setActiveVariant(variant)}
+                onClick={() => switchVariant(variant)}
                 className={cn(
                   "rounded-md px-2 py-1 text-xs transition-colors",
                   activeVariant.id === variant.id
@@ -154,6 +174,28 @@ export function SkillViewer({ group, onClose }: SkillViewerProps) {
             className="h-full"
             onSave={handleSave}
             onClose={onClose}
+            onDirtyChange={setIsDirty}
+            editToolbar={
+              hasMultipleVariants && !showVariantTabs && !isLinked ? (
+                <div className="flex items-center gap-2 border-b border-border bg-muted/20 px-4 py-1.5">
+                  <span className="text-xs text-muted-foreground">Editing in</span>
+                  {group.variants.map((variant) => (
+                    <button
+                      key={variant.id}
+                      onClick={() => switchVariant(variant)}
+                      className={cn(
+                        "rounded-md px-2 py-1 text-xs transition-colors",
+                        activeVariant.id === variant.id
+                          ? "bg-primary/10 text-primary"
+                          : "text-muted-foreground hover:bg-muted"
+                      )}
+                    >
+                      <ToolBadge tool={variant.sourceTool} />
+                    </button>
+                  ))}
+                </div>
+              ) : undefined
+            }
           />
         </div>
 
@@ -170,8 +212,12 @@ export function SkillViewer({ group, onClose }: SkillViewerProps) {
               path={activeVariant.path}
               variant="outline"
               size="sm"
+              paths={group.variants.map((v) => ({
+                tool: v.sourceTool,
+                path: v.path,
+              }))}
             />
-            {missingTools.length > 0 && (
+            {(missingTools.length > 0 || hasCopyInstalls) && (
               <Button
                 variant="outline"
                 size="sm"
@@ -190,13 +236,23 @@ export function SkillViewer({ group, onClose }: SkillViewerProps) {
           type="skill"
           name={group.name}
           existingTools={group.installedTools}
+          existingToolMethods={existingToolMethods}
+          hasContentDrift={group.hasContentDrift}
           onSync={(targetTools, method) =>
             installSkillToTools({
               name: group.name,
-              // Sync the currently selected variant to avoid propagating the wrong version.
               content: activeVariant.content,
               targetTools,
               method: method ?? "link",
+              files: [],
+            })
+          }
+          onConvert={(tools) =>
+            installSkillToTools({
+              name: group.name,
+              content: activeVariant.content,
+              targetTools: tools,
+              method: "link",
               files: [],
             })
           }
