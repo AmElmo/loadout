@@ -1,0 +1,10 @@
+<svg viewBox="0 0 1024 1024" xmlns="http://www.w3.org/2000/svg">
+  <!-- macOS squircle background (824x824 centered in 1024x1024) -->
+  <rect x="100" y="100" width="824" height="824" rx="185" ry="185" fill="#0C0A14"/>
+  <!-- Loadout mark centered -->
+  <circle cx="512" cy="512" r="296" fill="none" stroke="#3B82F6" stroke-width="58"/>
+  <line x1="512" y1="216" x2="512" y2="808" stroke="#3B82F6" stroke-width="36"/>
+  <line x1="256" y1="365" x2="768" y2="659" stroke="#3B82F6" stroke-width="36"/>
+  <line x1="768" y1="365" x2="256" y2="659" stroke="#3B82F6" stroke-width="36"/>
+  <path d="M512,216 A296,296 0 0,1 768,365 L512,512 Z" fill="#3B82F6"/>
+</svg>
