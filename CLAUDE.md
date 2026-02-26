@@ -105,7 +105,7 @@ Existing installations check for updates on launch (3s delay) and every 4 hours.
 ### First-time setup (already done unless regenerating keys)
 
 ```bash
-pnpm tauri signer generate -- -w ~/.tauri/loadout.key
+pnpm tauri signer generate --write-keys ~/.tauri/loadout.key
 ```
 
 Put the public key in `src-tauri/tauri.conf.json` → `plugins.updater.pubkey`, and the private key + password in GitHub repo secrets.
