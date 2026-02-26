@@ -12,7 +12,7 @@ use crate::parsers::{
 };
 use serde::{Deserialize, Serialize};
 use std::collections::{HashMap, HashSet};
-use std::path::{Path, PathBuf};
+use std::path::Path;
 
 // ===== Enums =====
 
@@ -167,12 +167,13 @@ pub struct PluginScanResult {
 
 // ===== ID generation =====
 
-fn generate_plugin_id(name: &str, source_variant: PluginSourceVariant) -> String {
+fn generate_plugin_id(name: &str, source_variant: PluginSourceVariant, path: &str) -> String {
     use std::collections::hash_map::DefaultHasher;
     use std::hash::{Hash, Hasher};
     let mut hasher = DefaultHasher::new();
     name.hash(&mut hasher);
     format!("{:?}", source_variant).hash(&mut hasher);
+    path.hash(&mut hasher);
     format!("plugin_{:x}", hasher.finish())
 }
 
@@ -486,8 +487,9 @@ fn scan_claude_cli_plugins(home_dir: &Path) -> Vec<PluginItem> {
             // Read README
             let readme = read_readme(&plugin_dir);
 
+            let path_str = plugin_dir.to_string_lossy().to_string();
             plugins.push(PluginItem {
-                id: generate_plugin_id(&name, PluginSourceVariant::ClaudeCli),
+                id: generate_plugin_id(&name, PluginSourceVariant::ClaudeCli, &path_str),
                 name,
                 description,
                 version,
@@ -497,7 +499,7 @@ fn scan_claude_cli_plugins(home_dir: &Path) -> Vec<PluginItem> {
                 marketplace: marketplace_name.clone(),
                 scope,
                 enabled: true,
-                path: plugin_dir.to_string_lossy().to_string(),
+                path: path_str,
                 installed_at: entry.installed_at.clone(),
                 components,
                 component_details,
@@ -615,8 +617,9 @@ fn scan_cowork_plugins(home_dir: &Path) -> Vec<PluginItem> {
                 let (components, component_details) = inventory_components(&resolved_path);
                 let readme = read_readme(&resolved_path);
 
+                let path_str = resolved_path.to_string_lossy().to_string();
                 plugins.push(PluginItem {
-                    id: generate_plugin_id(&name, PluginSourceVariant::ClaudeDesktop),
+                    id: generate_plugin_id(&name, PluginSourceVariant::ClaudeDesktop, &path_str),
                     name,
                     description,
                     version,
@@ -626,7 +629,7 @@ fn scan_cowork_plugins(home_dir: &Path) -> Vec<PluginItem> {
                     marketplace: marketplace_name.clone(),
                     scope,
                     enabled: true,
-                    path: resolved_path.to_string_lossy().to_string(),
+                    path: path_str,
                     installed_at: entry.installed_at.clone(),
                     components,
                     component_details,
@@ -675,8 +678,9 @@ fn scan_cowork_skills_plugin(skills_plugin_dir: &Path, plugins: &mut Vec<PluginI
         let (components, component_details) = inventory_components(&uuid_dir);
         let readme = read_readme(&uuid_dir);
 
+        let path_str = uuid_dir.to_string_lossy().to_string();
         plugins.push(PluginItem {
-            id: generate_plugin_id(&name, PluginSourceVariant::ClaudeDesktop),
+            id: generate_plugin_id(&name, PluginSourceVariant::ClaudeDesktop, &path_str),
             name,
             description,
             version,
@@ -686,7 +690,7 @@ fn scan_cowork_skills_plugin(skills_plugin_dir: &Path, plugins: &mut Vec<PluginI
             marketplace: None,
             scope: PluginScope::System,
             enabled: true,
-            path: uuid_dir.to_string_lossy().to_string(),
+            path: path_str,
             installed_at: None,
             components,
             component_details,
@@ -757,8 +761,9 @@ fn scan_gemini_extensions(home_dir: &Path) -> Vec<PluginItem> {
 
         let readme = read_readme(&ext_dir);
 
+        let path_str = ext_dir.to_string_lossy().to_string();
         plugins.push(PluginItem {
-            id: generate_plugin_id(&manifest.name, PluginSourceVariant::GeminiCli),
+            id: generate_plugin_id(&manifest.name, PluginSourceVariant::GeminiCli, &path_str),
             name: manifest.name,
             description: manifest.description.unwrap_or_default(),
             version: manifest.version.unwrap_or_else(|| "0.0.0".to_string()),
@@ -768,7 +773,7 @@ fn scan_gemini_extensions(home_dir: &Path) -> Vec<PluginItem> {
             marketplace: None,
             scope: PluginScope::User,
             enabled: true,
-            path: ext_dir.to_string_lossy().to_string(),
+            path: path_str,
             installed_at: None,
             components,
             component_details,
@@ -783,7 +788,7 @@ fn scan_gemini_extensions(home_dir: &Path) -> Vec<PluginItem> {
 /// Scan marketplace catalogs for available plugins
 fn scan_marketplace_catalogs(
     home_dir: &Path,
-    installed_names: &HashSet<String>,
+    installed_keys: &HashSet<(PluginSourceTool, String)>,
 ) -> (Vec<MarketplacePluginItem>, Vec<MarketplaceInfo>) {
     let mut available = Vec::new();
     let mut marketplaces = Vec::new();
@@ -813,7 +818,8 @@ fn scan_marketplace_catalogs(
                     });
 
                     for plugin in &catalog.plugins {
-                        let is_installed = installed_names.contains(&plugin.name);
+                        let is_installed = installed_keys
+                            .contains(&(PluginSourceTool::Claude, plugin.name.clone()));
                         available.push(MarketplacePluginItem {
                             name: plugin.name.clone(),
                             description: plugin.description.clone().unwrap_or_default(),
@@ -857,23 +863,29 @@ fn scan_marketplace_catalogs(
                             .join(".claude-plugin")
                             .join("marketplace.json");
                         if let Ok(catalog) = parse_marketplace_json(&catalog_path) {
-                            // Avoid duplicate marketplace entries
+                            // Only add marketplace metadata once (dedup)
                             let already_registered = marketplaces
                                 .iter()
                                 .any(|m| m.name == catalog.name);
-                            if already_registered {
-                                continue;
+                            if !already_registered {
+                                marketplaces.push(MarketplaceInfo {
+                                    name: catalog.name.clone(),
+                                    source: marketplace_dir.to_string_lossy().to_string(),
+                                    source_variant: PluginSourceVariant::ClaudeDesktop,
+                                    last_updated: None,
+                                });
                             }
 
-                            marketplaces.push(MarketplaceInfo {
-                                name: catalog.name.clone(),
-                                source: marketplace_dir.to_string_lossy().to_string(),
-                                source_variant: PluginSourceVariant::ClaudeDesktop,
-                                last_updated: None,
-                            });
-
+                            // Always merge plugin entries, deduplicating by name within marketplace
                             for plugin in &catalog.plugins {
-                                let is_installed = installed_names.contains(&plugin.name);
+                                let already_listed = available.iter().any(|a| {
+                                    a.marketplace == catalog.name && a.name == plugin.name
+                                });
+                                if already_listed {
+                                    continue;
+                                }
+                                let is_installed = installed_keys
+                                    .contains(&(PluginSourceTool::Claude, plugin.name.clone()));
                                 available.push(MarketplacePluginItem {
                                     name: plugin.name.clone(),
                                     description: plugin
@@ -926,11 +938,16 @@ pub fn scan_all_plugins(_workspace_path: Option<&str>) -> Result<PluginScanResul
     // 3. Gemini CLI extensions
     installed.extend(scan_gemini_extensions(&home_dir));
 
-    // Build set of installed plugin names for cross-referencing
-    let installed_names: HashSet<String> = installed.iter().map(|p| p.name.clone()).collect();
+    // Build set of installed plugin (source_tool, name) pairs for cross-referencing.
+    // This prevents a Gemini extension name from falsely marking a Claude marketplace
+    // plugin as installed (or vice versa).
+    let installed_keys: HashSet<(PluginSourceTool, String)> = installed
+        .iter()
+        .map(|p| (p.source_tool, p.name.clone()))
+        .collect();
 
     // 4. Marketplace catalogs
-    let (available, marketplaces) = scan_marketplace_catalogs(&home_dir, &installed_names);
+    let (available, marketplaces) = scan_marketplace_catalogs(&home_dir, &installed_keys);
 
     // Sort installed by name, then source variant
     installed.sort_by(|a, b| {
@@ -952,10 +969,12 @@ mod tests {
 
     #[test]
     fn test_generate_plugin_id() {
-        let id1 = generate_plugin_id("test", PluginSourceVariant::ClaudeCli);
-        let id2 = generate_plugin_id("test", PluginSourceVariant::GeminiCli);
+        let id1 = generate_plugin_id("test", PluginSourceVariant::ClaudeCli, "/path/a");
+        let id2 = generate_plugin_id("test", PluginSourceVariant::GeminiCli, "/path/b");
+        let id3 = generate_plugin_id("test", PluginSourceVariant::ClaudeCli, "/path/b");
         assert!(id1.starts_with("plugin_"));
         assert_ne!(id1, id2); // Different variants produce different IDs
+        assert_ne!(id1, id3); // Different paths produce different IDs
     }
 
     #[test]
