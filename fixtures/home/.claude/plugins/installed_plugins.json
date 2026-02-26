@@ -1,0 +1,25 @@
+{
+  "version": 2,
+  "plugins": {
+    "commit-commands@claude-plugins-official": [
+      {
+        "scope": "user",
+        "installPath": "cache/claude-plugins-official/commit-commands/1.0.0",
+        "version": "1.0.0",
+        "installedAt": "2026-02-19T03:32:02.466Z",
+        "lastUpdated": "2026-02-19T03:32:02.466Z",
+        "gitCommitSha": "abc123def456"
+      }
+    ],
+    "code-quality@claude-plugins-official": [
+      {
+        "scope": "user",
+        "installPath": "cache/claude-plugins-official/code-quality/2.1.0",
+        "version": "2.1.0",
+        "installedAt": "2026-02-20T10:15:00.000Z",
+        "lastUpdated": "2026-02-20T10:15:00.000Z",
+        "gitCommitSha": "789xyz012"
+      }
+    ]
+  }
+}

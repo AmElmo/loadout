@@ -1,0 +1,6 @@
+{
+  "name": "code-quality",
+  "version": "2.1.0",
+  "description": "Code quality analysis, linting, and best practices enforcement",
+  "author": { "name": "Anthropic" }
+}

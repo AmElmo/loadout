@@ -5,6 +5,7 @@ import {
   Bot,
   FileText,
   Anchor,
+  Puzzle,
   BarChart3,
   BookOpen,
   FolderOpen,
@@ -32,6 +33,7 @@ const navItems = [
   { id: "rules" as const, label: "Rules", icon: FileText },
   { id: "agents" as const, label: "Subagents", icon: Bot },
   { id: "hooks" as const, label: "Hooks", icon: Anchor },
+  { id: "plugins" as const, label: "Plugins", icon: Puzzle },
   { id: "context" as const, label: "Context", icon: BarChart3 },
 ];
 

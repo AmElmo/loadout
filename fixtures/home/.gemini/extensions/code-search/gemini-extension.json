@@ -1,0 +1,14 @@
+{
+  "name": "code-search",
+  "version": "0.3.0",
+  "description": "Semantic code search across repositories",
+  "mcpServers": {
+    "search-server": {
+      "command": "node",
+      "args": ["./server.js"],
+      "env": {}
+    }
+  },
+  "contextFileName": "GEMINI.md",
+  "settings": {}
+}
