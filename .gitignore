@@ -32,3 +32,4 @@ src-tauri/gen
 
 # Conductor workspace context
 .context
+src-tauri/.cargo/
