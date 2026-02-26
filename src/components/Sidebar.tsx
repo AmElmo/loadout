@@ -12,6 +12,8 @@ import {
   GitBranch,
   Search,
   RefreshCw,
+  Settings,
+  Keyboard,
   X,
 } from "lucide-react";
 import { open } from "@tauri-apps/plugin-dialog";
@@ -65,6 +67,68 @@ function ToolDots({ workspace }: { workspace: DiscoveredWorkspace }) {
             <ToolLogo tool={t.name} size={9} />
           </span>
         ))}
+    </div>
+  );
+}
+
+const isMac = navigator.platform.toUpperCase().includes("MAC");
+
+function SettingsMenu({ version }: { version: string }) {
+  const [open, setOpen] = useState(false);
+  const menuRef = useRef<HTMLDivElement>(null);
+  const setShowShortcutsModal = useShortcutStore(
+    (s) => s.setShowShortcutsModal
+  );
+
+  useEffect(() => {
+    function handleClickOutside(e: MouseEvent) {
+      if (menuRef.current && !menuRef.current.contains(e.target as Node)) {
+        setOpen(false);
+      }
+    }
+    if (open) {
+      document.addEventListener("mousedown", handleClickOutside);
+      return () =>
+        document.removeEventListener("mousedown", handleClickOutside);
+    }
+  }, [open]);
+
+  return (
+    <div className="relative" ref={menuRef}>
+      <div className="flex items-center justify-between">
+        <p className="text-xs text-muted-foreground">v{version}</p>
+        <div className="flex items-center gap-1">
+          <ThemeToggle />
+          <button
+            onClick={() => setOpen(!open)}
+            className={cn(
+              "rounded-md p-1.5 text-muted-foreground transition-colors hover:bg-sidebar-accent/50 hover:text-sidebar-foreground",
+              open && "bg-sidebar-accent text-sidebar-foreground"
+            )}
+            title="Settings"
+          >
+            <Settings className="h-4 w-4" />
+          </button>
+        </div>
+      </div>
+
+      {open && (
+        <div className="absolute bottom-full left-0 right-0 mb-1 rounded-md border border-border bg-card py-1 shadow-lg">
+          <button
+            onClick={() => {
+              setShowShortcutsModal(true);
+              setOpen(false);
+            }}
+            className="flex w-full items-center gap-2 px-3 py-1.5 text-left text-sm text-foreground hover:bg-accent"
+          >
+            <Keyboard className="h-3.5 w-3.5 text-muted-foreground" />
+            <span className="flex-1">Keyboard Shortcuts</span>
+            <span className="text-[10px] text-muted-foreground">
+              {isMac ? "\u2318" : "Ctrl"}+/
+            </span>
+          </button>
+        </div>
+      )}
     </div>
   );
 }
@@ -339,10 +403,9 @@ export function Sidebar() {
         </button>
       </nav>
 
-      {/* Version + Theme */}
-      <div className="flex items-center justify-between border-t border-sidebar-border px-4 py-3">
-        <p className="text-xs text-muted-foreground">v{version}</p>
-        <ThemeToggle />
+      {/* Footer: settings + version */}
+      <div className="border-t border-sidebar-border px-3 py-2">
+        <SettingsMenu version={version} />
       </div>
     </aside>
   );
