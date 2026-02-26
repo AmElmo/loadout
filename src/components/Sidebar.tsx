@@ -14,6 +14,7 @@ import {
   X,
 } from "lucide-react";
 import { open } from "@tauri-apps/plugin-dialog";
+import { getVersion } from "@tauri-apps/api/app";
 import { cn, isRealWorkspace } from "@/lib/utils";
 import { useWorkspaceStore } from "@/stores/workspaceStore";
 import { getWorkspaceInfo, discoverWorkspaces } from "@/lib/api/workspace";
@@ -69,7 +70,12 @@ export function Sidebar() {
     useWorkspaceStore();
   const [showDropdown, setShowDropdown] = useState(false);
   const [filter, setFilter] = useState("");
+  const [version, setVersion] = useState("0.1.0");
   const dropdownRef = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    getVersion().then(setVersion).catch(() => {});
+  }, []);
 
   const {
     data: discovery,
@@ -317,7 +323,7 @@ export function Sidebar() {
 
       {/* Version */}
       <div className="border-t border-sidebar-border p-4">
-        <p className="text-xs text-muted-foreground">v0.1.0</p>
+        <p className="text-xs text-muted-foreground">v{version}</p>
       </div>
     </aside>
   );
