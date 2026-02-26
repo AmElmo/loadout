@@ -1,11 +1,46 @@
 @import "tailwindcss";
-@import "highlight.js/styles/github-dark.min.css";
+@import "./hljs-themes.css";
+
+@custom-variant dark (&:where(.dark, .dark *));
 
 @theme {
   --font-sans: ui-sans-serif, system-ui, sans-serif, "Apple Color Emoji", "Segoe UI Emoji", "Segoe UI Symbol", "Noto Color Emoji";
   --font-mono: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", "Courier New", monospace;
 
-  /* Custom colors for Loadout */
+  /* Custom colors for Loadout — light mode defaults */
+  --color-background: #ffffff;
+  --color-foreground: #09090b;
+  --color-card: #f4f4f5;
+  --color-card-foreground: #09090b;
+  --color-primary: #2563eb;
+  --color-primary-foreground: #ffffff;
+  --color-secondary: #e4e4e7;
+  --color-secondary-foreground: #18181b;
+  --color-muted: #e4e4e7;
+  --color-muted-foreground: #71717a;
+  --color-accent: #e4e4e7;
+  --color-accent-foreground: #18181b;
+  --color-border: #d4d4d8;
+  --color-ring: #2563eb;
+
+  /* Sidebar */
+  --color-sidebar: #f9fafb;
+  --color-sidebar-foreground: #09090b;
+  --color-sidebar-border: #d4d4d8;
+  --color-sidebar-accent: #e4e4e7;
+  --color-sidebar-accent-foreground: #09090b;
+
+  /* Status colors */
+  --color-success: #16a34a;
+  --color-warning: #d97706;
+  --color-error: #dc2626;
+
+  /* Radii */
+  --radius: 0.5rem;
+}
+
+/* ─── Dark theme overrides ─── */
+.dark {
   --color-background: #0a0a0f;
   --color-foreground: #fafafa;
   --color-card: #18181b;
@@ -21,20 +56,15 @@
   --color-border: #27272a;
   --color-ring: #3b82f6;
 
-  /* Sidebar */
   --color-sidebar: #111113;
   --color-sidebar-foreground: #fafafa;
   --color-sidebar-border: #27272a;
   --color-sidebar-accent: #1f1f23;
   --color-sidebar-accent-foreground: #fafafa;
 
-  /* Status colors */
   --color-success: #22c55e;
   --color-warning: #f59e0b;
   --color-error: #ef4444;
-
-  /* Radii */
-  --radius: 0.5rem;
 }
 
 body {

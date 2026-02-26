@@ -85,10 +85,10 @@ function CliOutputStream({ text, toolLabel }: { text: string; toolLabel: string 
   return (
     <div
       ref={scrollRef}
-      className="max-h-48 overflow-auto bg-[#1a1a2e] p-3 font-mono text-xs leading-relaxed text-green-400/90"
+      className="max-h-48 overflow-auto bg-muted p-3 font-mono text-xs leading-relaxed text-green-700 dark:text-green-400/90"
     >
       <span className="whitespace-pre-wrap break-all">{text}</span>
-      <span className="inline-block h-3.5 w-[2px] animate-pulse bg-green-400/70" />
+      <span className="inline-block h-3.5 w-[2px] animate-pulse bg-green-700/70 dark:bg-green-400/70" />
     </div>
   );
 }
