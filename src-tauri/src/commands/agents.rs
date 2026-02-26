@@ -22,6 +22,8 @@ pub struct InstallAgentRequest {
     pub scope: String,
     /// Target tools to install to
     pub target_tools: Vec<String>,
+    /// Workspace path (required for project scope)
+    pub workspace_path: Option<String>,
 }
 
 /// Request to sync an existing agent to other tools
@@ -30,7 +32,7 @@ pub struct InstallAgentRequest {
 pub struct SyncAgentRequest {
     /// Agent filename (without .md extension)
     pub filename: String,
-    /// Source tool
+    /// Source tool (claude or gemini)
     pub source_tool: String,
     /// Source file path
     pub source_path: String,
@@ -38,6 +40,8 @@ pub struct SyncAgentRequest {
     pub target_tools: Vec<String>,
     /// Scope: user or project
     pub scope: String,
+    /// Workspace path (required for project scope)
+    pub workspace_path: Option<String>,
 }
 
 /// Result of an agent write operation
@@ -72,7 +76,7 @@ pub fn install_agent_to_tools(request: InstallAgentRequest) -> Result<AgentWrite
             &request.content,
             tool,
             &request.scope,
-            None,
+            request.workspace_path.as_deref(),
         ) {
             Ok(path) => modified_files.push(path),
             Err(e) => errors.push(format!("{}: {}", tool, e)),
@@ -86,6 +90,46 @@ pub fn install_agent_to_tools(request: InstallAgentRequest) -> Result<AgentWrite
     })
 }
 
+/// Validate that source_path is inside an expected agent directory for the declared tool
+fn validate_source_path(source_path: &str, source_tool: &str, workspace_path: Option<&str>) -> Result<(), String> {
+    let path = std::path::Path::new(source_path);
+    let canonical = path.canonicalize()
+        .map_err(|e| format!("Cannot resolve source path: {}", e))?;
+    let canonical_str = canonical.to_string_lossy();
+
+    let home = crate::helpers::effective_home()
+        .ok_or("Could not determine home directory")?;
+
+    let tool_dir = match source_tool {
+        "claude" => ".claude",
+        "gemini" => ".gemini",
+        _ => return Err(format!("Unknown source tool: {}", source_tool)),
+    };
+
+    // Check user-level path: ~/.<tool>/agents/
+    let user_agents_dir = home.join(tool_dir).join("agents");
+    if let Ok(user_canon) = user_agents_dir.canonicalize() {
+        if canonical_str.starts_with(&user_canon.to_string_lossy().to_string()) {
+            return Ok(());
+        }
+    }
+
+    // Check project-level path: $WORKSPACE/.<tool>/agents/
+    if let Some(ws) = workspace_path {
+        let project_agents_dir = std::path::PathBuf::from(ws).join(tool_dir).join("agents");
+        if let Ok(project_canon) = project_agents_dir.canonicalize() {
+            if canonical_str.starts_with(&project_canon.to_string_lossy().to_string()) {
+                return Ok(());
+            }
+        }
+    }
+
+    Err(format!(
+        "Source path is not inside a valid {} agents directory",
+        source_tool
+    ))
+}
+
 /// Sync an existing agent to other tools
 #[tauri::command]
 pub fn sync_agent_to_tools(request: SyncAgentRequest) -> Result<AgentWriteResult, String> {
@@ -96,6 +140,13 @@ pub fn sync_agent_to_tools(request: SyncAgentRequest) -> Result<AgentWriteResult
         return Err("At least one target tool must be selected".to_string());
     }
 
+    // Validate source path is inside the expected agent directory
+    validate_source_path(
+        &request.source_path,
+        &request.source_tool,
+        request.workspace_path.as_deref(),
+    )?;
+
     // Read the source file content
     let content = std::fs::read_to_string(&request.source_path)
         .map_err(|e| format!("Failed to read source agent: {}", e))?;
@@ -105,7 +156,7 @@ pub fn sync_agent_to_tools(request: SyncAgentRequest) -> Result<AgentWriteResult
     let mut errors = Vec::new();
 
     for tool in &request.target_tools {
-        match agent_writer::write_agent(&safe_name, &content, tool, &request.scope, None) {
+        match agent_writer::write_agent(&safe_name, &content, tool, &request.scope, request.workspace_path.as_deref()) {
             Ok(path) => modified_files.push(path),
             Err(e) => errors.push(format!("{}: {}", tool, e)),
         }

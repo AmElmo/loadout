@@ -1,5 +1,5 @@
 import { useCallback, useState } from "react";
-import { X, Loader2, Share2, AlertCircle } from "lucide-react";
+import { X, Loader2, Share2, AlertCircle, AlertTriangle } from "lucide-react";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import type { GroupedAgent, AgentSourceTool, AgentWriteResult } from "@/types";
 import { syncAgentToTools } from "@/lib/api/agents";
@@ -8,6 +8,7 @@ import { ToolLogo } from "@/components/ToolLogo";
 import { TOOL_CONFIG } from "@/config/tools";
 import { useEscapeKey } from "@/hooks/useEscapeKey";
 import { cn } from "@/lib/utils";
+import { useWorkspaceStore } from "@/stores/workspaceStore";
 
 const AGENT_TOOLS: AgentSourceTool[] = ["claude", "gemini"];
 
@@ -18,6 +19,7 @@ interface AgentSyncDialogProps {
 
 export function AgentSyncDialog({ group, onClose }: AgentSyncDialogProps) {
   const queryClient = useQueryClient();
+  const { current } = useWorkspaceStore();
   const stableOnClose = useCallback(() => onClose(), [onClose]);
   useEscapeKey(stableOnClose);
 
@@ -35,6 +37,7 @@ export function AgentSyncDialog({ group, onClose }: AgentSyncDialogProps) {
         sourcePath: group.primary.path,
         targetTools,
         scope: group.scope,
+        workspacePath: current?.path,
       });
     },
     onSuccess: () => {
@@ -48,13 +51,23 @@ export function AgentSyncDialog({ group, onClose }: AgentSyncDialogProps) {
       <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4">
         <div className="w-full max-w-md rounded-lg border border-border bg-background p-6 shadow-xl">
           <div className="text-center">
-            <div className="mx-auto mb-3 flex h-12 w-12 items-center justify-center rounded-full bg-green-500/10">
-              <Share2 className="h-6 w-6 text-green-600" />
+            <div className={cn(
+              "mx-auto mb-3 flex h-12 w-12 items-center justify-center rounded-full",
+              result.success ? "bg-green-500/10" : "bg-red-500/10"
+            )}>
+              {result.success ? (
+                <Share2 className="h-6 w-6 text-green-600" />
+              ) : (
+                <AlertTriangle className="h-6 w-6 text-red-600" />
+              )}
             </div>
-            <h3 className="text-lg font-semibold">Agent Synced</h3>
+            <h3 className="text-lg font-semibold">
+              {result.success ? "Agent Synced" : "Sync Failed"}
+            </h3>
             <p className="mt-1 text-sm text-muted-foreground">
-              Successfully synced{" "}
-              <span className="font-medium">{group.name}</span>
+              {result.success
+                ? <>Successfully synced <span className="font-medium">{group.name}</span></>
+                : <>Failed to sync <span className="font-medium">{group.name}</span> to some tools</>}
             </p>
             {result.modifiedFiles.length > 0 && (
               <div className="mt-3 space-y-1">

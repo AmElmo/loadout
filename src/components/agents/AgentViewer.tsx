@@ -1,11 +1,12 @@
-import { X, Copy, Check, FolderOpen, Share2, Bot } from "lucide-react";
+import { X, Copy, Check, FolderOpen, Share2 } from "lucide-react";
 import { useState, useCallback } from "react";
 import { useQueryClient } from "@tanstack/react-query";
 import type { GroupedAgent, AgentItem, AgentSourceTool } from "@/types";
-import { saveFileContent } from "@/lib/api/system";
+import { saveSkillContent } from "@/lib/api/system";
 import { ToolLogo } from "@/components/ToolLogo";
 import { TOOL_CONFIG } from "@/config/tools";
 import { MaturityBadge } from "@/components/skills/MaturityBadge";
+import { ItemIcon } from "@/components/ItemIcon";
 import { AgentSyncDialog } from "./AgentSyncDialog";
 import { Button } from "@/components/ui/button";
 import { MarkdownPreview } from "@/components/ui/markdown-preview";
@@ -29,7 +30,7 @@ export function AgentViewer({ group, onClose }: AgentViewerProps) {
   const [activeVariant, setActiveVariant] = useState<AgentItem>(group.primary);
 
   const handleSave = async (body: string) => {
-    await saveFileContent(activeVariant.path, body);
+    await saveSkillContent(activeVariant.path, body);
     queryClient.invalidateQueries({ queryKey: ["agents"] });
   };
 
@@ -50,9 +51,7 @@ export function AgentViewer({ group, onClose }: AgentViewerProps) {
         {/* Header */}
         <div className="flex items-center justify-between border-b border-border px-4 py-3">
           <div className="flex items-center gap-3">
-            <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-primary/10 text-primary">
-              <Bot className="h-4 w-4" />
-            </div>
+            <ItemIcon name={group.name} description={group.description} size="sm" />
             <h2 className="text-lg font-semibold">{group.name}</h2>
             <div className="flex gap-0.5">
               {group.installedTools.map((tool) => (

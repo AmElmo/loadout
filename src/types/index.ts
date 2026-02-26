@@ -551,6 +551,8 @@ export interface InstallAgentRequest {
   scope: AgentScope;
   /** Target tools to install to */
   targetTools: AgentSourceTool[];
+  /** Workspace path (required for project scope) */
+  workspacePath?: string;
 }
 
 /**
@@ -567,6 +569,8 @@ export interface SyncAgentRequest {
   targetTools: AgentSourceTool[];
   /** Scope */
   scope: AgentScope;
+  /** Workspace path (required for project scope) */
+  workspacePath?: string;
 }
 
 /**

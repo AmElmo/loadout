@@ -1,10 +1,11 @@
 import { useState } from "react";
-import { EyeOff, ChevronRight, Share2, Bot } from "lucide-react";
+import { EyeOff, ChevronRight, Share2 } from "lucide-react";
 import type { GroupedAgent, AgentSourceTool } from "@/types";
 import { cn } from "@/lib/utils";
 import { ToolLogo } from "@/components/ToolLogo";
 import { TOOL_CONFIG } from "@/config/tools";
 import { MaturityBadge } from "@/components/skills/MaturityBadge";
+import { ItemIcon } from "@/components/ItemIcon";
 import { AgentSyncDialog } from "./AgentSyncDialog";
 
 const AGENT_TOOLS: AgentSourceTool[] = ["claude", "gemini"];
@@ -33,9 +34,7 @@ export function AgentCard({ group, onClick }: AgentCardProps) {
         )}
       >
         {/* Icon */}
-        <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-lg bg-primary/10 text-primary">
-          <Bot className="h-5 w-5" />
-        </div>
+        <ItemIcon name={group.name} description={group.description} />
 
         {/* Content */}
         <div className="min-w-0 flex-1">

@@ -275,19 +275,30 @@ fn process_agent_entries(
         }
     }
 
-    // Second pass: detect conflicts (same name, different content across tools)
-    for (name, group) in &by_name {
+    // Second pass: detect conflicts (same name+scope, different content across tools)
+    // Group by (name, scope) so that user/project shadowing is not flagged as a conflict.
+    let mut by_name_scope: HashMap<(String, AgentScope), Vec<&RawAgentEntry>> = HashMap::new();
+    for entry in &entries {
+        by_name_scope
+            .entry((entry.name.clone(), entry.scope))
+            .or_default()
+            .push(entry);
+    }
+
+    for ((name, _scope), group) in &by_name_scope {
+        // Only flag conflicts when there are multiple tools with different content
+        let unique_tools: std::collections::HashSet<AgentSourceTool> =
+            group.iter().map(|e| e.source_tool).collect();
+        if unique_tools.len() < 2 {
+            continue; // Same tool entries — shadowing, not conflict
+        }
+
         let unique_hashes: std::collections::HashSet<u64> =
             group.iter().map(|e| e.content_hash).collect();
 
         if unique_hashes.len() > 1 {
             let conflicting_paths: Vec<String> = group.iter().map(|e| e.path.clone()).collect();
-            let tools: Vec<AgentSourceTool> = group
-                .iter()
-                .map(|e| e.source_tool)
-                .collect::<std::collections::HashSet<_>>()
-                .into_iter()
-                .collect();
+            let tools: Vec<AgentSourceTool> = unique_tools.into_iter().collect();
 
             conflicts.push(AgentConflict {
                 name: name.clone(),
@@ -565,5 +576,43 @@ mod tests {
             assert!(agent.configured_in.contains(&AgentSourceTool::Claude));
             assert!(agent.configured_in.contains(&AgentSourceTool::Gemini));
         }
+    }
+
+    #[test]
+    fn test_shadowing_not_flagged_as_conflict() {
+        // Same name, same tool, different scopes (user vs project) = shadowing, NOT conflict
+        let entries = vec![
+            RawAgentEntry {
+                name: "reviewer".to_string(),
+                description: "Project version".to_string(),
+                content: "project content".to_string(),
+                content_hash: hash_content("project content"),
+                tools: None,
+                model: None,
+                max_turns: None,
+                permission_mode: None,
+                source_tool: AgentSourceTool::Claude,
+                scope: AgentScope::Project,
+                path: "/project/.claude/agents/reviewer.md".to_string(),
+            },
+            RawAgentEntry {
+                name: "reviewer".to_string(),
+                description: "User version".to_string(),
+                content: "user content".to_string(),
+                content_hash: hash_content("user content"),
+                tools: None,
+                model: None,
+                max_turns: None,
+                permission_mode: None,
+                source_tool: AgentSourceTool::Claude,
+                scope: AgentScope::User,
+                path: "/home/.claude/agents/reviewer.md".to_string(),
+            },
+        ];
+
+        let (_, conflicts) = process_agent_entries(entries);
+
+        // Should NOT flag as conflict — same tool, different scopes is shadowing
+        assert_eq!(conflicts.len(), 0);
     }
 }

@@ -28,8 +28,8 @@ const navItems = [
   { id: "home" as const, label: "Home", icon: Home },
   { id: "mcps" as const, label: "MCPs", icon: Server },
   { id: "skills" as const, label: "Skills", icon: Sparkles },
-  { id: "agents" as const, label: "Agents", icon: Bot },
   { id: "rules" as const, label: "Rules", icon: FileText },
+  { id: "agents" as const, label: "Agents", icon: Bot },
   { id: "hooks" as const, label: "Hooks", icon: Anchor },
   { id: "context" as const, label: "Context", icon: BarChart3 },
 ];
