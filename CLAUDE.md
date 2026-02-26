@@ -48,6 +48,8 @@ pnpm tauri build         # Build full application
 - Version is tracked in 3 files that must stay in sync: `package.json`, `src-tauri/tauri.conf.json`, `src-tauri/Cargo.toml`
 - Releases are cut manually via `pnpm release [patch|minor|major]` — never auto-version
 - Always include `<ToolLogo>` from `src/components/ToolLogo.tsx` next to AI tool names (Claude, Codex, Gemini) in the UI — in badges, filters, selectors, and tables. Keep logos small (10-14px) and use alongside text, never as sole identifier.
+- `src-tauri/.cargo/config.toml` is gitignored and machine-local (e.g., custom `target-dir`). Do not track it in git.
+- Platform-specific Rust crates (e.g., `security-framework`) must go under `[target.'cfg(...)'.dependencies]` in `Cargo.toml`, not unconditional `[dependencies]`, to avoid cross-platform build failures.
 
 ## Branch Naming
 
@@ -89,7 +91,7 @@ feature branches → PRs → main → pnpm release [patch|minor|major] → git p
 | macOS (Apple Silicon) | `.dmg`, `.app.tar.gz` |
 | macOS (Intel) | `.dmg`, `.app.tar.gz` |
 | Linux (x86_64) | `.AppImage`, `.deb` |
-| Windows (x86_64) | `.exe` (NSIS installer) |
+| Windows (x86_64) | `.exe` (NSIS), `.msi` (WiX) |
 
 ### Auto-updates
 
