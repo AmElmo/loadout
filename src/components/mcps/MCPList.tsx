@@ -1,4 +1,4 @@
-import { Filter, Server } from "lucide-react";
+import { Filter, Unplug } from "lucide-react";
 import type { MCPItem } from "@/types";
 import { MCPCard } from "./MCPCard";
 
@@ -32,7 +32,7 @@ export function MCPList({ mcps, hasActiveFilters, onClearFilters }: MCPListProps
 
     return (
       <div className="rounded-lg border border-dashed border-border p-8 text-center">
-        <Server className="mx-auto mb-3 h-10 w-10 text-muted-foreground" />
+        <Unplug className="mx-auto mb-3 h-10 w-10 text-muted-foreground" />
         <h3 className="font-medium">No MCP Servers Found</h3>
         <p className="mt-1 text-sm text-muted-foreground">
           No MCP servers are configured in Claude Code, Codex CLI, or Gemini
