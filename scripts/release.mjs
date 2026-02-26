@@ -275,6 +275,9 @@ gitCommitAndTag(newVersion);
 
 console.log(`\nRelease v${newVersion} ready!\n`);
 console.log("Next steps:");
-console.log(`  1. Review: git log --oneline -1 && git show v${newVersion}`);
-console.log(`  2. Push:   git push origin main --tags`);
+console.log(`  1. Review: git log --oneline -1 && git diff HEAD~1`);
+console.log(`  2. Generate release notes: pnpm release:notes`);
+console.log(`  3. Edit .github/release-notes/v${newVersion}.md — add screenshots, tweak copy`);
+console.log(`  4. Commit: git add .github/release-notes && git commit --amend --no-edit`);
+console.log(`  5. Push:   git push origin main --tags`);
 console.log("");

@@ -13,7 +13,8 @@
     "tauri:dev:fixtures": "LOADOUT_HOME=$PWD/fixtures/home tauri dev",
     "tauri:build": "tauri build",
     "test:unit": "vitest",
-    "release": "node scripts/release.mjs"
+    "release": "node scripts/release.mjs",
+    "release:notes": "node scripts/generate-release-notes.mjs"
   },
   "dependencies": {
     "@tanstack/react-query": "^5.90.20",
