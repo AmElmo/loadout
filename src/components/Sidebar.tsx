@@ -2,6 +2,7 @@ import {
   Home,
   Unplug,
   Hammer,
+  Bot,
   FileText,
   Anchor,
   BarChart3,
@@ -29,6 +30,7 @@ const navItems = [
   { id: "mcps" as const, label: "MCPs", icon: Unplug },
   { id: "skills" as const, label: "Skills", icon: Hammer },
   { id: "rules" as const, label: "Rules", icon: FileText },
+  { id: "agents" as const, label: "Subagents", icon: Bot },
   { id: "hooks" as const, label: "Hooks", icon: Anchor },
   { id: "context" as const, label: "Context", icon: BarChart3 },
 ];

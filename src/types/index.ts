@@ -471,3 +471,149 @@ export interface RepoScanResult {
   reposWithoutRules: number;
   scanDurationMs: number;
 }
+
+// === Agent Types ===
+
+export type AgentSourceTool = "claude" | "gemini";
+
+export type AgentScope = "user" | "project";
+
+export type AgentMaturity = "stable" | "experimental";
+
+/**
+ * Agent item returned from the scanner
+ * Matches the Rust AgentItem struct
+ */
+export interface AgentItem {
+  /** Unique identifier */
+  id: string;
+  /** Agent name from frontmatter or filename */
+  name: string;
+  /** Agent description */
+  description: string;
+  /** Full markdown content (body after frontmatter) */
+  content: string;
+  /** Allowed tools (comma-separated in frontmatter) */
+  tools: string | null;
+  /** Model override */
+  model: string | null;
+  /** Max agentic turns */
+  maxTurns: number | null;
+  /** Permission mode */
+  permissionMode: string | null;
+  /** Which tool this agent is from */
+  sourceTool: AgentSourceTool;
+  /** Scope level (user or project) */
+  scope: AgentScope;
+  /** Feature maturity (stable or experimental) */
+  maturity: AgentMaturity;
+  /** Absolute path to the agent .md file */
+  path: string;
+  /** True if shadowed by a higher-precedence agent */
+  isShadowed: boolean;
+  /** Path of the agent that shadows this one */
+  shadowedBy: string | null;
+  /** Which tools this agent is configured in (for merged view) */
+  configuredIn: AgentSourceTool[];
+}
+
+/**
+ * Agents grouped by name + scope across multiple tools
+ */
+export interface GroupedAgent {
+  groupKey: string;
+  name: string;
+  description: string;
+  scope: AgentScope;
+  maturity: AgentMaturity;
+  tools: string | null;
+  model: string | null;
+  maxTurns: number | null;
+  permissionMode: string | null;
+  installedTools: AgentSourceTool[];
+  primary: AgentItem;
+  variants: AgentItem[];
+  hasContentDrift: boolean;
+}
+
+/**
+ * Conflict information when same agent name has different content
+ */
+export interface AgentConflict {
+  /** Agent name that has conflicts */
+  name: string;
+  /** Paths of agents with different content */
+  conflictingPaths: string[];
+  /** Tools that have this conflict */
+  tools: AgentSourceTool[];
+}
+
+/**
+ * Result of scanning all agents
+ */
+export interface AgentScanResult {
+  /** All discovered agents */
+  agents: AgentItem[];
+  /** Detected conflicts (same name, different content) */
+  conflicts: AgentConflict[];
+  /** Whether Gemini has enableAgents: true */
+  geminiAgentsEnabled: boolean;
+}
+
+/**
+ * Request to install a new agent to one or more tools
+ */
+export interface InstallAgentRequest {
+  /** Filename (without .md extension) */
+  filename: string;
+  /** Full file content (frontmatter + body) */
+  content: string;
+  /** Scope: user-level or project-level */
+  scope: AgentScope;
+  /** Target tools to install to */
+  targetTools: AgentSourceTool[];
+  /** Workspace path (required for project scope) */
+  workspacePath?: string;
+}
+
+/**
+ * Request to sync an existing agent to other tools
+ */
+export interface SyncAgentRequest {
+  /** Agent filename (without .md extension) */
+  filename: string;
+  /** Source tool */
+  sourceTool: AgentSourceTool;
+  /** Source file path */
+  sourcePath: string;
+  /** Target tools to sync to */
+  targetTools: AgentSourceTool[];
+  /** Scope */
+  scope: AgentScope;
+  /** Workspace path (required for project scope) */
+  workspacePath?: string;
+}
+
+/**
+ * Result of an agent write operation
+ */
+export interface AgentWriteResult {
+  success: boolean;
+  modifiedFiles: string[];
+  errors: string[];
+}
+
+/**
+ * An agent fetched from a URL or parsed from file content
+ */
+export interface FetchedAgent {
+  name: string;
+  description: string;
+  /** Full raw file content (frontmatter + body) */
+  content: string;
+  tools: string | null;
+  model: string | null;
+  maxTurns: number | null;
+  permissionMode: string | null;
+  sourceUrl: string | null;
+}

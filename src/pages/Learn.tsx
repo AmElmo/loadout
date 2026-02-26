@@ -1,6 +1,7 @@
 import {
   Unplug,
   Hammer,
+  Bot,
   FileText,
   Anchor,
   BarChart3,
@@ -54,6 +55,23 @@ export function Learn() {
             ]}
             pageTab="skills"
             pageLabel="Go to Skills page"
+          />
+
+          <ConceptCard
+            icon={Bot}
+            iconColorClass="text-pink-500"
+            iconBgClass="bg-pink-500/10"
+            title="Subagents"
+            description="Predefined personas or modes that combine a custom system prompt with optional MCP servers. They let you spin up specialized AI assistants on demand."
+            details={[
+              "Defined as markdown files in .claude/agents/ (Claude) or .gemini/agents/ (Gemini)",
+              "Each subagent has a name, description, and instruction prompt",
+              "Can bundle MCP servers so the subagent has the right tools available",
+              "Invoked via /agent command — similar to skills but with persistent identity",
+              "User-level subagents are global; project-level subagents are workspace-scoped",
+            ]}
+            pageTab="agents"
+            pageLabel="Go to Subagents page"
           />
 
           <ConceptCard
