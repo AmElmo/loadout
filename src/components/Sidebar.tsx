@@ -1,7 +1,7 @@
 import {
   Home,
-  Server,
-  Sparkles,
+  Unplug,
+  Hammer,
   FileText,
   Anchor,
   BarChart3,
@@ -25,8 +25,8 @@ import { TOOL_CONFIG, toolTextColor } from "@/config/tools";
 
 const navItems = [
   { id: "home" as const, label: "Home", icon: Home },
-  { id: "mcps" as const, label: "MCPs", icon: Server },
-  { id: "skills" as const, label: "Skills", icon: Sparkles },
+  { id: "mcps" as const, label: "MCPs", icon: Unplug },
+  { id: "skills" as const, label: "Skills", icon: Hammer },
   { id: "rules" as const, label: "Rules", icon: FileText },
   { id: "hooks" as const, label: "Hooks", icon: Anchor },
   { id: "context" as const, label: "Context", icon: BarChart3 },

@@ -1,7 +1,7 @@
 import { useMemo, useState } from "react";
 import {
-  Server,
-  Sparkles,
+  Unplug,
+  Hammer,
   FileText,
   Anchor,
   RefreshCw,
@@ -424,7 +424,7 @@ export function Home() {
       {/* Stat cards — user-level counts */}
       <div className="grid grid-cols-2 gap-4 lg:grid-cols-4">
         <StatCard
-          icon={Server}
+          icon={Unplug}
           label="MCP Servers"
           count={mcpsList.length}
           isLoading={mcpsLoading}
@@ -432,7 +432,7 @@ export function Home() {
           onClick={() => setActiveTab("mcps")}
         />
         <StatCard
-          icon={Sparkles}
+          icon={Hammer}
           label="Skills"
           count={skills.length}
           isLoading={skillsLoading}
@@ -511,7 +511,7 @@ export function Home() {
                 )}
               >
                 <div className="flex items-center gap-2">
-                  <Server className="h-3.5 w-3.5 text-muted-foreground" />
+                  <Unplug className="h-3.5 w-3.5 text-muted-foreground" />
                   <span className="text-sm font-medium">{wsWithMCPs}</span>
                 </div>
                 <p className="mt-0.5 text-xs text-muted-foreground">
@@ -549,7 +549,7 @@ export function Home() {
                 )}
               >
                 <div className="flex items-center gap-2">
-                  <Sparkles className="h-3.5 w-3.5 text-muted-foreground" />
+                  <Hammer className="h-3.5 w-3.5 text-muted-foreground" />
                   <span className="text-sm font-medium">{wsWithSkills}</span>
                 </div>
                 <p className="mt-0.5 text-xs text-muted-foreground">
