@@ -171,7 +171,7 @@ export function SkillViewer({ group, onClose }: SkillViewerProps) {
             onClose={onClose}
             onDirtyChange={setIsDirty}
             editToolbar={
-              hasMultipleVariants && !showVariantTabs ? (
+              hasMultipleVariants && !showVariantTabs && !isLinked ? (
                 <div className="flex items-center gap-2 border-b border-border bg-muted/20 px-4 py-1.5">
                   <span className="text-xs text-muted-foreground">Editing in</span>
                   {group.variants.map((variant) => (
