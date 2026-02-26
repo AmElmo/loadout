@@ -55,32 +55,44 @@ export function ContextBar({ summary }: ContextBarProps) {
   const totalUsed = segments.reduce((acc, s) => acc + s.tokens, 0);
   const freeTokens = Math.max(0, summary.contextLimit - totalUsed);
 
+  // Use sqrt scale so small segments are still visible when usage is low.
+  // Each segment gets width proportional to sqrt(tokens), with a minimum of 8%.
+  const activeSegments = segments.filter((s) => s.tokens > 0);
+  const usedPercent = (totalUsed / summary.contextLimit) * 100;
+  // Give the used portion at least 8% of the bar width so it's always visible
+  const usedBarPercent = Math.max(usedPercent, activeSegments.length > 0 ? 8 : 0);
+  const sqrtValues = activeSegments.map((s) => Math.sqrt(s.tokens));
+  const sqrtTotal = sqrtValues.reduce((a, b) => a + b, 0);
+
   return (
     <div>
       {/* Bar */}
       <div className="flex h-8 w-full overflow-hidden rounded-lg border border-border bg-muted/30">
-        {segments.map(
-          (segment) =>
-            segment.tokens > 0 && (
-              <div
-                key={segment.label}
-                className={cn(
-                  "relative flex items-center justify-center transition-all",
-                  segment.bgColor
-                )}
-                style={{
-                  width: `${Math.max((segment.tokens / summary.contextLimit) * 100, 0.5)}%`,
-                }}
-                title={`${segment.label}: ${segment.tokens.toLocaleString()} tokens (${((segment.tokens / summary.contextLimit) * 100).toFixed(1)}%)`}
-              >
-                {segment.tokens / summary.contextLimit > 0.05 && (
-                  <span className="truncate px-1 text-[10px] font-medium text-white">
-                    {formatTokens(segment.tokens)}
-                  </span>
-                )}
-              </div>
-            )
-        )}
+        {activeSegments.map((segment, i) => {
+          const segWidth =
+            sqrtTotal > 0
+              ? (sqrtValues[i] / sqrtTotal) * usedBarPercent
+              : 0;
+          return (
+            <div
+              key={segment.label}
+              className={cn(
+                "relative flex items-center justify-center transition-all",
+                segment.bgColor
+              )}
+              style={{
+                width: `${segWidth}%`,
+              }}
+              title={`${segment.label}: ${segment.tokens.toLocaleString()} tokens (${((segment.tokens / summary.contextLimit) * 100).toFixed(1)}%)`}
+            >
+              {segWidth > 5 && (
+                <span className="truncate px-1 text-[10px] font-medium text-white">
+                  {formatTokens(segment.tokens)}
+                </span>
+              )}
+            </div>
+          );
+        })}
         {/* Free space */}
         <div
           className="flex flex-1 items-center justify-center"
