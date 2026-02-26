@@ -2,7 +2,7 @@ import { useState } from "react";
 import { Filter, Puzzle } from "lucide-react";
 import type { PluginItem } from "@/types";
 import { PluginCard } from "./PluginCard";
-import { PluginDetail } from "./PluginDetail";
+import { PluginViewer } from "./PluginViewer";
 
 interface PluginListProps {
   plugins: PluginItem[];
@@ -56,23 +56,18 @@ export function PluginList({
 
   return (
     <div>
-      <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
+      <div className="space-y-2">
         {plugins.map((plugin) => (
           <PluginCard
             key={plugin.id}
             plugin={plugin}
-            isSelected={selectedPlugin?.id === plugin.id}
-            onClick={() =>
-              setSelectedPlugin(
-                selectedPlugin?.id === plugin.id ? null : plugin
-              )
-            }
+            onClick={() => setSelectedPlugin(plugin)}
           />
         ))}
       </div>
 
       {selectedPlugin && (
-        <PluginDetail
+        <PluginViewer
           plugin={selectedPlugin}
           onClose={() => setSelectedPlugin(null)}
         />

@@ -1,6 +1,6 @@
 export { PluginList } from "./PluginList";
 export { PluginCard } from "./PluginCard";
-export { PluginDetail } from "./PluginDetail";
+export { PluginViewer } from "./PluginViewer";
 export { PluginComponentSection } from "./PluginComponentSection";
 export { MarketplaceSection } from "./MarketplaceSection";
 export { MarketplacePluginCard } from "./MarketplacePluginCard";

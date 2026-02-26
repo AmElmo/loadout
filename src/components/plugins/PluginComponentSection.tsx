@@ -1,3 +1,5 @@
+import type { ReactNode } from "react";
+
 interface ColumnDef {
   key: string;
   label: string;
@@ -5,6 +7,7 @@ interface ColumnDef {
 
 interface PluginComponentSectionProps {
   title: string;
+  icon?: ReactNode;
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   items: Array<Record<string, any>>;
   columns?: ColumnDef[];
@@ -17,6 +20,7 @@ const DEFAULT_COLUMNS: ColumnDef[] = [
 
 export function PluginComponentSection({
   title,
+  icon,
   items,
   columns = DEFAULT_COLUMNS,
 }: PluginComponentSectionProps) {
@@ -24,7 +28,12 @@ export function PluginComponentSection({
 
   return (
     <div>
-      <h4 className="mb-2 text-sm font-medium text-foreground">{title}</h4>
+      <div className="mb-2 flex items-center gap-2">
+        {icon && (
+          <span className="text-muted-foreground">{icon}</span>
+        )}
+        <h4 className="text-sm font-medium text-foreground">{title}</h4>
+      </div>
       <div className="overflow-hidden rounded-md border border-border">
         <table className="w-full text-sm">
           <thead>
