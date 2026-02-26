@@ -121,6 +121,7 @@ export function SyncDialog({
     !detectionErrorMessage &&
     effectiveTargetTools.length > 0 &&
     !syncMutation.isPending &&
+    !syncMutation.isSuccess &&
     !allSynced;
   useSubmitShortcut(() => syncMutation.mutate(), canSync);
 

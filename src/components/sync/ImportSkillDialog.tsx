@@ -167,7 +167,7 @@ export function ImportSkillDialog({
     !detectionErrorMessage &&
     effectiveTargetTools.length > 0;
 
-  useSubmitShortcut(handleInstall, !!canInstall && !installMutation.isPending);
+  useSubmitShortcut(handleInstall, !!canInstall && !installMutation.isPending && !installMutation.isSuccess);
 
   // Show success state
   if (installMutation.isSuccess && installMutation.data) {

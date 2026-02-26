@@ -1,4 +1,4 @@
-import { useEffect } from "react";
+import { useEffect, useRef } from "react";
 import { useWorkspaceStore } from "@/stores/workspaceStore";
 import { useShortcutStore, type ShortcutAction } from "@/stores/shortcutStore";
 
@@ -39,6 +39,9 @@ export function useKeyboardShortcuts() {
   const toggleWorkspaceSwitcher = useShortcutStore(
     (s) => s.toggleWorkspaceSwitcher
   );
+  const showWorkspaceSwitcher = useShortcutStore(
+    (s) => s.showWorkspaceSwitcher
+  );
   const setShowWorkspaceSwitcher = useShortcutStore(
     (s) => s.setShowWorkspaceSwitcher
   );
@@ -47,14 +50,18 @@ export function useKeyboardShortcuts() {
     function handleKeyDown(e: KeyboardEvent) {
       const mod = isMac ? e.metaKey : e.ctrlKey;
 
-      // Esc: close shortcuts modal or workspace switcher
+      // Esc: close shortcuts modal, then workspace switcher (priority order)
       if (e.key === "Escape") {
         if (showShortcutsModal) {
           e.preventDefault();
           setShowShortcutsModal(false);
           return;
         }
-        // Esc for workspace switcher is handled by the Sidebar component
+        if (showWorkspaceSwitcher) {
+          e.preventDefault();
+          setShowWorkspaceSwitcher(false);
+          return;
+        }
         // Esc for dialogs is handled by useEscapeKey in each dialog
         return;
       }
@@ -111,32 +118,15 @@ export function useKeyboardShortcuts() {
         return;
       }
 
-      // Cmd+Shift+S — sync item
-      if (mod && e.shiftKey && e.key === "S") {
-        e.preventDefault();
-        dispatch("sync-item");
-        return;
-      }
-
-      // Cmd+Shift+O — open config
-      if (mod && e.shiftKey && e.key === "O") {
-        e.preventDefault();
-        dispatch("open-config");
-        return;
-      }
-
-      // Cmd+Shift+T — test MCP health
-      if (mod && e.shiftKey && e.key === "T") {
-        e.preventDefault();
-        dispatch("test-mcp");
-        return;
-      }
+      // Item actions (Cmd+Shift+S/O/T) are reserved but not yet wired —
+      // they require per-item focus tracking which is not yet implemented.
     }
 
     window.addEventListener("keydown", handleKeyDown);
     return () => window.removeEventListener("keydown", handleKeyDown);
   }, [
     showShortcutsModal,
+    showWorkspaceSwitcher,
     setActiveTab,
     dispatch,
     setShowShortcutsModal,
@@ -154,11 +144,13 @@ export function useShortcutAction(
   handler: () => void
 ) {
   const counter = useShortcutStore((s) => s.actionCounter[action]);
+  const lastSeen = useRef(counter);
 
   useEffect(() => {
-    if (counter > 0) {
+    if (counter > lastSeen.current) {
       handler();
     }
+    lastSeen.current = counter;
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [counter]);
 }

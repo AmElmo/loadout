@@ -1,12 +1,6 @@
 import { create } from "zustand";
 
-type ShortcutAction =
-  | "focus-search"
-  | "add-item"
-  | "refresh"
-  | "sync-item"
-  | "open-config"
-  | "test-mcp";
+type ShortcutAction = "focus-search" | "add-item" | "refresh";
 
 interface ShortcutState {
   /** Incremented to trigger page-level actions (acts as event bus) */
@@ -29,9 +23,6 @@ export const useShortcutStore = create<ShortcutState>()((set) => ({
     "focus-search": 0,
     "add-item": 0,
     refresh: 0,
-    "sync-item": 0,
-    "open-config": 0,
-    "test-mcp": 0,
   },
   showShortcutsModal: false,
   showWorkspaceSwitcher: false,

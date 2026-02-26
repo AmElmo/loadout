@@ -54,14 +54,6 @@ const SHORTCUT_GROUPS: ShortcutGroup[] = [
     ],
   },
   {
-    title: "Item Actions",
-    shortcuts: [
-      { keys: `${mod}+Shift+S`, action: "Sync item to other tools" },
-      { keys: `${mod}+Shift+O`, action: "Open config file" },
-      { keys: `${mod}+Shift+T`, action: "Test MCP health" },
-    ],
-  },
-  {
     title: "Help",
     shortcuts: [{ keys: `${mod}+/`, action: "Open this panel" }],
   },

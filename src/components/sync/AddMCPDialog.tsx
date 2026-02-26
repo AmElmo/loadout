@@ -134,7 +134,7 @@ export function AddMCPDialog({ onClose }: AddMCPDialogProps) {
     effectiveTargetTools.length > 0 &&
     (!isHttpMCP ? command.trim() : url.trim());
 
-  useSubmitShortcut(handleSubmit, !!isValid && !writeMutation.isPending);
+  useSubmitShortcut(handleSubmit, !!isValid && !writeMutation.isPending && !writeMutation.isSuccess);
 
   // Show success state
   if (writeMutation.isSuccess && writeMutation.data) {

@@ -142,7 +142,7 @@ export function ImportAgentDialog({
     fetchMutation.error || parseMutation.error || readFileMutation.error;
   const canInstall = preview && editedName.trim() && targetTools.length > 0;
 
-  useSubmitShortcut(handleInstall, !!canInstall && !installMutation.isPending);
+  useSubmitShortcut(handleInstall, !!canInstall && !installMutation.isPending && !installMutation.isSuccess);
 
   // Show success state
   if (installMutation.isSuccess && installMutation.data) {
