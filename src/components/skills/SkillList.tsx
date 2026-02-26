@@ -1,4 +1,4 @@
-import { Filter, Sparkles } from "lucide-react";
+import { Filter, Hammer } from "lucide-react";
 import { useState } from "react";
 import type { GroupedSkill } from "@/types";
 import { SkillCard } from "./SkillCard";
@@ -36,7 +36,7 @@ export function SkillList({ skills, hasActiveFilters, onClearFilters }: SkillLis
 
     return (
       <div className="rounded-lg border border-dashed border-border p-8 text-center">
-        <Sparkles className="mx-auto mb-3 h-10 w-10 text-muted-foreground" />
+        <Hammer className="mx-auto mb-3 h-10 w-10 text-muted-foreground" />
         <h3 className="font-medium">No Skills Found</h3>
         <p className="mt-1 text-sm text-muted-foreground">
           No skills are configured in Claude Code, Codex CLI, or Gemini CLI.

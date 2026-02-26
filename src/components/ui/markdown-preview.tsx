@@ -9,9 +9,14 @@ interface MarkdownPreviewProps {
   className?: string;
   onSave?: (content: string) => Promise<void>;
   onClose?: () => void;
+  onModeChange?: (mode: "edit" | "preview") => void;
+  /** Called when the dirty state changes (true = unsaved edits exist) */
+  onDirtyChange?: (dirty: boolean) => void;
+  /** Rendered below the Edit/Preview toggle bar when in edit mode */
+  editToolbar?: React.ReactNode;
 }
 
-export function MarkdownPreview({ content, className, onSave, onClose }: MarkdownPreviewProps) {
+export function MarkdownPreview({ content, className, onSave, onClose, onModeChange, onDirtyChange, editToolbar }: MarkdownPreviewProps) {
   const [mode, setMode] = useState<"edit" | "preview">("preview");
   const [draft, setDraft] = useState(content);
   const [saving, setSaving] = useState(false);
@@ -30,6 +35,11 @@ export function MarkdownPreview({ content, className, onSave, onClose }: Markdow
   useEffect(() => {
     if (isDirty) setSaved(false);
   }, [isDirty]);
+
+  // Notify parent of dirty state changes
+  useEffect(() => {
+    onDirtyChange?.(isDirty);
+  }, [isDirty, onDirtyChange]);
 
   // Cleanup timer on unmount
   useEffect(() => {
@@ -102,7 +112,7 @@ export function MarkdownPreview({ content, className, onSave, onClose }: Markdow
         {/* Pill toggle */}
         <div className="inline-flex rounded-lg border border-border bg-muted/50 p-0.5">
           <button
-            onClick={() => setMode("edit")}
+            onClick={() => { setMode("edit"); onModeChange?.("edit"); }}
             className={cn(
               "rounded-md px-3 py-1 text-xs font-medium transition-colors",
               mode === "edit"
@@ -113,7 +123,7 @@ export function MarkdownPreview({ content, className, onSave, onClose }: Markdow
             Edit
           </button>
           <button
-            onClick={() => setMode("preview")}
+            onClick={() => { setMode("preview"); onModeChange?.("preview"); }}
             className={cn(
               "rounded-md px-3 py-1 text-xs font-medium transition-colors",
               mode === "preview"
@@ -152,6 +162,9 @@ export function MarkdownPreview({ content, className, onSave, onClose }: Markdow
           </div>
         )}
       </div>
+
+      {/* Optional toolbar below toggle when editing */}
+      {mode === "edit" && editToolbar}
 
       {/* Content */}
       <div className="min-h-0 flex-1 overflow-auto">

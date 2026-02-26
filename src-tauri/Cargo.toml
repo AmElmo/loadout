@@ -1,6 +1,6 @@
 [package]
 name = "loadout"
-version = "0.1.0"
+version = "0.1.1"
 description = "Unified AI CLI Configuration Management Tool"
 authors = ["Julien Berthomier"]
 license = "MIT"
@@ -24,6 +24,7 @@ tauri-plugin-log = "2"
 tauri-plugin-dialog = "2"
 tauri-plugin-fs = "2"
 tauri-plugin-store = "2"
+tauri-plugin-process = "2"
 dirs = "6"
 thiserror = "2"
 toml = "0.8"
@@ -32,8 +33,13 @@ serde_yaml = "0.9"
 walkdir = "2"
 tokio = { version = "1", features = ["fs", "process", "time"] }
 reqwest = { version = "0.12", features = ["json", "rustls-tls"] }
-security-framework = "2"
 tempfile = "3"
 chrono = "0.4"
 shlex = "1.3"
 pathdiff = "0.2"
+
+[target.'cfg(target_os = "macos")'.dependencies]
+security-framework = "2"
+
+[target.'cfg(any(target_os = "macos", windows, target_os = "linux"))'.dependencies]
+tauri-plugin-updater = "2"

@@ -1,7 +1,7 @@
 import {
   Home,
-  Server,
-  Sparkles,
+  Unplug,
+  Hammer,
   Bot,
   FileText,
   Anchor,
@@ -15,6 +15,7 @@ import {
   X,
 } from "lucide-react";
 import { open } from "@tauri-apps/plugin-dialog";
+import { getVersion } from "@tauri-apps/api/app";
 import { cn, isRealWorkspace } from "@/lib/utils";
 import { useWorkspaceStore } from "@/stores/workspaceStore";
 import { getWorkspaceInfo, discoverWorkspaces } from "@/lib/api/workspace";
@@ -26,8 +27,8 @@ import { TOOL_CONFIG, toolTextColor } from "@/config/tools";
 
 const navItems = [
   { id: "home" as const, label: "Home", icon: Home },
-  { id: "mcps" as const, label: "MCPs", icon: Server },
-  { id: "skills" as const, label: "Skills", icon: Sparkles },
+  { id: "mcps" as const, label: "MCPs", icon: Unplug },
+  { id: "skills" as const, label: "Skills", icon: Hammer },
   { id: "rules" as const, label: "Rules", icon: FileText },
   { id: "agents" as const, label: "Subagents", icon: Bot },
   { id: "hooks" as const, label: "Hooks", icon: Anchor },
@@ -71,7 +72,12 @@ export function Sidebar() {
     useWorkspaceStore();
   const [showDropdown, setShowDropdown] = useState(false);
   const [filter, setFilter] = useState("");
+  const [version, setVersion] = useState("0.1.0");
   const dropdownRef = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    getVersion().then(setVersion).catch(() => {});
+  }, []);
 
   const {
     data: discovery,
@@ -319,7 +325,7 @@ export function Sidebar() {
 
       {/* Version */}
       <div className="border-t border-sidebar-border p-4">
-        <p className="text-xs text-muted-foreground">v0.1.0</p>
+        <p className="text-xs text-muted-foreground">v{version}</p>
       </div>
     </aside>
   );

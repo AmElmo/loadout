@@ -19,8 +19,15 @@ export function SkillCard({ group, onClick }: SkillCardProps) {
 
   const missingTools = ALL_TOOLS.filter((t) => !group.installedTools.includes(t));
   const hasMissingTools = missingTools.length > 0;
+  const hasCopyInstalls = group.variants.some((v) => !v.isSymlinked);
+  const existingToolMethods = group.variants.map((v) => ({
+    tool: v.sourceTool,
+    method: v.isSymlinked ? "link" as const : "copy" as const,
+  }));
   // When variants drift across tools, force users to choose a specific variant in the viewer.
-  const canQuickSyncFromCard = hasMissingTools && !group.hasContentDrift;
+  // Also show sync when there are copy installs that could be converted to links.
+  const canQuickSyncFromCard =
+    (hasMissingTools || hasCopyInstalls) && !group.hasContentDrift;
 
   return (
     <>
@@ -83,12 +90,23 @@ export function SkillCard({ group, onClick }: SkillCardProps) {
           type="skill"
           name={group.name}
           existingTools={group.installedTools}
+          existingToolMethods={existingToolMethods}
+          hasContentDrift={group.hasContentDrift}
           onSync={(targetTools, method) =>
             installSkillToTools({
               name: group.name,
               content: group.primary.content,
               targetTools,
               method: method ?? "link",
+              files: [],
+            })
+          }
+          onConvert={(tools) =>
+            installSkillToTools({
+              name: group.name,
+              content: group.primary.content,
+              targetTools: tools,
+              method: "link",
               files: [],
             })
           }

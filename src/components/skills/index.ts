@@ -4,3 +4,4 @@ export { SkillIcon } from "./SkillIcon";
 export { SkillViewer } from "./SkillViewer";
 export { MaturityBadge } from "./MaturityBadge";
 export { ConflictWarning } from "./ConflictWarning";
+export { ConflictResolutionDialog } from "./ConflictResolutionDialog";

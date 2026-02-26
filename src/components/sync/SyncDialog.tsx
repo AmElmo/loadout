@@ -1,7 +1,7 @@
 import { useCallback, useMemo, useState } from "react";
 import { X, Loader2, Share2 } from "lucide-react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import type { InstallMethod, SourceTool, WriteResult } from "@/types";
+import type { ExistingToolInfo, InstallMethod, SourceTool, WriteResult } from "@/types";
 import { Button } from "@/components/ui/button";
 import { ToolSelector } from "./ToolSelector";
 import { SuccessConfirmation } from "./SuccessConfirmation";
@@ -22,6 +22,12 @@ interface SyncDialogProps {
   onClose: () => void;
   /** Query key to invalidate on success */
   queryKey: string;
+  /** Install methods for each existing tool (enables conversion UI) */
+  existingToolMethods?: ExistingToolInfo[];
+  /** Callback to convert copy-installed tools to links */
+  onConvert?: (tools: SourceTool[]) => Promise<WriteResult>;
+  /** Whether variants have content drift (shows warning in conversion banner) */
+  hasContentDrift?: boolean;
 }
 
 export function SyncDialog({
@@ -31,6 +37,9 @@ export function SyncDialog({
   onSync,
   onClose,
   queryKey,
+  existingToolMethods,
+  onConvert,
+  hasContentDrift,
 }: SyncDialogProps) {
   const queryClient = useQueryClient();
   const stableOnClose = useCallback(() => onClose(), [onClose]);
@@ -76,6 +85,36 @@ export function SyncDialog({
       queryClient.invalidateQueries({ queryKey: [queryKey] });
     },
   });
+
+  const copyTools = useMemo(
+    () =>
+      (existingToolMethods ?? [])
+        .filter((t) => t.method === "copy")
+        .map((t) => t.tool),
+    [existingToolMethods]
+  );
+
+  const convertMutation = useMutation({
+    mutationFn: () => onConvert!(copyTools),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: [queryKey] });
+    },
+  });
+
+  const conversionState = useMemo(() => {
+    if (!onConvert || !existingToolMethods) return undefined;
+    const data = convertMutation.data;
+    const isSuccess = convertMutation.isSuccess && !!data;
+    const isPartial = isSuccess && (data.symlinkFailed || data.errors.length > 0);
+    return {
+      isPending: convertMutation.isPending,
+      isSuccess: isSuccess && !isPartial,
+      isPartial,
+      canonicalPath: data?.canonicalPath ?? null,
+      error: convertMutation.error,
+      onConvert: () => convertMutation.mutate(),
+    };
+  }, [onConvert, existingToolMethods, convertMutation]);
 
   if (syncMutation.isSuccess && syncMutation.data) {
     return (
@@ -153,6 +192,9 @@ export function SyncDialog({
             existingTools={existingTools}
             availableTools={installedToolIds}
             installMethod={type === "skill" ? method : undefined}
+            existingToolMethods={existingToolMethods}
+            conversionState={conversionState}
+            hasContentDrift={hasContentDrift}
           />
 
           {allSynced && (

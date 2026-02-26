@@ -1,6 +1,6 @@
 import {
-  Server,
-  Sparkles,
+  Unplug,
+  Hammer,
   Bot,
   FileText,
   Anchor,
@@ -26,7 +26,7 @@ export function Learn() {
         </h3>
         <div className="grid gap-4 lg:grid-cols-2">
           <ConceptCard
-            icon={Server}
+            icon={Unplug}
             iconColorClass="text-cyan-500"
             iconBgClass="bg-cyan-500/10"
             title="MCPs"
@@ -42,7 +42,7 @@ export function Learn() {
           />
 
           <ConceptCard
-            icon={Sparkles}
+            icon={Hammer}
             iconColorClass="text-purple-500"
             iconBgClass="bg-purple-500/10"
             title="Skills"

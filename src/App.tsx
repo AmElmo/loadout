@@ -1,5 +1,6 @@
 import { Sidebar } from "@/components/Sidebar";
 import { Header } from "@/components/Header";
+import { UpdateNotification } from "@/components/UpdateNotification";
 import { Home } from "@/pages/Home";
 import { MCPs } from "@/pages/MCPs";
 import { Skills } from "@/pages/Skills";
@@ -49,6 +50,7 @@ function App() {
         <Header />
         <main ref={mainRef} className="flex-1 overflow-auto">{renderPage()}</main>
       </div>
+      <UpdateNotification />
     </div>
   );
 }
