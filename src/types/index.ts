@@ -358,6 +358,11 @@ export interface SkillFile {
  */
 export type InstallMethod = "link" | "copy";
 
+export interface ExistingToolInfo {
+  tool: SourceTool;
+  method: InstallMethod;
+}
+
 /**
  * Request to install a skill to one or more tools
  */

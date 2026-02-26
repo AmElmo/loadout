@@ -49,6 +49,11 @@ export function SkillViewer({ group, onClose }: SkillViewerProps) {
   };
 
   const missingTools = ALL_TOOLS.filter((t) => !group.installedTools.includes(t));
+  const hasCopyInstalls = group.variants.some((v) => !v.isSymlinked);
+  const existingToolMethods = group.variants.map((v) => ({
+    tool: v.sourceTool,
+    method: v.isSymlinked ? "link" as const : "copy" as const,
+  }));
   const showVariantTabs = group.hasContentDrift && group.variants.length > 1;
   const hasMultipleVariants = group.variants.length > 1;
 
@@ -207,8 +212,12 @@ export function SkillViewer({ group, onClose }: SkillViewerProps) {
               path={activeVariant.path}
               variant="outline"
               size="sm"
+              paths={group.variants.map((v) => ({
+                tool: v.sourceTool,
+                path: v.path,
+              }))}
             />
-            {missingTools.length > 0 && (
+            {(missingTools.length > 0 || hasCopyInstalls) && (
               <Button
                 variant="outline"
                 size="sm"
@@ -227,13 +236,23 @@ export function SkillViewer({ group, onClose }: SkillViewerProps) {
           type="skill"
           name={group.name}
           existingTools={group.installedTools}
+          existingToolMethods={existingToolMethods}
+          hasContentDrift={group.hasContentDrift}
           onSync={(targetTools, method) =>
             installSkillToTools({
               name: group.name,
-              // Sync the currently selected variant to avoid propagating the wrong version.
               content: activeVariant.content,
               targetTools,
               method: method ?? "link",
+              files: [],
+            })
+          }
+          onConvert={(tools) =>
+            installSkillToTools({
+              name: group.name,
+              content: activeVariant.content,
+              targetTools: tools,
+              method: "link",
               files: [],
             })
           }
