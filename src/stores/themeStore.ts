@@ -14,8 +14,17 @@ function getSystemTheme(): "dark" | "light" {
     : "light";
 }
 
+const VALID_THEMES: ReadonlySet<string> = new Set(["dark", "light", "system"]);
+
+function normalizeTheme(value: unknown): Theme {
+  return typeof value === "string" && VALID_THEMES.has(value)
+    ? (value as Theme)
+    : "system";
+}
+
 function applyTheme(theme: Theme) {
-  const resolved = theme === "system" ? getSystemTheme() : theme;
+  const safe = normalizeTheme(theme);
+  const resolved = safe === "system" ? getSystemTheme() : safe;
   const root = document.documentElement;
   root.classList.remove("dark", "light");
   root.classList.add(resolved);
