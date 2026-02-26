@@ -25,9 +25,23 @@ export function SkillViewer({ group, onClose }: SkillViewerProps) {
   const queryClient = useQueryClient();
   const [copied, setCopied] = useState(false);
   const [showSync, setShowSync] = useState(false);
+  const [isDirty, setIsDirty] = useState(false);
   const stableOnClose = useCallback(() => onClose(), [onClose]);
   useEscapeKey(stableOnClose);
   const [activeVariant, setActiveVariant] = useState<SkillItem>(group.primary);
+
+  const switchVariant = useCallback(
+    (variant: SkillItem) => {
+      if (isDirty) {
+        const confirmed = window.confirm(
+          "You have unsaved changes. Discard and switch version?"
+        );
+        if (!confirmed) return;
+      }
+      setActiveVariant(variant);
+    },
+    [isDirty]
+  );
 
   const handleSave = async (body: string) => {
     await saveSkillContent(activeVariant.path, body);
@@ -119,7 +133,7 @@ export function SkillViewer({ group, onClose }: SkillViewerProps) {
             {group.variants.map((variant) => (
               <button
                 key={variant.id}
-                onClick={() => setActiveVariant(variant)}
+                onClick={() => switchVariant(variant)}
                 className={cn(
                   "rounded-md px-2 py-1 text-xs transition-colors",
                   activeVariant.id === variant.id
@@ -155,6 +169,7 @@ export function SkillViewer({ group, onClose }: SkillViewerProps) {
             className="h-full"
             onSave={handleSave}
             onClose={onClose}
+            onDirtyChange={setIsDirty}
             editToolbar={
               hasMultipleVariants && !showVariantTabs ? (
                 <div className="flex items-center gap-2 border-b border-border bg-muted/20 px-4 py-1.5">
@@ -162,7 +177,7 @@ export function SkillViewer({ group, onClose }: SkillViewerProps) {
                   {group.variants.map((variant) => (
                     <button
                       key={variant.id}
-                      onClick={() => setActiveVariant(variant)}
+                      onClick={() => switchVariant(variant)}
                       className={cn(
                         "rounded-md px-2 py-1 text-xs transition-colors",
                         activeVariant.id === variant.id

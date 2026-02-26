@@ -75,6 +75,7 @@ pub fn get_skill_conflict_details(
 
 /// Resolve a skill conflict by overwriting target paths with the chosen version.
 ///
+/// Pre-validates all targets before writing to avoid partial application.
 /// Uses atomic writes with backups for safety.
 #[tauri::command]
 pub fn resolve_skill_conflict(
@@ -93,20 +94,26 @@ pub fn resolve_skill_conflict(
     let content = std::fs::read_to_string(&source)
         .map_err(|e| format!("Failed to read source {}: {}", chosen_path, e))?;
 
-    for target_str in &target_paths {
-        if target_str == &chosen_path {
-            continue; // Skip the source itself
-        }
+    // Pre-validate: ensure all targets exist before writing any
+    let targets: Vec<PathBuf> = target_paths
+        .iter()
+        .filter(|p| p.as_str() != chosen_path)
+        .map(|p| PathBuf::from(p))
+        .collect();
 
-        let target = PathBuf::from(target_str);
+    for target in &targets {
         if !target.exists() {
             return Err(format!(
                 "Target file does not exist: {}. Cannot resolve conflict for skill '{}'.",
-                target_str, skill_name
+                target.display(),
+                skill_name
             ));
         }
+    }
 
-        atomic_write(&target, &content)?;
+    // All targets validated — now perform writes
+    for target in &targets {
+        atomic_write(target, &content)?;
     }
 
     Ok(())

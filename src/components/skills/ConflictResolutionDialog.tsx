@@ -49,6 +49,20 @@ export function ConflictResolutionDialog({
 
   const selectedVersion = versions?.find((v) => v.path === selectedPath);
 
+  // Diff: compare the selected version against all others.
+  // When nothing is selected yet, diff the first two versions as a default preview.
+  const diffPair = useMemo<
+    { left: SkillVersion; right: SkillVersion } | null
+  >(() => {
+    if (!versions || versions.length < 2) return null;
+    if (!selectedVersion) {
+      return { left: versions[0], right: versions[1] };
+    }
+    const other = versions.find((v) => v.path !== selectedPath);
+    if (!other) return null;
+    return { left: other, right: selectedVersion };
+  }, [versions, selectedVersion, selectedPath]);
+
   if (resolveMutation.isSuccess) {
     return (
       <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4">
@@ -150,7 +164,13 @@ export function ConflictResolutionDialog({
 
               {/* Diff view */}
               <div className="min-h-0 flex-1 overflow-auto">
-                <UnifiedDiff versions={versions} />
+                {diffPair ? (
+                  <UnifiedDiff left={diffPair.left} right={diffPair.right} />
+                ) : (
+                  <div className="flex items-center justify-center p-8 text-sm text-muted-foreground">
+                    Select a version to see the diff.
+                  </div>
+                )}
               </div>
             </>
           )}
@@ -194,26 +214,25 @@ function formatDate(isoString: string): string {
   }
 }
 
-/** GitHub-style unified diff between the first two versions */
-function UnifiedDiff({ versions }: { versions: SkillVersion[] }) {
+/** GitHub-style unified diff between two versions */
+function UnifiedDiff({ left, right }: { left: SkillVersion; right: SkillVersion }) {
   const hunks = useMemo(() => {
-    if (versions.length < 2) return [];
     const patch = structuredPatch(
-      versions[0].sourceTool,
-      versions[1].sourceTool,
-      versions[0].content,
-      versions[1].content,
+      left.sourceTool,
+      right.sourceTool,
+      left.content,
+      right.content,
       undefined,
       undefined,
       { context: 3 }
     );
     return patch.hunks;
-  }, [versions]);
+  }, [left, right]);
 
   if (hunks.length === 0) {
     return (
       <div className="flex items-center justify-center p-8 text-sm text-muted-foreground">
-        No differences found between versions.
+        No differences found between these versions.
       </div>
     );
   }
@@ -223,11 +242,11 @@ function UnifiedDiff({ versions }: { versions: SkillVersion[] }) {
       {/* Legend */}
       <div className="flex items-center gap-4 border-b border-border bg-muted/30 px-4 py-2 text-xs">
         <span className="flex items-center gap-1.5">
-          <ToolBadge tool={versions[0].sourceTool} />
+          <ToolBadge tool={left.sourceTool} />
           <span className="text-red-600">(removed)</span>
         </span>
         <span className="flex items-center gap-1.5">
-          <ToolBadge tool={versions[1].sourceTool} />
+          <ToolBadge tool={right.sourceTool} />
           <span className="text-green-600">(added)</span>
         </span>
       </div>

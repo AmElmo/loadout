@@ -10,11 +10,13 @@ interface MarkdownPreviewProps {
   onSave?: (content: string) => Promise<void>;
   onClose?: () => void;
   onModeChange?: (mode: "edit" | "preview") => void;
+  /** Called when the dirty state changes (true = unsaved edits exist) */
+  onDirtyChange?: (dirty: boolean) => void;
   /** Rendered below the Edit/Preview toggle bar when in edit mode */
   editToolbar?: React.ReactNode;
 }
 
-export function MarkdownPreview({ content, className, onSave, onClose, onModeChange, editToolbar }: MarkdownPreviewProps) {
+export function MarkdownPreview({ content, className, onSave, onClose, onModeChange, onDirtyChange, editToolbar }: MarkdownPreviewProps) {
   const [mode, setMode] = useState<"edit" | "preview">("preview");
   const [draft, setDraft] = useState(content);
   const [saving, setSaving] = useState(false);
@@ -33,6 +35,11 @@ export function MarkdownPreview({ content, className, onSave, onClose, onModeCha
   useEffect(() => {
     if (isDirty) setSaved(false);
   }, [isDirty]);
+
+  // Notify parent of dirty state changes
+  useEffect(() => {
+    onDirtyChange?.(isDirty);
+  }, [isDirty, onDirtyChange]);
 
   // Cleanup timer on unmount
   useEffect(() => {
