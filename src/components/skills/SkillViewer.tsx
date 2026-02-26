@@ -25,7 +25,6 @@ export function SkillViewer({ group, onClose }: SkillViewerProps) {
   const queryClient = useQueryClient();
   const [copied, setCopied] = useState(false);
   const [showSync, setShowSync] = useState(false);
-  const [isEditing, setIsEditing] = useState(false);
   const stableOnClose = useCallback(() => onClose(), [onClose]);
   useEscapeKey(stableOnClose);
   const [activeVariant, setActiveVariant] = useState<SkillItem>(group.primary);
@@ -156,30 +155,29 @@ export function SkillViewer({ group, onClose }: SkillViewerProps) {
             className="h-full"
             onSave={handleSave}
             onClose={onClose}
-            onModeChange={(mode) => setIsEditing(mode === "edit")}
+            editToolbar={
+              hasMultipleVariants && !showVariantTabs ? (
+                <div className="flex items-center gap-2 border-b border-border bg-muted/20 px-4 py-1.5">
+                  <span className="text-xs text-muted-foreground">Editing in</span>
+                  {group.variants.map((variant) => (
+                    <button
+                      key={variant.id}
+                      onClick={() => setActiveVariant(variant)}
+                      className={cn(
+                        "rounded-md px-2 py-1 text-xs transition-colors",
+                        activeVariant.id === variant.id
+                          ? "bg-primary/10 text-primary"
+                          : "text-muted-foreground hover:bg-muted"
+                      )}
+                    >
+                      <ToolBadge tool={variant.sourceTool} />
+                    </button>
+                  ))}
+                </div>
+              ) : undefined
+            }
           />
         </div>
-
-        {/* Editing variant selector — shown in edit mode for multi-tool skills */}
-        {isEditing && hasMultipleVariants && !showVariantTabs && (
-          <div className="flex items-center gap-2 border-t border-border bg-muted/20 px-4 py-2">
-            <span className="text-xs text-muted-foreground">Editing:</span>
-            {group.variants.map((variant) => (
-              <button
-                key={variant.id}
-                onClick={() => setActiveVariant(variant)}
-                className={cn(
-                  "rounded-md px-2 py-1 text-xs transition-colors",
-                  activeVariant.id === variant.id
-                    ? "bg-primary/10 text-primary"
-                    : "text-muted-foreground hover:bg-muted"
-                )}
-              >
-                <ToolBadge tool={variant.sourceTool} />
-              </button>
-            ))}
-          </div>
-        )}
 
         {/* Footer */}
         <div className="flex items-center justify-between border-t border-border px-4 py-2">

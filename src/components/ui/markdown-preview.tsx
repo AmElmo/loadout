@@ -10,9 +10,11 @@ interface MarkdownPreviewProps {
   onSave?: (content: string) => Promise<void>;
   onClose?: () => void;
   onModeChange?: (mode: "edit" | "preview") => void;
+  /** Rendered below the Edit/Preview toggle bar when in edit mode */
+  editToolbar?: React.ReactNode;
 }
 
-export function MarkdownPreview({ content, className, onSave, onClose, onModeChange }: MarkdownPreviewProps) {
+export function MarkdownPreview({ content, className, onSave, onClose, onModeChange, editToolbar }: MarkdownPreviewProps) {
   const [mode, setMode] = useState<"edit" | "preview">("preview");
   const [draft, setDraft] = useState(content);
   const [saving, setSaving] = useState(false);
@@ -153,6 +155,9 @@ export function MarkdownPreview({ content, className, onSave, onClose, onModeCha
           </div>
         )}
       </div>
+
+      {/* Optional toolbar below toggle when editing */}
+      {mode === "edit" && editToolbar}
 
       {/* Content */}
       <div className="min-h-0 flex-1 overflow-auto">
