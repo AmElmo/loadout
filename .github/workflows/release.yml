@@ -67,7 +67,8 @@ jobs:
         with:
           tagName: ${{ github.ref_name }}
           releaseName: "Loadout ${{ github.ref_name }}"
-          releaseBody: "See [CHANGELOG.md](https://github.com/AmElmo/loadout/blob/main/CHANGELOG.md) for details."
+          releaseBody: "See [CHANGELOG.md](https://github.com/AmElmo/loadout/blob/main/CHANGELOG.md) for the full history."
+          generateReleaseNotes: true
           releaseDraft: true
           prerelease: false
           args: --target ${{ matrix.target }}
