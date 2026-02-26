@@ -16,6 +16,7 @@ import { SuccessConfirmation } from "./SuccessConfirmation";
 import { InstallMethodSelector } from "./InstallMethodSelector";
 import { cn } from "@/lib/utils";
 import { useEscapeKey } from "@/hooks/useEscapeKey";
+import { useSubmitShortcut } from "@/hooks/useSubmitShortcut";
 
 function formatFileSize(bytes: number): string {
   if (bytes < 1024) return `${bytes} B`;
@@ -165,6 +166,8 @@ export function ImportSkillDialog({
     editedName.trim() &&
     !detectionErrorMessage &&
     effectiveTargetTools.length > 0;
+
+  useSubmitShortcut(handleInstall, !!canInstall && !installMutation.isPending);
 
   // Show success state
   if (installMutation.isSuccess && installMutation.data) {

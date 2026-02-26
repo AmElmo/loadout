@@ -25,6 +25,7 @@ import { ToolLogo } from "@/components/ToolLogo";
 import { TOOL_CONFIG } from "@/config/tools";
 import { cn } from "@/lib/utils";
 import { useEscapeKey } from "@/hooks/useEscapeKey";
+import { useSubmitShortcut } from "@/hooks/useSubmitShortcut";
 import { useWorkspaceStore } from "@/stores/workspaceStore";
 
 type ImportMode = "url" | "file";
@@ -140,6 +141,8 @@ export function ImportAgentDialog({
   const fetchError =
     fetchMutation.error || parseMutation.error || readFileMutation.error;
   const canInstall = preview && editedName.trim() && targetTools.length > 0;
+
+  useSubmitShortcut(handleInstall, !!canInstall && !installMutation.isPending);
 
   // Show success state
   if (installMutation.isSuccess && installMutation.data) {

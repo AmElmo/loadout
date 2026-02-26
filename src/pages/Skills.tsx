@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { RefreshCw, AlertCircle, FolderOpen, Plus, Download } from "lucide-react";
 import { useQuery } from "@tanstack/react-query";
 import { useWorkspaceStore } from "@/stores/workspaceStore";
@@ -8,6 +8,7 @@ import { FilterBar, SearchBar } from "@/components/filters";
 import { ImportSkillDialog } from "@/components/sync";
 import { Button } from "@/components/ui/button";
 import { useInfiniteList } from "@/hooks/useInfiniteList";
+import { useShortcutAction } from "@/hooks/useKeyboardShortcuts";
 import type { SourceTool } from "@/types";
 import { ALL_TOOLS } from "@/config/tools";
 import { groupSkills } from "@/lib/groupSkills";
@@ -16,6 +17,9 @@ import { cn } from "@/lib/utils";
 export function Skills() {
   const { current } = useWorkspaceStore();
   const [showImportDialog, setShowImportDialog] = useState(false);
+  const searchRef = useRef<HTMLInputElement>(null);
+  useShortcutAction("focus-search", () => searchRef.current?.focus());
+  useShortcutAction("add-item", () => setShowImportDialog(true));
   const [droppedFile, setDroppedFile] = useState<{
     content: string;
     name: string;
@@ -39,6 +43,8 @@ export function Skills() {
     queryKey: ["skills", current?.repo_root ?? current?.path ?? null],
     queryFn: () => scanSkills(current?.repo_root ?? current?.path),
   });
+
+  useShortcutAction("refresh", () => refetch());
 
   const groupedSkills = useMemo(() => {
     if (!result) return [];
@@ -165,6 +171,7 @@ export function Skills() {
       {result && groupedSkills.length > 0 && (
         <div className="mb-4 flex items-center gap-4">
           <SearchBar
+            ref={searchRef}
             value={searchQuery}
             onChange={setSearchQuery}
             placeholder="Search skills..."

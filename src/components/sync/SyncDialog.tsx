@@ -8,6 +8,7 @@ import { SuccessConfirmation } from "./SuccessConfirmation";
 import { InstallMethodSelector } from "./InstallMethodSelector";
 import { detectInstalledTools } from "@/lib/api/detection";
 import { useEscapeKey } from "@/hooks/useEscapeKey";
+import { useSubmitShortcut } from "@/hooks/useSubmitShortcut";
 
 interface SyncDialogProps {
   type: "mcp" | "skill";
@@ -115,6 +116,13 @@ export function SyncDialog({
       onConvert: () => convertMutation.mutate(),
     };
   }, [onConvert, existingToolMethods, convertMutation]);
+
+  const canSync =
+    !detectionErrorMessage &&
+    effectiveTargetTools.length > 0 &&
+    !syncMutation.isPending &&
+    !allSynced;
+  useSubmitShortcut(() => syncMutation.mutate(), canSync);
 
   if (syncMutation.isSuccess && syncMutation.data) {
     return (

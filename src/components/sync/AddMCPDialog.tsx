@@ -9,6 +9,7 @@ import { ToolSelector } from "./ToolSelector";
 import { ConfigPreview } from "./ConfigPreview";
 import { SuccessConfirmation } from "./SuccessConfirmation";
 import { useEscapeKey } from "@/hooks/useEscapeKey";
+import { useSubmitShortcut } from "@/hooks/useSubmitShortcut";
 
 interface AddMCPDialogProps {
   onClose: () => void;
@@ -132,6 +133,8 @@ export function AddMCPDialog({ onClose }: AddMCPDialogProps) {
     name.trim() &&
     effectiveTargetTools.length > 0 &&
     (!isHttpMCP ? command.trim() : url.trim());
+
+  useSubmitShortcut(handleSubmit, !!isValid && !writeMutation.isPending);
 
   // Show success state
   if (writeMutation.isSuccess && writeMutation.data) {

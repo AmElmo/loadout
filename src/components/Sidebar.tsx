@@ -18,6 +18,7 @@ import { open } from "@tauri-apps/plugin-dialog";
 import { getVersion } from "@tauri-apps/api/app";
 import { cn, isRealWorkspace } from "@/lib/utils";
 import { useWorkspaceStore } from "@/stores/workspaceStore";
+import { useShortcutStore } from "@/stores/shortcutStore";
 import { getWorkspaceInfo, discoverWorkspaces } from "@/lib/api/workspace";
 import { useState, useEffect, useRef } from "react";
 import { useQuery } from "@tanstack/react-query";
@@ -71,8 +72,22 @@ function ToolDots({ workspace }: { workspace: DiscoveredWorkspace }) {
 export function Sidebar() {
   const { activeTab, setActiveTab, current, setCurrent } =
     useWorkspaceStore();
-  const [showDropdown, setShowDropdown] = useState(false);
+  const showWorkspaceSwitcher = useShortcutStore((s) => s.showWorkspaceSwitcher);
+  const setShowWorkspaceSwitcher = useShortcutStore((s) => s.setShowWorkspaceSwitcher);
+  const [showDropdown, setShowDropdownLocal] = useState(false);
   const [filter, setFilter] = useState("");
+
+  // Sync local dropdown state with shortcut store (for Cmd+K)
+  useEffect(() => {
+    setShowDropdownLocal(showWorkspaceSwitcher);
+    if (showWorkspaceSwitcher) setFilter("");
+  }, [showWorkspaceSwitcher]);
+
+  // Keep shortcut store in sync when local state changes
+  const setShowDropdown = (show: boolean) => {
+    setShowDropdownLocal(show);
+    setShowWorkspaceSwitcher(show);
+  };
   const [version, setVersion] = useState("0.1.0");
   const dropdownRef = useRef<HTMLDivElement>(null);
 
