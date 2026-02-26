@@ -1,5 +1,7 @@
 //! Shared helpers used across the application
 
+pub mod github;
+
 use std::path::PathBuf;
 
 /// Returns the effective home directory.

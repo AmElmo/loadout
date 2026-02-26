@@ -62,7 +62,7 @@ export function AgentSyncDialog({ group, onClose }: AgentSyncDialogProps) {
               )}
             </div>
             <h3 className="text-lg font-semibold">
-              {result.success ? "Agent Synced" : "Sync Failed"}
+              {result.success ? "Subagent Synced" : "Sync Failed"}
             </h3>
             <p className="mt-1 text-sm text-muted-foreground">
               {result.success
@@ -101,7 +101,7 @@ export function AgentSyncDialog({ group, onClose }: AgentSyncDialogProps) {
         <div className="flex items-center justify-between border-b border-border px-4 py-3">
           <div className="flex items-center gap-2">
             <Share2 className="h-4 w-4" />
-            <h2 className="text-lg font-semibold">Sync Agent to Other Tools</h2>
+            <h2 className="text-lg font-semibold">Sync Subagent to Other Tools</h2>
           </div>
           <button
             onClick={onClose}
@@ -172,7 +172,7 @@ export function AgentSyncDialog({ group, onClose }: AgentSyncDialogProps) {
             {/* Codex — always disabled */}
             <div
               className="flex items-center gap-3 rounded-md border border-border px-3 py-2 opacity-50"
-              title="Codex CLI does not support agents"
+              title="Codex CLI does not support subagents"
             >
               <input
                 type="checkbox"

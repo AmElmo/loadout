@@ -29,7 +29,7 @@ const navItems = [
   { id: "mcps" as const, label: "MCPs", icon: Server },
   { id: "skills" as const, label: "Skills", icon: Sparkles },
   { id: "rules" as const, label: "Rules", icon: FileText },
-  { id: "agents" as const, label: "Agents", icon: Bot },
+  { id: "agents" as const, label: "Subagents", icon: Bot },
   { id: "hooks" as const, label: "Hooks", icon: Anchor },
   { id: "context" as const, label: "Context", icon: BarChart3 },
 ];

@@ -15,12 +15,12 @@ export function AgentConflictWarning({ conflicts }: AgentConflictWarningProps) {
       <div className="flex items-center gap-2 text-yellow-600">
         <AlertTriangle className="h-5 w-5 shrink-0" />
         <span className="font-medium">
-          {conflicts.length} agent conflict{conflicts.length !== 1 ? "s" : ""}{" "}
+          {conflicts.length} subagent conflict{conflicts.length !== 1 ? "s" : ""}{" "}
           detected
         </span>
       </div>
       <p className="mt-1 text-sm text-muted-foreground">
-        The following agents have the same name but different content across
+        The following subagents have the same name but different content across
         tools:
       </p>
       <ul className="mt-2 space-y-2">

@@ -22,9 +22,9 @@ export function AgentList({
       return (
         <div className="rounded-lg border border-dashed border-border p-8 text-center">
           <Filter className="mx-auto mb-3 h-10 w-10 text-muted-foreground" />
-          <h3 className="font-medium">No Matching Agents</h3>
+          <h3 className="font-medium">No Matching Subagents</h3>
           <p className="mt-1 text-sm text-muted-foreground">
-            No agents match the current filters.
+            No subagents match the current filters.
           </p>
           {onClearFilters && (
             <button
@@ -41,11 +41,11 @@ export function AgentList({
     return (
       <div className="rounded-lg border border-dashed border-border p-8 text-center">
         <Bot className="mx-auto mb-3 h-10 w-10 text-muted-foreground" />
-        <h3 className="font-medium">No Agents Found</h3>
+        <h3 className="font-medium">No Subagents Found</h3>
         <p className="mt-1 text-sm text-muted-foreground">
-          No agents are configured in Claude Code or Gemini CLI.
+          No subagents are configured in Claude Code or Gemini CLI.
         </p>
-        <p className="mt-3 text-xs text-muted-foreground">Add agents to:</p>
+        <p className="mt-3 text-xs text-muted-foreground">Add subagents to:</p>
         <ul className="mt-1 space-y-0.5 text-xs text-muted-foreground">
           <li>
             <code className="rounded bg-muted px-1">

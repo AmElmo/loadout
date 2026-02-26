@@ -11,7 +11,7 @@ interface ConceptCardProps {
   title: string;
   description: string;
   details: string[];
-  pageTab?: "mcps" | "skills" | "rules" | "hooks" | "context";
+  pageTab?: "mcps" | "skills" | "agents" | "rules" | "hooks" | "context";
   pageLabel?: string;
 }
 

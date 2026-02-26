@@ -1,5 +1,7 @@
 //! Tauri commands for Agents management
 
+use crate::helpers::github::{self, GitHubUrl};
+use crate::parsers::agent_md::parse_agent_content;
 use crate::scanners::agents::{scan_all_agents, AgentScanResult};
 use crate::writers::agent_writer;
 use serde::Deserialize;
@@ -51,6 +53,21 @@ pub struct AgentWriteResult {
     pub success: bool,
     pub modified_files: Vec<String>,
     pub errors: Vec<String>,
+}
+
+/// An agent fetched from a URL or parsed from file content
+#[derive(Debug, Clone, serde::Serialize)]
+#[serde(rename_all = "camelCase")]
+pub struct FetchedAgent {
+    pub name: String,
+    pub description: String,
+    /// Full raw file content (frontmatter + body)
+    pub content: String,
+    pub tools: Option<String>,
+    pub model: Option<String>,
+    pub max_turns: Option<u32>,
+    pub permission_mode: Option<String>,
+    pub source_url: Option<String>,
 }
 
 /// Install a new agent to selected tools
@@ -166,5 +183,156 @@ pub fn sync_agent_to_tools(request: SyncAgentRequest) -> Result<AgentWriteResult
         success: errors.is_empty(),
         modified_files,
         errors,
+    })
+}
+
+// ---------------------------------------------------------------------------
+// Import commands: fetch from URL, read from file, parse from content
+// ---------------------------------------------------------------------------
+
+/// Fetch an agent from a URL, parse its frontmatter, and return a preview
+#[tauri::command]
+pub async fn fetch_agent_from_url(url: String) -> Result<FetchedAgent, String> {
+    let url = url.trim().to_string();
+    if url.is_empty() {
+        return Err("URL is required".to_string());
+    }
+
+    let client = reqwest::Client::new();
+
+    // Handle GitHub URLs: resolve to raw content URL
+    if let Some(gh) = github::parse_github_url(&url) {
+        let raw_url = match &gh {
+            GitHubUrl::Blob {
+                owner,
+                repo,
+                ref_and_path,
+            } => format!(
+                "https://raw.githubusercontent.com/{}/{}/{}",
+                owner, repo, ref_and_path
+            ),
+            GitHubUrl::Tree {
+                owner,
+                repo,
+                ref_and_path,
+            } => {
+                // For a directory URL, we can't know the agent filename — try common patterns
+                // First try fetching as-is (the ref_and_path might point to a .md file)
+                return Err(
+                    "Please link directly to an agent .md file, not a directory. \
+                     For example: https://github.com/org/repo/blob/main/agents/code-reviewer.md"
+                        .to_string(),
+                );
+            }
+            GitHubUrl::Repo { .. } => {
+                return Err(
+                    "Please link directly to an agent .md file, not a repository. \
+                     For example: https://github.com/org/repo/blob/main/agents/code-reviewer.md"
+                        .to_string(),
+                );
+            }
+        };
+
+        let raw_content = github::fetch_raw_content(&client, &raw_url).await?;
+
+        let fallback_name = match &gh {
+            GitHubUrl::Blob { ref_and_path, .. } => ref_and_path
+                .rsplit('/')
+                .find(|s| !s.is_empty())
+                .unwrap_or("imported-agent")
+                .trim_end_matches(".md")
+                .to_string(),
+            _ => "imported-agent".to_string(),
+        };
+
+        let parsed = parse_agent_content(&raw_content, &fallback_name)
+            .map_err(|e| format!("Failed to parse agent: {}", e))?;
+
+        return Ok(FetchedAgent {
+            name: parsed.name,
+            description: parsed.description,
+            content: raw_content,
+            tools: parsed.tools,
+            model: parsed.model,
+            max_turns: parsed.max_turns,
+            permission_mode: parsed.permission_mode,
+            source_url: Some(url),
+        });
+    }
+
+    // Non-GitHub URL: simple fetch
+    let raw_content = github::fetch_raw_content(&client, &url).await?;
+
+    let fallback_name = url
+        .rsplit('/')
+        .find(|s| !s.is_empty())
+        .unwrap_or("imported-agent")
+        .trim_end_matches(".md")
+        .to_string();
+
+    let parsed = parse_agent_content(&raw_content, &fallback_name)
+        .map_err(|e| format!("Failed to parse agent: {}", e))?;
+
+    Ok(FetchedAgent {
+        name: parsed.name,
+        description: parsed.description,
+        content: raw_content,
+        tools: parsed.tools,
+        model: parsed.model,
+        max_turns: parsed.max_turns,
+        permission_mode: parsed.permission_mode,
+        source_url: Some(url),
+    })
+}
+
+/// Read and parse an agent file from disk (for file picker imports)
+#[tauri::command]
+pub fn read_agent_file(path: String) -> Result<FetchedAgent, String> {
+    let path_buf = std::path::PathBuf::from(&path);
+    let content = std::fs::read_to_string(&path_buf)
+        .map_err(|e| format!("Failed to read file: {}", e))?;
+
+    let fallback_name = path_buf
+        .file_stem()
+        .map(|n| n.to_string_lossy().to_string())
+        .unwrap_or_else(|| "imported-agent".to_string());
+
+    let parsed = parse_agent_content(&content, &fallback_name)
+        .map_err(|e| format!("Failed to parse agent: {}", e))?;
+
+    Ok(FetchedAgent {
+        name: parsed.name,
+        description: parsed.description,
+        content,
+        tools: parsed.tools,
+        model: parsed.model,
+        max_turns: parsed.max_turns,
+        permission_mode: parsed.permission_mode,
+        source_url: None,
+    })
+}
+
+/// Parse raw agent file content (for drag-and-drop imports)
+#[tauri::command]
+pub fn parse_agent_file_content(content: String, filename: String) -> Result<FetchedAgent, String> {
+    let fallback_name = filename
+        .trim_end_matches(".md")
+        .rsplit('/')
+        .next()
+        .unwrap_or("imported-agent")
+        .to_string();
+
+    let parsed = parse_agent_content(&content, &fallback_name)
+        .map_err(|e| format!("Failed to parse agent: {}", e))?;
+
+    Ok(FetchedAgent {
+        name: parsed.name,
+        description: parsed.description,
+        content,
+        tools: parsed.tools,
+        model: parsed.model,
+        max_turns: parsed.max_turns,
+        permission_mode: parsed.permission_mode,
+        source_url: None,
     })
 }

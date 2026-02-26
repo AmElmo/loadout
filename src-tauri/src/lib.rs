@@ -11,12 +11,12 @@ mod workspace;
 mod writers;
 
 use commands::{
-    add_mcp_to_tools, create_rules_with_cli, detect_installed_tools, fetch_mcp_tools,
-    fetch_skill_from_url, install_agent_to_tools, install_skill_to_tools,
-    parse_skill_file_content, preview_mcp_configs, read_skill_file, reveal_in_file_manager,
-    save_file_content, save_skill_content, scan_agents, scan_hooks, scan_mcps,
-    scan_repos_without_rules, scan_rules, scan_skills, sync_agent_to_tools, sync_mcp_to_tools,
-    test_mcp_health,
+    add_mcp_to_tools, create_rules_with_cli, detect_installed_tools, fetch_agent_from_url,
+    fetch_mcp_tools, fetch_skill_from_url, install_agent_to_tools, install_skill_to_tools,
+    parse_agent_file_content, parse_skill_file_content, preview_mcp_configs, read_agent_file,
+    read_skill_file, reveal_in_file_manager, save_file_content, save_skill_content, scan_agents,
+    scan_hooks, scan_mcps, scan_repos_without_rules, scan_rules, scan_skills,
+    sync_agent_to_tools, sync_mcp_to_tools, test_mcp_health,
 };
 use scanners::workspaces::{discover_workspaces, DiscoveryResult};
 
@@ -123,6 +123,9 @@ pub fn run() {
             preview_mcp_configs,
             install_skill_to_tools,
             install_agent_to_tools,
+            fetch_agent_from_url,
+            read_agent_file,
+            parse_agent_file_content,
             sync_mcp_to_tools,
             sync_agent_to_tools,
             test_mcp_health,

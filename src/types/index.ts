@@ -581,3 +581,18 @@ export interface AgentWriteResult {
   modifiedFiles: string[];
   errors: string[];
 }
+
+/**
+ * An agent fetched from a URL or parsed from file content
+ */
+export interface FetchedAgent {
+  name: string;
+  description: string;
+  /** Full raw file content (frontmatter + body) */
+  content: string;
+  tools: string | null;
+  model: string | null;
+  maxTurns: number | null;
+  permissionMode: string | null;
+  sourceUrl: string | null;
+}
