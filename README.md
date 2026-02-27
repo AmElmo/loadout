@@ -10,7 +10,7 @@
 </p>
 
 <p align="center">
-  One desktop app to manage MCPs, skills, rules, hooks, and agents across all your AI coding tools.
+  One desktop app to manage MCPs, skills, rules, hooks, and subagents across all your AI coding tools.
 </p>
 
 ---
