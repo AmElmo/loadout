@@ -2,9 +2,9 @@ import {
   X,
   FolderOpen,
   Terminal,
-  Sparkles,
-  Server,
-  Webhook,
+  Hammer,
+  Unplug,
+  Anchor,
   Bot,
   FileCode2,
   BookOpen,
@@ -126,7 +126,7 @@ export function PluginViewer({ plugin, onClose }: PluginViewerProps) {
             {details.skills.length > 0 && (
               <PluginComponentSection
                 title="Skills"
-                icon={<Sparkles className="h-4 w-4" />}
+                icon={<Hammer className="h-4 w-4" />}
                 items={details.skills}
                 columns={[
                   { key: "name", label: "Name" },
@@ -138,7 +138,7 @@ export function PluginViewer({ plugin, onClose }: PluginViewerProps) {
             {details.mcps.length > 0 && (
               <PluginComponentSection
                 title="MCP Servers"
-                icon={<Server className="h-4 w-4" />}
+                icon={<Unplug className="h-4 w-4" />}
                 items={details.mcps}
                 columns={[
                   { key: "name", label: "Name" },
@@ -151,7 +151,7 @@ export function PluginViewer({ plugin, onClose }: PluginViewerProps) {
             {details.hooks.length > 0 && (
               <PluginComponentSection
                 title="Hooks"
-                icon={<Webhook className="h-4 w-4" />}
+                icon={<Anchor className="h-4 w-4" />}
                 items={details.hooks}
                 columns={[
                   { key: "event", label: "Event" },
