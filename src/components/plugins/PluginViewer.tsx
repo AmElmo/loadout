@@ -1,7 +1,7 @@
 import {
   X,
   FolderOpen,
-  Terminal,
+  Zap,
   Hammer,
   Unplug,
   Anchor,
@@ -114,7 +114,7 @@ export function PluginViewer({ plugin, onClose }: PluginViewerProps) {
             {details.commands.length > 0 && (
               <PluginComponentSection
                 title="Commands"
-                icon={<Terminal className="h-4 w-4" />}
+                icon={<Zap className="h-4 w-4" />}
                 items={details.commands}
                 columns={[
                   { key: "name", label: "Name" },
