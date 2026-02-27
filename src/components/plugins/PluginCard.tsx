@@ -42,7 +42,7 @@ export function PluginCard({ plugin, onClick }: PluginCardProps) {
     <button
       onClick={onClick}
       className={cn(
-        "flex w-full items-center gap-3 rounded-lg border border-border bg-card p-4 text-left transition-colors hover:bg-muted/50",
+        "flex w-full items-center gap-3 rounded-lg border border-border bg-card p-4 text-left transition-colors hover:bg-muted/30",
         !plugin.enabled && "opacity-60"
       )}
     >

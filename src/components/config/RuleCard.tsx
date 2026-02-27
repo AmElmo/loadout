@@ -24,7 +24,7 @@ export function RuleCard({ rule, onClick }: RuleCardProps) {
       onClick={onClick}
       disabled={!rule.exists}
       className={cn(
-        "flex w-full items-center gap-3 rounded-lg border border-border bg-card p-4 text-left transition-colors hover:bg-muted/50",
+        "flex w-full items-center gap-3 rounded-lg border border-border bg-card p-4 text-left transition-colors hover:bg-muted/30",
         !rule.exists && "opacity-40 cursor-default hover:bg-card"
       )}
     >

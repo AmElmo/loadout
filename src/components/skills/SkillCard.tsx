@@ -34,7 +34,7 @@ export function SkillCard({ group, onClick }: SkillCardProps) {
       <button
         onClick={onClick}
         className={cn(
-          "flex w-full items-center gap-3 rounded-lg border border-border bg-card p-4 text-left transition-colors hover:bg-muted/50",
+          "flex w-full items-center gap-3 rounded-lg border border-border bg-card p-4 text-left transition-colors hover:bg-muted/30",
           group.primary.isShadowed && "opacity-60"
         )}
       >
