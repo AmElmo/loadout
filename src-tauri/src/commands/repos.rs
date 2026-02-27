@@ -112,7 +112,7 @@ pub async fn create_rules_with_cli(
         let tk = tool_kind.clone();
         std::thread::spawn(move || {
             let reader = BufReader::new(stdout);
-            for raw in reader.lines().flatten() {
+            for raw in reader.lines().map_while(Result::ok) {
                 let parsed = match tk.as_str() {
                     "claude" => parse_claude_stream_line(&raw),
                     "codex" => parse_codex_stream_line(&raw),
@@ -137,7 +137,7 @@ pub async fn create_rules_with_cli(
         let rp = repo_path.clone();
         std::thread::spawn(move || {
             let reader = BufReader::new(stderr);
-            for line in reader.lines().flatten() {
+            for line in reader.lines().map_while(Result::ok) {
                 // Skip noisy stderr lines (credential caching, model refresh errors, etc.)
                 let trimmed = line.trim();
                 if trimmed.is_empty()
