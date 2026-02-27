@@ -1,5 +1,5 @@
 <p align="center">
-  <img src="brand-assets/svg/readme-hero.svg" alt="Loadout — Gear up your AI tools" width="720" />
+  <img src="brand-assets/svg/readme-hero-v2.svg" alt="Loadout — Gear up your AI tools" width="720" />
 </p>
 
 ---
