@@ -14,6 +14,7 @@ import type { PluginItem, PluginSourceVariant, SourceTool } from "@/types";
 import { ToolLogo } from "@/components/ToolLogo";
 import { OpenPathButton } from "@/components/ui/open-path-button";
 import { useEscapeKey } from "@/hooks/useEscapeKey";
+import { DialogOverlay } from "@/components/ui/dialog-overlay";
 import { PluginComponentSection } from "./PluginComponentSection";
 
 const SOURCE_VARIANT_LABELS: Record<PluginSourceVariant, string> = {
@@ -36,7 +37,7 @@ export function PluginViewer({ plugin, onClose }: PluginViewerProps) {
   const details = plugin.componentDetails;
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4">
+    <DialogOverlay onClose={onClose}>
       <div className="flex h-[85vh] w-full max-w-3xl flex-col rounded-lg border border-border bg-background shadow-xl">
         {/* Header */}
         <div className="flex items-center justify-between border-b border-border px-4 py-3">
@@ -213,6 +214,6 @@ export function PluginViewer({ plugin, onClose }: PluginViewerProps) {
           <OpenPathButton path={plugin.path} variant="outline" size="sm" />
         </div>
       </div>
-    </div>
+    </DialogOverlay>
   );
 }

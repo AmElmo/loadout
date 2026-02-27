@@ -17,8 +17,7 @@ export function Learn() {
       <div className="mb-6">
         <h2 className="text-2xl font-semibold">Learn</h2>
         <p className="mt-1 text-muted-foreground">
-          Master the building blocks that power your AI coding tools — think of
-          it like running a company
+          Master the building blocks that power your AI coding tools
         </p>
       </div>
 

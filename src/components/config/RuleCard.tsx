@@ -24,11 +24,11 @@ export function RuleCard({ rule, onClick }: RuleCardProps) {
       onClick={onClick}
       disabled={!rule.exists}
       className={cn(
-        "flex w-full items-center gap-3 rounded-lg border border-border bg-card p-4 text-left transition-colors hover:bg-muted/50",
+        "flex w-full items-center gap-3 rounded-lg border border-border bg-card p-4 text-left transition-colors hover:bg-muted/30",
         !rule.exists && "opacity-40 cursor-default hover:bg-card"
       )}
     >
-      {/* Icon */}
+        {/* Icon */}
       <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-lg bg-primary/10">
         <FileText className="h-5 w-5 text-primary" />
       </div>
