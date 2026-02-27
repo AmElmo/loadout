@@ -1,0 +1,138 @@
+<svg viewBox="0 0 900 320" xmlns="http://www.w3.org/2000/svg">
+  <defs>
+    <radialGradient id="bgGlow" cx="50%" cy="45%" r="65%" fx="50%" fy="40%">
+      <stop offset="0%" stop-color="#1a2744"/>
+      <stop offset="100%" stop-color="#0c1220"/>
+    </radialGradient>
+    <radialGradient id="iconGlow" cx="50%" cy="50%" r="50%">
+      <stop offset="0%" stop-color="#3B82F6" stop-opacity="0.35"/>
+      <stop offset="70%" stop-color="#3B82F6" stop-opacity="0.05"/>
+      <stop offset="100%" stop-color="#3B82F6" stop-opacity="0"/>
+    </radialGradient>
+    <linearGradient id="lineGrad" x1="0%" y1="0%" x2="100%" y2="0%">
+      <stop offset="0%" stop-color="#3B82F6" stop-opacity="0"/>
+      <stop offset="30%" stop-color="#3B82F6" stop-opacity="1"/>
+      <stop offset="70%" stop-color="#60A5FA" stop-opacity="1"/>
+      <stop offset="100%" stop-color="#3B82F6" stop-opacity="0"/>
+    </linearGradient>
+    <!-- Orbit ring gradient -->
+    <linearGradient id="orbitGrad" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#3B82F6" stop-opacity="0.15"/>
+      <stop offset="50%" stop-color="#60A5FA" stop-opacity="0.08"/>
+      <stop offset="100%" stop-color="#3B82F6" stop-opacity="0.15"/>
+    </linearGradient>
+  </defs>
+
+  <!-- Background -->
+  <rect width="900" height="320" rx="16" fill="url(#bgGlow)"/>
+  <rect width="900" height="320" rx="16" fill="none" stroke="#1e3a5f" stroke-width="1" stroke-opacity="0.5"/>
+
+  <!-- ═══ ORBITAL RINGS around the central mark ═══ -->
+  <ellipse cx="450" cy="130" rx="280" ry="90" fill="none" stroke="url(#orbitGrad)" stroke-width="0.8" stroke-dasharray="4 8" transform="rotate(-8, 450, 130)"/>
+  <ellipse cx="450" cy="130" rx="210" ry="70" fill="none" stroke="url(#orbitGrad)" stroke-width="0.6" stroke-dasharray="3 6" transform="rotate(5, 450, 130)"/>
+  <ellipse cx="450" cy="130" rx="340" ry="110" fill="none" stroke="url(#orbitGrad)" stroke-width="0.5" stroke-dasharray="5 12" transform="rotate(-3, 450, 130)"/>
+
+  <!-- ═══ CONCEPT ICONS on the orbits (exact lucide-react v0.563.0 paths) ═══ -->
+
+  <!-- MCPs / Unplug (cyan) — outer orbit, left -->
+  <g transform="translate(115, 105)" opacity="0.75">
+    <circle r="26" fill="#06b6d4" fill-opacity="0.08" stroke="#06b6d4" stroke-width="0.8" stroke-opacity="0.4"/>
+    <!-- lucide: unplug (viewBox 0 0 24 24) -->
+    <g transform="translate(-12,-12)" fill="none" stroke="#06b6d4" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+      <path d="m19 5 3-3"/>
+      <path d="m2 22 3-3"/>
+      <path d="M6.3 20.3a2.4 2.4 0 0 0 3.4 0L12 18l-6-6-2.3 2.3a2.4 2.4 0 0 0 0 3.4Z"/>
+      <path d="M7.5 13.5 10 11"/>
+      <path d="M10.5 16.5 13 14"/>
+      <path d="m12 6 6 6 2.3-2.3a2.4 2.4 0 0 0 0-3.4l-2.6-2.6a2.4 2.4 0 0 0-3.4 0Z"/>
+    </g>
+  </g>
+
+  <!-- Skills / Hammer (purple) — middle orbit, upper-left -->
+  <g transform="translate(245, 55)" opacity="0.7">
+    <circle r="24" fill="#a855f7" fill-opacity="0.08" stroke="#a855f7" stroke-width="0.8" stroke-opacity="0.4"/>
+    <!-- lucide: hammer (viewBox 0 0 24 24) -->
+    <g transform="translate(-12,-12)" fill="none" stroke="#a855f7" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+      <path d="m15 12-9.373 9.373a1 1 0 0 1-3.001-3L12 9"/>
+      <path d="m18 15 4-4"/>
+      <path d="m21.5 11.5-1.914-1.914A2 2 0 0 1 19 8.172v-.344a2 2 0 0 0-.586-1.414l-1.657-1.657A6 6 0 0 0 12.516 3H9l1.243 1.243A6 6 0 0 1 12 8.485V10l2 2h1.172a2 2 0 0 1 1.414.586L18.5 14.5"/>
+    </g>
+  </g>
+
+  <!-- Rules / FileText (amber) — inner orbit, bottom-left -->
+  <g transform="translate(265, 200)" opacity="0.65">
+    <circle r="22" fill="#fbbf24" fill-opacity="0.08" stroke="#fbbf24" stroke-width="0.8" stroke-opacity="0.4"/>
+    <!-- lucide: file-text (viewBox 0 0 24 24) -->
+    <g transform="translate(-12,-12)" fill="none" stroke="#fbbf24" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+      <path d="M6 22a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h8a2.4 2.4 0 0 1 1.704.706l3.588 3.588A2.4 2.4 0 0 1 20 8v12a2 2 0 0 1-2 2z"/>
+      <path d="M14 2v5a1 1 0 0 0 1 1h5"/>
+      <path d="M10 9H8"/>
+      <path d="M16 13H8"/>
+      <path d="M16 17H8"/>
+    </g>
+  </g>
+
+  <!-- Subagents / Bot (pink) — outer orbit, right -->
+  <g transform="translate(778, 95)" opacity="0.7">
+    <circle r="26" fill="#ec4899" fill-opacity="0.08" stroke="#ec4899" stroke-width="0.8" stroke-opacity="0.4"/>
+    <!-- lucide: bot (viewBox 0 0 24 24) -->
+    <g transform="translate(-12,-12)" fill="none" stroke="#ec4899" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+      <path d="M12 8V4H8"/>
+      <rect width="16" height="12" x="4" y="8" rx="2"/>
+      <path d="M2 14h2"/>
+      <path d="M20 14h2"/>
+      <path d="M15 13v2"/>
+      <path d="M9 13v2"/>
+    </g>
+  </g>
+
+  <!-- Hooks / Anchor (slate) — middle orbit, upper-right -->
+  <g transform="translate(650, 52)" opacity="0.6">
+    <circle r="22" fill="#94a3b8" fill-opacity="0.08" stroke="#94a3b8" stroke-width="0.8" stroke-opacity="0.4"/>
+    <!-- lucide: anchor (viewBox 0 0 24 24) -->
+    <g transform="translate(-12,-12)" fill="none" stroke="#94a3b8" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+      <path d="M12 6v16"/>
+      <path d="m19 13 2-1a9 9 0 0 1-18 0l2 1"/>
+      <path d="M9 11h6"/>
+      <circle cx="12" cy="4" r="2"/>
+    </g>
+  </g>
+
+  <!-- Plugins / Puzzle (emerald) — inner orbit, bottom-right -->
+  <g transform="translate(638, 205)" opacity="0.6">
+    <circle r="24" fill="#10b981" fill-opacity="0.08" stroke="#10b981" stroke-width="0.8" stroke-opacity="0.4"/>
+    <!-- lucide: puzzle (viewBox 0 0 24 24) -->
+    <g transform="translate(-12,-12)" fill="none" stroke="#10b981" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+      <path d="M15.39 4.39a1 1 0 0 0 1.68-.474 2.5 2.5 0 1 1 3.014 3.015 1 1 0 0 0-.474 1.68l1.683 1.682a2.414 2.414 0 0 1 0 3.414L19.61 15.39a1 1 0 0 1-1.68-.474 2.5 2.5 0 1 0-3.014 3.015 1 1 0 0 1 .474 1.68l-1.683 1.682a2.414 2.414 0 0 1-3.414 0L8.61 19.61a1 1 0 0 0-1.68.474 2.5 2.5 0 1 1-3.014-3.015 1 1 0 0 0 .474-1.68l-1.683-1.682a2.414 2.414 0 0 1 0-3.414L4.39 8.61a1 1 0 0 1 1.68.474 2.5 2.5 0 1 0 3.014-3.015 1 1 0 0 1-.474-1.68l1.683-1.682a2.414 2.414 0 0 1 3.414 0z"/>
+    </g>
+  </g>
+
+  <!-- ═══ Connecting lines from icons toward center (subtle) ═══ -->
+  <line x1="141" y1="105" x2="305" y2="115" stroke="#06b6d4" stroke-width="0.4" stroke-opacity="0.15" stroke-dasharray="2 4"/>
+  <line x1="269" y1="55" x2="375" y2="92" stroke="#a855f7" stroke-width="0.4" stroke-opacity="0.15" stroke-dasharray="2 4"/>
+  <line x1="287" y1="200" x2="380" y2="165" stroke="#fbbf24" stroke-width="0.4" stroke-opacity="0.12" stroke-dasharray="2 4"/>
+  <line x1="752" y1="95" x2="595" y2="112" stroke="#ec4899" stroke-width="0.4" stroke-opacity="0.15" stroke-dasharray="2 4"/>
+  <line x1="628" y1="52" x2="525" y2="88" stroke="#94a3b8" stroke-width="0.4" stroke-opacity="0.12" stroke-dasharray="2 4"/>
+  <line x1="614" y1="205" x2="520" y2="165" stroke="#10b981" stroke-width="0.4" stroke-opacity="0.12" stroke-dasharray="2 4"/>
+
+  <!-- ═══ Central content ═══ -->
+  <circle cx="450" cy="105" r="100" fill="url(#iconGlow)"/>
+
+  <g transform="translate(450, 105) scale(1.917)">
+    <circle cx="0" cy="0" r="24" fill="none" stroke="#3B82F6" stroke-width="5"/>
+    <line x1="0" y1="-24" x2="0" y2="24" stroke="#3B82F6" stroke-width="3"/>
+    <line x1="-21" y1="-12" x2="21" y2="12" stroke="#3B82F6" stroke-width="3"/>
+    <line x1="21" y1="-12" x2="-21" y2="12" stroke="#3B82F6" stroke-width="3"/>
+    <path d="M0,-24 A24,24 0 0,1 20.8,-12 L0,0 Z" fill="#3B82F6"/>
+  </g>
+
+  <text x="450" y="214" font-family="'Space Grotesk', 'Segoe UI', system-ui, -apple-system, sans-serif" font-weight="700" font-size="38" letter-spacing="6" fill="#F0F4FF" text-anchor="middle">LOADOUT</text>
+  <line x1="250" y1="236" x2="650" y2="236" stroke="url(#lineGrad)" stroke-width="1.5"/>
+  <text x="450" y="268" font-family="'Space Grotesk', 'Segoe UI', system-ui, -apple-system, sans-serif" font-weight="400" font-size="18" letter-spacing="1" fill="#94A3B8" text-anchor="middle">Gear up your AI tools</text>
+
+  <!-- Corner accents -->
+  <path d="M16,1 L1,1 L1,16" fill="none" stroke="#3B82F6" stroke-width="1" stroke-opacity="0.3"/>
+  <path d="M884,1 L899,1 L899,16" fill="none" stroke="#3B82F6" stroke-width="1" stroke-opacity="0.3"/>
+  <path d="M1,304 L1,319 L16,319" fill="none" stroke="#3B82F6" stroke-width="1" stroke-opacity="0.3"/>
+  <path d="M899,304 L899,319 L884,319" fill="none" stroke="#3B82F6" stroke-width="1" stroke-opacity="0.3"/>
+</svg>
