@@ -14,6 +14,9 @@ import {
   RefreshCw,
   Settings,
   Keyboard,
+  Sun,
+  Moon,
+  Monitor,
   X,
 } from "lucide-react";
 import { open } from "@tauri-apps/plugin-dialog";
@@ -26,8 +29,14 @@ import { useState, useEffect, useRef } from "react";
 import { useQuery } from "@tanstack/react-query";
 import type { DiscoveredWorkspace, SourceTool } from "@/types";
 import { ToolLogo } from "@/components/ToolLogo";
-import { ThemeToggle } from "@/components/ThemeToggle";
+import { useThemeStore } from "@/stores/themeStore";
 import { TOOL_CONFIG, toolTextColor } from "@/config/tools";
+
+const themeOptions = [
+  { value: "light" as const, icon: Sun, label: "Light" },
+  { value: "dark" as const, icon: Moon, label: "Dark" },
+  { value: "system" as const, icon: Monitor, label: "System" },
+];
 
 const navItems = [
   { id: "home" as const, label: "Home", icon: Home },
@@ -79,6 +88,7 @@ function SettingsMenu({ version }: { version: string }) {
   const setShowShortcutsModal = useShortcutStore(
     (s) => s.setShowShortcutsModal
   );
+  const { theme, setTheme } = useThemeStore();
 
   useEffect(() => {
     function handleClickOutside(e: MouseEvent) {
@@ -97,19 +107,16 @@ function SettingsMenu({ version }: { version: string }) {
     <div className="relative" ref={menuRef}>
       <div className="flex items-center justify-between">
         <p className="text-xs text-muted-foreground">v{version}</p>
-        <div className="flex items-center gap-1">
-          <ThemeToggle />
-          <button
-            onClick={() => setOpen(!open)}
-            className={cn(
-              "rounded-md p-1.5 text-muted-foreground transition-colors hover:bg-sidebar-accent/50 hover:text-sidebar-foreground",
-              open && "bg-sidebar-accent text-sidebar-foreground"
-            )}
-            title="Settings"
-          >
-            <Settings className="h-4 w-4" />
-          </button>
-        </div>
+        <button
+          onClick={() => setOpen(!open)}
+          className={cn(
+            "rounded-md p-1.5 text-muted-foreground transition-colors hover:bg-sidebar-accent/50 hover:text-sidebar-foreground",
+            open && "bg-sidebar-accent text-sidebar-foreground"
+          )}
+          title="Settings"
+        >
+          <Settings className="h-4 w-4" />
+        </button>
       </div>
 
       {open && (
@@ -127,6 +134,28 @@ function SettingsMenu({ version }: { version: string }) {
               {isMac ? "\u2318" : "Ctrl"}+/
             </span>
           </button>
+          <div className="mx-2 my-1 border-t border-border" />
+          <div className="flex items-center gap-2 px-3 py-1.5">
+            <Sun className="h-3.5 w-3.5 text-muted-foreground" />
+            <span className="flex-1 text-sm">Theme</span>
+            <div className="flex items-center gap-0.5 rounded-md bg-muted p-0.5">
+              {themeOptions.map(({ value, icon: Icon, label }) => (
+                <button
+                  key={value}
+                  onClick={() => setTheme(value)}
+                  title={label}
+                  className={cn(
+                    "rounded-sm p-1 transition-colors",
+                    theme === value
+                      ? "bg-background text-foreground shadow-sm"
+                      : "text-muted-foreground hover:text-foreground"
+                  )}
+                >
+                  <Icon className="h-3 w-3" />
+                </button>
+              ))}
+            </div>
+          </div>
         </div>
       )}
     </div>
