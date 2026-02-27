@@ -3,7 +3,7 @@ import { useEffect } from "react";
 export function useEscapeKey(handler: () => void) {
   useEffect(() => {
     const onKeyDown = (e: KeyboardEvent) => {
-      if (e.key === "Escape") {
+      if (e.key === "Escape" && !e.defaultPrevented) {
         e.preventDefault();
         handler();
       }

@@ -1,6 +1,7 @@
 import { Sidebar } from "@/components/Sidebar";
 import { Header } from "@/components/Header";
 import { UpdateNotification } from "@/components/UpdateNotification";
+import { KeyboardShortcutsModal } from "@/components/KeyboardShortcutsModal";
 import { Home } from "@/pages/Home";
 import { MCPs } from "@/pages/MCPs";
 import { Skills } from "@/pages/Skills";
@@ -11,11 +12,15 @@ import { Plugins } from "@/pages/Plugins";
 import { Context } from "@/pages/Context";
 import { Learn } from "@/pages/Learn";
 import { useWorkspaceStore } from "@/stores/workspaceStore";
+import { useShortcutStore } from "@/stores/shortcutStore";
+import { useKeyboardShortcuts } from "@/hooks/useKeyboardShortcuts";
 import { useEffect, useRef } from "react";
 
 function App() {
   const { activeTab } = useWorkspaceStore();
+  const showShortcutsModal = useShortcutStore((s) => s.showShortcutsModal);
   const mainRef = useRef<HTMLElement>(null);
+  useKeyboardShortcuts();
 
   useEffect(() => {
     mainRef.current?.scrollTo(0, 0);
@@ -54,6 +59,7 @@ function App() {
         <main ref={mainRef} className="flex-1 overflow-auto">{renderPage()}</main>
       </div>
       <UpdateNotification />
+      {showShortcutsModal && <KeyboardShortcutsModal />}
     </div>
   );
 }

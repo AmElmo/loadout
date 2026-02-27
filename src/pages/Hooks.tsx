@@ -1,4 +1,4 @@
-import { useMemo, useState } from "react";
+import { useMemo, useRef, useState } from "react";
 import { RefreshCw, AlertCircle } from "lucide-react";
 import { useQuery } from "@tanstack/react-query";
 import { scanHooks } from "@/lib/api/config";
@@ -6,12 +6,15 @@ import { HooksSection } from "@/components/config";
 import { SearchBar } from "@/components/filters";
 import { Button } from "@/components/ui/button";
 import { useInfiniteList } from "@/hooks/useInfiniteList";
+import { useShortcutAction } from "@/hooks/useKeyboardShortcuts";
 import { useWorkspaceStore } from "@/stores/workspaceStore";
 
 export function Hooks() {
   const [searchQuery, setSearchQuery] = useState("");
   const workspace = useWorkspaceStore((s) => s.current);
   const workspacePath = workspace?.path ?? undefined;
+  const searchRef = useRef<HTMLInputElement>(null);
+  useShortcutAction("focus-search", () => searchRef.current?.focus());
 
   const {
     data: result,
@@ -23,6 +26,8 @@ export function Hooks() {
     queryKey: ["hooks", workspacePath ?? null],
     queryFn: () => scanHooks(workspacePath),
   });
+
+  useShortcutAction("refresh", () => refetch());
 
   const filteredHooks = useMemo(() => {
     if (!result) return [];
@@ -63,6 +68,7 @@ export function Hooks() {
       {result && result.hooks.length > 0 && (
         <div className="mb-4">
           <SearchBar
+            ref={searchRef}
             value={searchQuery}
             onChange={setSearchQuery}
             placeholder="Search hooks..."
