@@ -16,8 +16,8 @@ use commands::{
     install_skill_to_tools, parse_agent_file_content, parse_skill_file_content,
     preview_mcp_configs, read_agent_file, read_skill_file, resolve_skill_conflict,
     reveal_in_file_manager, save_file_content, save_skill_content, scan_agents, scan_hooks,
-    scan_mcps, scan_repos_without_rules, scan_rules, scan_skills, sync_agent_to_tools,
-    sync_mcp_to_tools, test_mcp_health,
+    scan_mcps, scan_plugins, scan_repos_without_rules, scan_rules, scan_skills,
+    sync_agent_to_tools, sync_mcp_to_tools, test_mcp_health,
 };
 use scanners::workspaces::{discover_workspaces, DiscoveryResult};
 
@@ -116,6 +116,7 @@ pub fn run() {
             scan_mcps,
             scan_skills,
             scan_agents,
+            scan_plugins,
             scan_rules,
             scan_hooks,
             scan_repos_without_rules,

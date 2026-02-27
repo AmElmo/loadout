@@ -7,6 +7,7 @@ import { Skills } from "@/pages/Skills";
 import { Agents } from "@/pages/Agents";
 import { Rules } from "@/pages/Rules";
 import { Hooks } from "@/pages/Hooks";
+import { Plugins } from "@/pages/Plugins";
 import { Context } from "@/pages/Context";
 import { Learn } from "@/pages/Learn";
 import { useWorkspaceStore } from "@/stores/workspaceStore";
@@ -34,6 +35,8 @@ function App() {
         return <Rules />;
       case "hooks":
         return <Hooks />;
+      case "plugins":
+        return <Plugins />;
       case "context":
         return <Context />;
       case "learn":
