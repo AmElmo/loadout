@@ -2,6 +2,7 @@ import { FileText, ChevronRight, Crosshair } from "lucide-react";
 import type { PromptFile } from "@/types";
 import { cn } from "@/lib/utils";
 import { ToolBadge } from "@/components/mcps/ToolBadge";
+import { toolAccentColor } from "@/config/tools";
 
 interface RuleCardProps {
   rule: PromptFile;
@@ -19,16 +20,25 @@ function formatScopedPaths(paths: string[]): string {
 }
 
 export function RuleCard({ rule, onClick }: RuleCardProps) {
+  const accentHex = toolAccentColor(rule.sourceTool);
+
   return (
-    <button
-      onClick={onClick}
-      disabled={!rule.exists}
+    <div
       className={cn(
-        "flex w-full items-center gap-3 rounded-lg border border-border bg-card p-4 text-left transition-colors hover:bg-muted/30",
-        !rule.exists && "opacity-40 cursor-default hover:bg-card"
+        "relative overflow-hidden rounded-lg border border-border bg-card",
+        !rule.exists && "opacity-40"
       )}
     >
-      {/* Icon */}
+      <span className="absolute left-0 top-0 h-full w-[3px]" style={{ background: accentHex }} aria-hidden="true" />
+      <button
+        onClick={onClick}
+        disabled={!rule.exists}
+        className={cn(
+          "flex w-full items-center gap-3 p-5 pl-[23px] text-left transition-colors hover:bg-muted/30",
+          !rule.exists && "cursor-default hover:bg-transparent"
+        )}
+      >
+        {/* Icon */}
       <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-lg bg-primary/10">
         <FileText className="h-5 w-5 text-primary" />
       </div>
@@ -62,5 +72,6 @@ export function RuleCard({ rule, onClick }: RuleCardProps) {
         <ChevronRight className="h-5 w-5 shrink-0 text-muted-foreground" />
       )}
     </button>
+    </div>
   );
 }

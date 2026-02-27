@@ -7,7 +7,7 @@ import { ToolBadges } from "@/components/mcps/ToolBadge";
 import { SyncDialog } from "@/components/sync";
 import { SkillIcon } from "./SkillIcon";
 import { MaturityBadge } from "./MaturityBadge";
-import { ALL_TOOLS } from "@/config/tools";
+import { ALL_TOOLS, toolAccentColor } from "@/config/tools";
 
 interface SkillCardProps {
   group: GroupedSkill;
@@ -29,17 +29,23 @@ export function SkillCard({ group, onClick }: SkillCardProps) {
   const canQuickSyncFromCard =
     (hasMissingTools || hasCopyInstalls) && !group.hasContentDrift;
 
+  const accentHex = group.installedTools[0] ? toolAccentColor(group.installedTools[0]) : "#3b82f6";
+
   return (
     <>
-      <button
-        onClick={onClick}
+      <div
         className={cn(
-          "flex w-full items-center gap-3 rounded-lg border border-border bg-card p-4 text-left transition-colors hover:bg-muted/30",
+          "relative overflow-hidden rounded-lg border border-border bg-card",
           group.primary.isShadowed && "opacity-60"
         )}
       >
-        {/* Icon */}
-        <SkillIcon name={group.name} description={group.description} />
+        <span className="absolute left-0 top-0 h-full w-[3px]" style={{ background: accentHex }} aria-hidden="true" />
+        <button
+          onClick={onClick}
+          className="flex w-full items-center gap-3 p-5 pl-[23px] text-left transition-colors hover:bg-muted/30"
+        >
+          {/* Icon */}
+          <SkillIcon name={group.name} description={group.description} />
 
         {/* Content */}
         <div className="min-w-0 flex-1">
@@ -81,9 +87,10 @@ export function SkillCard({ group, onClick }: SkillCardProps) {
           </div>
         )}
 
-        {/* Arrow */}
-        <ChevronRight className="h-5 w-5 shrink-0 text-muted-foreground" />
-      </button>
+          {/* Arrow */}
+          <ChevronRight className="h-5 w-5 shrink-0 text-muted-foreground" />
+        </button>
+      </div>
 
       {showSync && (
         <SyncDialog

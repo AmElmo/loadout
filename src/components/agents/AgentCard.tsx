@@ -3,7 +3,7 @@ import { EyeOff, ChevronRight, Share2 } from "lucide-react";
 import type { GroupedAgent, AgentSourceTool } from "@/types";
 import { cn } from "@/lib/utils";
 import { ToolLogo } from "@/components/ToolLogo";
-import { TOOL_CONFIG } from "@/config/tools";
+import { TOOL_CONFIG, toolAccentColor } from "@/config/tools";
 import { MaturityBadge } from "@/components/skills/MaturityBadge";
 import { ItemIcon } from "@/components/ItemIcon";
 import { AgentSyncDialog } from "./AgentSyncDialog";
@@ -24,17 +24,23 @@ export function AgentCard({ group, onClick }: AgentCardProps) {
   const hasMissingTools = missingTools.length > 0;
   const canQuickSyncFromCard = hasMissingTools && !group.hasContentDrift;
 
+  const accentHex = group.installedTools[0] ? toolAccentColor(group.installedTools[0]) : "#3b82f6";
+
   return (
     <>
-      <button
-        onClick={onClick}
+      <div
         className={cn(
-          "flex w-full items-center gap-3 rounded-lg border border-border bg-card p-4 text-left transition-colors hover:bg-muted/30",
+          "relative overflow-hidden rounded-lg border border-border bg-card",
           group.primary.isShadowed && "opacity-60"
         )}
       >
-        {/* Icon */}
-        <ItemIcon name={group.name} description={group.description} />
+        <span className="absolute left-0 top-0 h-full w-[3px]" style={{ background: accentHex }} aria-hidden="true" />
+        <button
+          onClick={onClick}
+          className="flex w-full items-center gap-3 p-5 pl-[23px] text-left transition-colors hover:bg-muted/30"
+        >
+          {/* Icon */}
+          <ItemIcon name={group.name} description={group.description} />
 
         {/* Content */}
         <div className="min-w-0 flex-1">
@@ -104,9 +110,10 @@ export function AgentCard({ group, onClick }: AgentCardProps) {
           </div>
         )}
 
-        {/* Arrow */}
-        <ChevronRight className="h-5 w-5 shrink-0 text-muted-foreground" />
-      </button>
+          {/* Arrow */}
+          <ChevronRight className="h-5 w-5 shrink-0 text-muted-foreground" />
+        </button>
+      </div>
 
       {showSync && (
         <AgentSyncDialog
