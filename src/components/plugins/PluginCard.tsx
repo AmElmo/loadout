@@ -2,7 +2,6 @@ import { ChevronRight } from "lucide-react";
 import type { PluginItem, PluginSourceVariant, SourceTool } from "@/types";
 import { cn } from "@/lib/utils";
 import { ToolLogo } from "@/components/ToolLogo";
-import { toolAccentColor } from "@/config/tools";
 
 const SOURCE_VARIANT_LABELS: Record<PluginSourceVariant, string> = {
   "claude-cli": "Claude Code CLI",
@@ -39,20 +38,14 @@ export function PluginCard({ plugin, onClick }: PluginCardProps) {
     chips.push(`${plugin.components.lspServers} LSP server${plugin.components.lspServers !== 1 ? "s" : ""}`);
   }
 
-  const accentHex = toolAccentColor(sourceTool);
-
   return (
-    <div
+    <button
+      onClick={onClick}
       className={cn(
-        "relative overflow-hidden rounded-lg border border-border bg-card",
+        "flex w-full items-center gap-3 rounded-lg border border-border bg-card p-4 text-left transition-colors hover:bg-muted/30",
         !plugin.enabled && "opacity-60"
       )}
     >
-      <span className="absolute left-0 top-0 h-full w-[3px]" style={{ background: accentHex }} aria-hidden="true" />
-      <button
-        onClick={onClick}
-        className="flex w-full items-center gap-3 p-5 pl-[23px] text-left transition-colors hover:bg-muted/30"
-      >
         {/* Content */}
       <div className="min-w-0 flex-1">
         {/* Header row */}
@@ -117,6 +110,5 @@ export function PluginCard({ plugin, onClick }: PluginCardProps) {
       {/* Arrow */}
       <ChevronRight className="h-5 w-5 shrink-0 text-muted-foreground" />
     </button>
-    </div>
   );
 }

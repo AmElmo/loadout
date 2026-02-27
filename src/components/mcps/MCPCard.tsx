@@ -3,7 +3,7 @@ import { useState } from "react";
 import type { MCPItem } from "@/types";
 import { cn } from "@/lib/utils";
 import { syncMCPToTools } from "@/lib/api/sync";
-import { ALL_TOOLS, toolsAccentStyle } from "@/config/tools";
+import { ALL_TOOLS } from "@/config/tools";
 import { SyncDialog } from "@/components/sync";
 import { Button } from "@/components/ui/button";
 import { OpenPathButton } from "@/components/ui/open-path-button";
@@ -31,19 +31,16 @@ export function MCPCard({ mcp }: MCPCardProps) {
     ? mcp.url ?? "HTTP endpoint"
     : `${mcp.command ?? ""} ${mcp.args.join(" ")}`.trim();
 
-  const accentStyle = toolsAccentStyle(mcp.configuredIn);
-
   return (
     <div
       className={cn(
-        "relative overflow-hidden rounded-lg border border-border bg-card transition-colors",
+        "rounded-lg border border-border bg-card transition-colors",
         expanded && "ring-1 ring-primary/20"
       )}
     >
-      <span className="absolute left-0 top-0 h-full w-[3px]" style={accentStyle} aria-hidden="true" />
       <button
         onClick={() => setExpanded(!expanded)}
-        className="flex w-full items-center gap-3 p-5 pl-[23px] text-left hover:bg-muted/30"
+        className="flex w-full items-center gap-3 p-4 text-left hover:bg-muted/30"
       >
         <MCPIcon name={mcp.name} mcpType={mcp.mcpType} url={mcp.url} args={mcp.args} />
 
@@ -74,7 +71,7 @@ export function MCPCard({ mcp }: MCPCardProps) {
       </button>
 
       {expanded && (
-        <div className="border-t border-border px-4 py-3 pl-[23px]">
+        <div className="border-t border-border px-4 py-3">
           <dl className="space-y-2 text-sm">
             <div className="grid grid-cols-[100px_1fr] gap-2">
               <dt className="font-medium text-muted-foreground">Type</dt>
