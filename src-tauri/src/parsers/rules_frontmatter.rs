@@ -25,6 +25,7 @@ struct RuleFrontmatter {
 
 /// Parsed scoping info from a rule file
 #[derive(Debug, Clone)]
+#[allow(dead_code)]
 pub struct ParsedRuleScoping {
     /// Glob patterns from frontmatter. None = always loaded.
     pub paths: Option<Vec<String>>,

@@ -8,6 +8,7 @@ use std::path::Path;
 // === plugin.json (Claude) ===
 
 #[derive(Debug, Clone, Deserialize)]
+#[allow(dead_code)]
 pub struct PluginAuthor {
     pub name: String,
     #[serde(default)]
@@ -36,6 +37,7 @@ pub fn parse_plugin_json(path: &Path) -> Result<PluginJson, String> {
 
 /// MCP server entry within a Gemini extension
 #[derive(Debug, Clone, Deserialize)]
+#[allow(dead_code)]
 pub struct GeminiExtMcpServer {
     #[serde(default)]
     pub command: Option<String>,
@@ -49,6 +51,7 @@ pub struct GeminiExtMcpServer {
 
 #[derive(Debug, Clone, Deserialize)]
 #[serde(rename_all = "camelCase")]
+#[allow(dead_code)]
 pub struct GeminiExtensionJson {
     pub name: String,
     #[serde(default)]
@@ -71,6 +74,7 @@ pub fn parse_gemini_extension_json(path: &Path) -> Result<GeminiExtensionJson, S
 // === marketplace.json ===
 
 #[derive(Debug, Clone, Deserialize)]
+#[allow(dead_code)]
 pub struct MarketplaceOwner {
     pub name: String,
     #[serde(default)]
@@ -78,6 +82,7 @@ pub struct MarketplaceOwner {
 }
 
 #[derive(Debug, Clone, Deserialize)]
+#[allow(dead_code)]
 pub struct MarketplacePluginEntry {
     pub name: String,
     #[serde(default)]
@@ -93,6 +98,7 @@ pub struct MarketplacePluginEntry {
 }
 
 #[derive(Debug, Clone, Deserialize)]
+#[allow(dead_code)]
 pub struct MarketplaceJson {
     pub name: String,
     #[serde(default)]
@@ -114,6 +120,7 @@ pub fn parse_marketplace_json(path: &Path) -> Result<MarketplaceJson, String> {
 
 #[derive(Debug, Clone, Deserialize)]
 #[serde(rename_all = "camelCase")]
+#[allow(dead_code)]
 pub struct InstalledPluginEntry {
     #[serde(default)]
     pub scope: Option<String>,
@@ -130,6 +137,7 @@ pub struct InstalledPluginEntry {
 }
 
 #[derive(Debug, Clone, Deserialize)]
+#[allow(dead_code)]
 pub struct InstalledPluginsJson {
     #[serde(default)]
     pub version: Option<u32>,
