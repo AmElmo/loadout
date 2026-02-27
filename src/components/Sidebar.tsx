@@ -26,7 +26,7 @@ import { cn, isRealWorkspace } from "@/lib/utils";
 import { useWorkspaceStore } from "@/stores/workspaceStore";
 import { useShortcutStore } from "@/stores/shortcutStore";
 import { getWorkspaceInfo, discoverWorkspaces } from "@/lib/api/workspace";
-import { useState, useEffect, useRef } from "react";
+import { useState, useEffect, useRef, useCallback } from "react";
 import { useQuery } from "@tanstack/react-query";
 import type { DiscoveredWorkspace, SourceTool } from "@/types";
 import { ToolLogo } from "@/components/ToolLogo";
@@ -164,13 +164,17 @@ function SettingsMenu({ version }: { version: string }) {
   );
 }
 
+const MIN_WIDTH = 120;
+const MAX_WIDTH = 400;
+
 export function Sidebar() {
-  const { activeTab, setActiveTab, current, setCurrent } =
+  const { activeTab, setActiveTab, current, setCurrent, sidebarWidth, setSidebarWidth } =
     useWorkspaceStore();
   const showWorkspaceSwitcher = useShortcutStore((s) => s.showWorkspaceSwitcher);
   const setShowWorkspaceSwitcher = useShortcutStore((s) => s.setShowWorkspaceSwitcher);
   const [showDropdown, setShowDropdownLocal] = useState(false);
   const [filter, setFilter] = useState("");
+  const [isResizing, setIsResizing] = useState(false);
 
   // Sync local dropdown state with shortcut store (for Cmd+K)
   useEffect(() => {
@@ -218,6 +222,41 @@ export function Sidebar() {
     }
   }, [showDropdown]);
 
+  const handleMouseDown = useCallback(
+    (e: React.MouseEvent) => {
+      e.preventDefault();
+      setIsResizing(true);
+    },
+    []
+  );
+
+  useEffect(() => {
+    if (!isResizing) return;
+
+    document.body.style.cursor = "col-resize";
+    document.body.style.userSelect = "none";
+
+    const handleMouseMove = (e: MouseEvent) => {
+      const newWidth = Math.min(MAX_WIDTH, Math.max(MIN_WIDTH, e.clientX));
+      setSidebarWidth(newWidth);
+    };
+
+    const handleMouseUp = () => {
+      setIsResizing(false);
+      document.body.style.cursor = "";
+      document.body.style.userSelect = "";
+    };
+
+    document.addEventListener("mousemove", handleMouseMove);
+    document.addEventListener("mouseup", handleMouseUp);
+    return () => {
+      document.removeEventListener("mousemove", handleMouseMove);
+      document.removeEventListener("mouseup", handleMouseUp);
+      document.body.style.cursor = "";
+      document.body.style.userSelect = "";
+    };
+  }, [isResizing, setSidebarWidth]);
+
   const handleSelectFolder = async () => {
     const selected = await open({
       directory: true,
@@ -255,7 +294,10 @@ export function Sidebar() {
       ) ?? [];
 
   return (
-    <aside className="flex h-full w-[200px] flex-col border-r border-sidebar-border bg-sidebar">
+    <aside
+      className="relative flex h-full shrink-0 flex-col border-r border-sidebar-border bg-sidebar"
+      style={{ width: sidebarWidth, minWidth: MIN_WIDTH, maxWidth: MAX_WIDTH }}
+    >
       {/* Logo */}
       <div className="flex h-14 items-center gap-2.5 border-b border-sidebar-border px-4">
         <svg viewBox="0 0 64 64" xmlns="http://www.w3.org/2000/svg" className="h-6 w-6 shrink-0">
@@ -438,6 +480,14 @@ export function Sidebar() {
       <div className="border-t border-sidebar-border px-3 py-2">
         <SettingsMenu version={version} />
       </div>
+      {/* Resize handle */}
+      <div
+        onMouseDown={handleMouseDown}
+        className={cn(
+          "absolute right-0 top-0 z-10 h-full w-1 cursor-col-resize transition-colors hover:bg-blue-500/40",
+          isResizing && "bg-blue-500/40"
+        )}
+      />
     </aside>
   );
 }
