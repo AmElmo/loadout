@@ -31,6 +31,7 @@ export function Agents() {
   const [dragFileName, setDragFileName] = useState<string | undefined>();
 
   useEffect(() => {
+    // eslint-disable-next-line react-hooks/set-state-in-effect -- reset filters when workspace changes
     if (!current) setActiveScopes([]);
   }, [current]);
 

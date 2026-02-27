@@ -363,10 +363,7 @@ fn read_mcp_from_source(
         }
         // For tools that use mcpServers JSON format, use the generic parser
         "cursor" | "copilot" | "windsurf" | "roo" | "cline" | "kilo" => {
-            let default_path = match mcp_config_path(source_tool) {
-                Ok(p) => p,
-                Err(e) => return Err(e),
-            };
+            let default_path = mcp_config_path(source_tool)?;
             for path in candidate_paths(source_path, default_path) {
                 let config = parse_claude_config(&path)?;
                 if let Some(server) = config.mcp_servers.get(name) {
@@ -385,10 +382,7 @@ fn read_mcp_from_source(
             ))
         }
         "opencode" => {
-            let default_path = match mcp_config_path(source_tool) {
-                Ok(p) => p,
-                Err(e) => return Err(e),
-            };
+            let default_path = mcp_config_path(source_tool)?;
             for path in candidate_paths(source_path, default_path) {
                 let config = crate::parsers::parse_opencode_config(&path)?;
                 if let Some(server) = config.mcp.get(name) {

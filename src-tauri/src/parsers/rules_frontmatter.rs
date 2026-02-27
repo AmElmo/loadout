@@ -38,8 +38,7 @@ pub struct ParsedRuleScoping {
 pub fn parse_rule_frontmatter(content: &str) -> ParsedRuleScoping {
     let trimmed = content.trim();
 
-    if trimmed.starts_with("---") {
-        let after_first_delimiter = &trimmed[3..];
+    if let Some(after_first_delimiter) = trimmed.strip_prefix("---") {
         if let Some(end_pos) = after_first_delimiter.find("\n---") {
             let frontmatter_str = after_first_delimiter[..end_pos].trim();
             let body = after_first_delimiter[end_pos + 4..].trim().to_string();
