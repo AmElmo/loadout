@@ -3,6 +3,7 @@ import { X, Loader2, Share2 } from "lucide-react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import type { ExistingToolInfo, InstallMethod, SourceTool, WriteResult } from "@/types";
 import { Button } from "@/components/ui/button";
+import { DialogOverlay } from "@/components/ui/dialog-overlay";
 import { ToolSelector } from "./ToolSelector";
 import { SuccessConfirmation } from "./SuccessConfirmation";
 import { InstallMethodSelector } from "./InstallMethodSelector";
@@ -127,7 +128,7 @@ export function SyncDialog({
 
   if (syncMutation.isSuccess && syncMutation.data) {
     return (
-      <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4">
+      <DialogOverlay onClose={onClose}>
         <div className="w-full max-w-md rounded-lg border border-border bg-background p-6 shadow-xl">
           <SuccessConfirmation
             result={syncMutation.data}
@@ -135,7 +136,7 @@ export function SyncDialog({
             onClose={onClose}
           />
         </div>
-      </div>
+      </DialogOverlay>
     );
   }
 
@@ -145,7 +146,7 @@ export function SyncDialog({
       : "Add Skill to Other Tools";
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4">
+    <DialogOverlay onClose={onClose}>
       <div className="w-full max-w-md rounded-lg border border-border bg-background shadow-xl">
         {/* Header */}
         <div className="flex items-center justify-between border-b border-border px-4 py-3">
@@ -236,6 +237,6 @@ export function SyncDialog({
           </Button>
         </div>
       </div>
-    </div>
+    </DialogOverlay>
   );
 }

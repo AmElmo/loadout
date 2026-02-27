@@ -11,6 +11,7 @@ import {
 } from "@/lib/api/sync";
 import { detectInstalledTools } from "@/lib/api/detection";
 import { Button } from "@/components/ui/button";
+import { DialogOverlay } from "@/components/ui/dialog-overlay";
 import { ToolSelector } from "./ToolSelector";
 import { SuccessConfirmation } from "./SuccessConfirmation";
 import { InstallMethodSelector } from "./InstallMethodSelector";
@@ -172,7 +173,7 @@ export function ImportSkillDialog({
   // Show success state
   if (installMutation.isSuccess && installMutation.data) {
     return (
-      <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4">
+      <DialogOverlay onClose={onClose}>
         <div className="w-full max-w-md rounded-lg border border-border bg-background p-6 shadow-xl">
           <SuccessConfirmation
             result={installMutation.data}
@@ -180,12 +181,12 @@ export function ImportSkillDialog({
             onClose={onClose}
           />
         </div>
-      </div>
+      </DialogOverlay>
     );
   }
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4">
+    <DialogOverlay onClose={onClose}>
       <div className="flex max-h-[90vh] w-full max-w-2xl flex-col rounded-lg border border-border bg-background shadow-xl">
         {/* Header */}
         <div className="flex items-center justify-between border-b border-border px-4 py-3">
@@ -463,6 +464,6 @@ export function ImportSkillDialog({
           )}
         </div>
       </div>
-    </div>
+    </DialogOverlay>
   );
 }

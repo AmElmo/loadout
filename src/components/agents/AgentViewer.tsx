@@ -9,6 +9,7 @@ import { MaturityBadge } from "@/components/skills/MaturityBadge";
 import { ItemIcon } from "@/components/ItemIcon";
 import { AgentSyncDialog } from "./AgentSyncDialog";
 import { Button } from "@/components/ui/button";
+import { DialogOverlay } from "@/components/ui/dialog-overlay";
 import { MarkdownPreview } from "@/components/ui/markdown-preview";
 import { OpenPathButton } from "@/components/ui/open-path-button";
 import { cn } from "@/lib/utils";
@@ -46,7 +47,7 @@ export function AgentViewer({ group, onClose }: AgentViewerProps) {
   };
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4">
+    <DialogOverlay onClose={onClose}>
       <div className="flex h-[85vh] w-full max-w-3xl flex-col rounded-lg border border-border bg-background shadow-xl">
         {/* Header */}
         <div className="flex items-center justify-between border-b border-border px-4 py-3">
@@ -219,6 +220,6 @@ export function AgentViewer({ group, onClose }: AgentViewerProps) {
           onClose={() => setShowSync(false)}
         />
       )}
-    </div>
+    </DialogOverlay>
   );
 }

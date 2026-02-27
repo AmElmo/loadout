@@ -3,6 +3,7 @@ import { useCallback } from "react";
 import { useShortcutStore } from "@/stores/shortcutStore";
 import { useEscapeKey } from "@/hooks/useEscapeKey";
 import { isMac } from "@/hooks/useKeyboardShortcuts";
+import { DialogOverlay } from "@/components/ui/dialog-overlay";
 
 const mod = isMac ? "\u2318" : "Ctrl";
 
@@ -83,7 +84,7 @@ export function KeyboardShortcutsModal() {
   useEscapeKey(close);
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50">
+    <DialogOverlay onClose={close} className="p-0">
       <div className="relative mx-4 max-h-[80vh] w-full max-w-lg overflow-auto rounded-lg border border-border bg-card shadow-xl">
         {/* Header */}
         <div className="sticky top-0 flex items-center justify-between border-b border-border bg-card px-5 py-4">
@@ -125,6 +126,6 @@ export function KeyboardShortcutsModal() {
           </p>
         </div>
       </div>
-    </div>
+    </DialogOverlay>
   );
 }

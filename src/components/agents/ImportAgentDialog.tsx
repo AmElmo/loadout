@@ -21,6 +21,7 @@ import {
   installAgentToTools,
 } from "@/lib/api/agents";
 import { Button } from "@/components/ui/button";
+import { DialogOverlay } from "@/components/ui/dialog-overlay";
 import { ToolLogo } from "@/components/ToolLogo";
 import { TOOL_CONFIG } from "@/config/tools";
 import { cn } from "@/lib/utils";
@@ -148,7 +149,7 @@ export function ImportAgentDialog({
   if (installMutation.isSuccess && installMutation.data) {
     const result = installMutation.data as AgentWriteResult;
     return (
-      <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4">
+      <DialogOverlay onClose={onClose}>
         <div className="w-full max-w-md rounded-lg border border-border bg-background p-6 shadow-xl">
           <div className="text-center">
             <div
@@ -206,12 +207,12 @@ export function ImportAgentDialog({
             </Button>
           </div>
         </div>
-      </div>
+      </DialogOverlay>
     );
   }
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4">
+    <DialogOverlay onClose={onClose}>
       <div className="flex max-h-[90vh] w-full max-w-2xl flex-col rounded-lg border border-border bg-background shadow-xl">
         {/* Header */}
         <div className="flex items-center justify-between border-b border-border px-4 py-3">
@@ -509,6 +510,6 @@ export function ImportAgentDialog({
           )}
         </div>
       </div>
-    </div>
+    </DialogOverlay>
   );
 }
