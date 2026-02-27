@@ -27,12 +27,14 @@ Supports **Claude Code**, **Codex CLI**, **Gemini CLI**, **Cursor**, **Copilot**
 
 Download the latest release for your platform:
 
+<!-- DOWNLOAD_TABLE_START -->
 | Platform | Download |
 |----------|----------|
-| macOS (Apple Silicon) | [`.dmg`](https://github.com/AmElmo/loadout/releases/latest) |
-| macOS (Intel) | [`.dmg`](https://github.com/AmElmo/loadout/releases/latest) |
-| Linux | [`.AppImage`](https://github.com/AmElmo/loadout/releases/latest) / [`.deb`](https://github.com/AmElmo/loadout/releases/latest) |
-| Windows | [`.exe`](https://github.com/AmElmo/loadout/releases/latest) / [`.msi`](https://github.com/AmElmo/loadout/releases/latest) |
+| macOS (Apple Silicon) | [`.dmg`](https://github.com/AmElmo/loadout/releases/latest/download/Loadout_0.2.0_aarch64.dmg) |
+| macOS (Intel) | [`.dmg`](https://github.com/AmElmo/loadout/releases/latest/download/Loadout_0.2.0_x64.dmg) |
+| Linux | [`.AppImage`](https://github.com/AmElmo/loadout/releases/latest/download/Loadout_0.2.0_amd64.AppImage) / [`.deb`](https://github.com/AmElmo/loadout/releases/latest/download/Loadout_0.2.0_amd64.deb) |
+| Windows | [`.exe`](https://github.com/AmElmo/loadout/releases/latest/download/Loadout_0.2.0_x64-setup.exe) / [`.msi`](https://github.com/AmElmo/loadout/releases/latest/download/Loadout_0.2.0_x64_en-US.msi) |
+<!-- DOWNLOAD_TABLE_END -->
 
 Auto-updates are built in — Loadout checks for new versions on launch and every 4 hours.
 
