@@ -120,7 +120,7 @@ export function ContextTable({ prompts, skills, mcps, mcpTools, activeTool }: Co
     }
   };
 
-  const SortIcon = ({ field }: { field: SortField }) => {
+  const sortIcon = (field: SortField) => {
     if (sortField !== field) return null;
     return sortDir === "desc" ? (
       <ChevronDown className="h-3 w-3" />
@@ -173,7 +173,7 @@ export function ContextTable({ prompts, skills, mcps, mcpTools, activeTool }: Co
                 className="flex items-center gap-1 font-medium text-muted-foreground hover:text-foreground"
                 onClick={() => handleSort("name")}
               >
-                Name <SortIcon field="name" />
+                Name {sortIcon("name")}
               </button>
             </th>
             <th className="px-4 py-2 text-left">
@@ -181,7 +181,7 @@ export function ContextTable({ prompts, skills, mcps, mcpTools, activeTool }: Co
                 className="flex items-center gap-1 font-medium text-muted-foreground hover:text-foreground"
                 onClick={() => handleSort("type")}
               >
-                Type <SortIcon field="type" />
+                Type {sortIcon("type")}
               </button>
             </th>
             <th className="px-4 py-2 text-left font-medium text-muted-foreground">
@@ -192,7 +192,7 @@ export function ContextTable({ prompts, skills, mcps, mcpTools, activeTool }: Co
                 className="flex items-center gap-1 font-medium text-muted-foreground hover:text-foreground ml-auto"
                 onClick={() => handleSort("idleTokens")}
               >
-                Idle Tokens <SortIcon field="idleTokens" />
+                Idle Tokens {sortIcon("idleTokens")}
               </button>
             </th>
             <th className="px-4 py-2 text-right">
@@ -200,7 +200,7 @@ export function ContextTable({ prompts, skills, mcps, mcpTools, activeTool }: Co
                 className="flex items-center gap-1 font-medium text-muted-foreground hover:text-foreground ml-auto"
                 onClick={() => handleSort("activeTokens")}
               >
-                Active Tokens <SortIcon field="activeTokens" />
+                Active Tokens {sortIcon("activeTokens")}
               </button>
             </th>
           </tr>

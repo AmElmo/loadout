@@ -117,16 +117,14 @@ pub async fn resolve_github_branch(
 
                 for git_ref in &refs {
                     if let Some(branch) = git_ref.ref_name.strip_prefix("refs/heads/") {
-                        if ref_and_path == branch
+                        if (ref_and_path == branch
                             || (ref_and_path.starts_with(branch)
-                                && ref_and_path.as_bytes().get(branch.len()) == Some(&b'/'))
-                        {
-                            if best_branch
+                                && ref_and_path.as_bytes().get(branch.len()) == Some(&b'/')))
+                            && best_branch
                                 .as_ref()
                                 .map_or(true, |b| branch.len() > b.len())
-                            {
-                                best_branch = Some(branch.to_string());
-                            }
+                        {
+                            best_branch = Some(branch.to_string());
                         }
                     }
                 }

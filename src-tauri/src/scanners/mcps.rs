@@ -3,7 +3,7 @@
 use crate::parsers::{parse_claude_config, parse_codex_config, parse_gemini_config, parse_opencode_config};
 use serde::{Deserialize, Serialize};
 use std::collections::HashMap;
-use std::path::PathBuf;
+use std::path::{Path, PathBuf};
 
 /// Health status of an MCP server
 #[derive(Debug, Clone, Serialize, Deserialize, PartialEq)]
@@ -358,7 +358,7 @@ pub fn scan_all_mcps(workspace_path: Option<&str>) -> Result<Vec<MCPItem>, Strin
 
 /// Helper: scan a JSON file with Claude-style `mcpServers` format
 fn scan_json_mcp_file(
-    path: &PathBuf,
+    path: &Path,
     source_tool: SourceTool,
     scope: Scope,
     entries: &mut Vec<RawMCPEntry>,
@@ -447,8 +447,8 @@ fn generate_id(name: &str) -> String {
 
 /// Mask environment variable values for security
 fn mask_env_values(env: &HashMap<String, String>) -> HashMap<String, String> {
-    env.iter()
-        .map(|(k, _)| (k.clone(), "***".to_string()))
+    env.keys()
+        .map(|k| (k.clone(), "***".to_string()))
         .collect()
 }
 

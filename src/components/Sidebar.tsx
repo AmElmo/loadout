@@ -177,8 +177,11 @@ export function Sidebar() {
   const [isResizing, setIsResizing] = useState(false);
 
   // Sync local dropdown state with shortcut store (for Cmd+K)
+  // Sync local dropdown state with shortcut store (for Cmd+K)
   useEffect(() => {
+    // eslint-disable-next-line react-hooks/set-state-in-effect -- syncing external store state
     setShowDropdownLocal(showWorkspaceSwitcher);
+    // eslint-disable-next-line react-hooks/set-state-in-effect
     if (showWorkspaceSwitcher) setFilter("");
   }, [showWorkspaceSwitcher]);
 

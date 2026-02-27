@@ -4,7 +4,7 @@ version = "0.2.0"
 description = "Unified AI CLI Configuration Management Tool"
 authors = ["Julien Berthomier"]
 license = "MIT"
-repository = ""
+repository = "https://github.com/AmElmo/loadout"
 edition = "2021"
 rust-version = "1.77.2"
 

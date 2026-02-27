@@ -30,6 +30,7 @@ export function Skills() {
   const [isDragOver, setIsDragOver] = useState(false);
 
   useEffect(() => {
+    // eslint-disable-next-line react-hooks/set-state-in-effect -- reset filters when workspace changes
     if (!current) setActiveScopes([]);
   }, [current]);
 

@@ -23,6 +23,7 @@ export function MCPs() {
   const [searchQuery, setSearchQuery] = useState("");
 
   useEffect(() => {
+    // eslint-disable-next-line react-hooks/set-state-in-effect -- reset filters when workspace changes
     if (!current) setActiveScopes([]);
   }, [current]);
 
