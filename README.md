@@ -17,10 +17,8 @@
 
 AI coding assistants store their configs in scattered JSON, TOML, and markdown files across your home directory and project folders. Loadout scans all of them, shows you what's configured where, and lets you sync settings between tools — without touching a terminal.
 
-Supports **Claude Code**, **Codex CLI**, **Gemini CLI**, **Cursor**, **Copilot**, **Windsurf**, **Roo**, **Cline**, **Kilo**, and **OpenCode**.
-
 <p align="center">
-  <img src="assets/list_tools_supported.png" alt="10 supported AI coding tools with their config formats and file paths" width="720" />
+  <img src="assets/homepage.png" alt="Loadout dashboard — stat cards, detected tools, and discovered workspaces" width="720" />
 </p>
 
 ## Install
@@ -38,8 +36,10 @@ Download the latest release for your platform:
 
 Auto-updates are built in — Loadout checks for new versions on launch and every 4 hours.
 
+Supports **Claude Code**, **Codex CLI**, **Gemini CLI**, **Cursor**, **Copilot**, **Windsurf**, **Roo**, **Cline**, **Kilo**, and **OpenCode**.
+
 <p align="center">
-  <img src="assets/homepage.png" alt="Loadout dashboard — stat cards, detected tools, and discovered workspaces" width="720" />
+  <img src="assets/list_tools_supported.png" alt="10 supported AI coding tools with their config formats and file paths" width="720" />
 </p>
 
 ## What You Can Do
