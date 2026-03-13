@@ -99,6 +99,7 @@ export function PluginDetail({ plugin, onClose }: PluginDetailProps) {
               { key: "name", label: "Name" },
               { key: "description", label: "Description" },
             ]}
+            expandableKey="content"
           />
         )}
 

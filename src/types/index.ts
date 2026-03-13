@@ -629,6 +629,7 @@ export type PluginScope = "user" | "project" | "local" | "managed" | "system";
 export interface PluginSkillInfo {
   name: string;
   description: string | null;
+  content: string | null;
 }
 
 export interface PluginCommandInfo {

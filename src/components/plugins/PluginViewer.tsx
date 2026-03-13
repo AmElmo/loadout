@@ -133,6 +133,7 @@ export function PluginViewer({ plugin, onClose }: PluginViewerProps) {
                   { key: "name", label: "Name" },
                   { key: "description", label: "Description" },
                 ]}
+                expandableKey="content"
               />
             )}
 

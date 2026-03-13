@@ -12,7 +12,7 @@ use crate::parsers::{
 };
 use serde::{Deserialize, Serialize};
 use std::collections::{HashMap, HashSet};
-use std::path::Path;
+use std::path::{Path, PathBuf};
 
 // ===== Enums =====
 
@@ -48,6 +48,7 @@ pub enum PluginScope {
 pub struct PluginSkillInfo {
     pub name: String,
     pub description: Option<String>,
+    pub content: Option<String>,
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
@@ -192,17 +193,21 @@ fn inventory_components(plugin_dir: &Path) -> (PluginComponents, PluginComponent
                 if skill_dir.is_dir() {
                     let skill_md = skill_dir.join("SKILL.md");
                     if skill_md.exists() {
-                        let (name, desc) = match parse_skill_md(&skill_md) {
-                            Ok(parsed) => (parsed.name, Some(parsed.description)),
+                        let (name, desc, content) = match parse_skill_md(&skill_md) {
+                            Ok(parsed) => (
+                                parsed.name,
+                                Some(parsed.description),
+                                Some(parsed.content),
+                            ),
                             Err(_) => {
                                 let fallback = skill_dir
                                     .file_name()
                                     .map(|n| n.to_string_lossy().to_string())
                                     .unwrap_or_else(|| "unknown".to_string());
-                                (fallback, None)
+                                (fallback, None, None)
                             }
                         };
-                        details.skills.push(PluginSkillInfo { name, description: desc });
+                        details.skills.push(PluginSkillInfo { name, description: desc, content });
                     }
                 }
             }
@@ -643,6 +648,29 @@ fn scan_cowork_plugins(home_dir: &Path) -> Vec<PluginItem> {
     plugins
 }
 
+/// Find the actual plugin content directory within a UUID dir.
+/// The structure is skills-plugin/<uuid>/<org-uuid>/ where the org-uuid subfolder
+/// contains .claude-plugin/, skills/, etc. If no such subfolder exists, returns None
+/// and the caller falls back to the uuid_dir itself.
+fn find_plugin_content_dir(uuid_dir: &Path) -> Option<PathBuf> {
+    let entries = std::fs::read_dir(uuid_dir).ok()?;
+    for entry in entries.flatten() {
+        let path = entry.path();
+        if path.is_dir() {
+            // Check if this subdirectory looks like a plugin content dir
+            // (has .claude-plugin/, skills/, commands/, or .mcp.json)
+            if path.join(".claude-plugin").is_dir()
+                || path.join("skills").is_dir()
+                || path.join("commands").is_dir()
+                || path.join(".mcp.json").exists()
+            {
+                return Some(path);
+            }
+        }
+    }
+    None
+}
+
 /// Scan the built-in Anthropic skills plugin from Cowork's skills-plugin directory
 fn scan_cowork_skills_plugin(skills_plugin_dir: &Path, plugins: &mut Vec<PluginItem>) {
     if !skills_plugin_dir.is_dir() {
@@ -661,8 +689,15 @@ fn scan_cowork_skills_plugin(skills_plugin_dir: &Path, plugins: &mut Vec<PluginI
             continue;
         }
 
+        // The actual plugin content lives one level deeper inside an org-uuid subdirectory:
+        // skills-plugin/<uuid>/<org-uuid>/.claude-plugin/plugin.json
+        // skills-plugin/<uuid>/<org-uuid>/skills/*/SKILL.md
+        // Find the first valid subdirectory that contains plugin content.
+        let plugin_content_dir = find_plugin_content_dir(&uuid_dir);
+        let content_dir = plugin_content_dir.as_deref().unwrap_or(&uuid_dir);
+
         // Check for plugin.json manifest
-        let manifest_path = uuid_dir.join(".claude-plugin").join("plugin.json");
+        let manifest_path = content_dir.join(".claude-plugin").join("plugin.json");
         let (name, description, version, author) =
             if let Ok(manifest) = parse_plugin_json(&manifest_path) {
                 (
@@ -675,10 +710,10 @@ fn scan_cowork_skills_plugin(skills_plugin_dir: &Path, plugins: &mut Vec<PluginI
                 ("anthropic-skills".to_string(), "Built-in Anthropic skills".to_string(), "0.0.0".to_string(), Some("Anthropic".to_string()))
             };
 
-        let (components, component_details) = inventory_components(&uuid_dir);
-        let readme = read_readme(&uuid_dir);
+        let (components, component_details) = inventory_components(content_dir);
+        let readme = read_readme(content_dir);
 
-        let path_str = uuid_dir.to_string_lossy().to_string();
+        let path_str = content_dir.to_string_lossy().to_string();
         plugins.push(PluginItem {
             id: generate_plugin_id(&name, PluginSourceVariant::ClaudeDesktop, &path_str),
             name,
