@@ -1,4 +1,5 @@
 import type { ReactNode } from "react";
+import { cn } from "@/lib/utils";
 
 interface ColumnDef {
   key: string;
@@ -11,6 +12,7 @@ interface PluginComponentSectionProps {
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   items: Array<Record<string, any>>;
   columns?: ColumnDef[];
+  onItemClick?: (index: number) => void;
 }
 
 const DEFAULT_COLUMNS: ColumnDef[] = [
@@ -23,6 +25,7 @@ export function PluginComponentSection({
   icon,
   items,
   columns = DEFAULT_COLUMNS,
+  onItemClick,
 }: PluginComponentSectionProps) {
   if (items.length === 0) return null;
 
@@ -52,11 +55,13 @@ export function PluginComponentSection({
             {items.map((item, index) => (
               <tr
                 key={index}
-                className={
+                className={cn(
                   index < items.length - 1
                     ? "border-b border-border"
-                    : undefined
-                }
+                    : undefined,
+                  onItemClick && "cursor-pointer hover:bg-muted/30",
+                )}
+                onClick={onItemClick ? () => onItemClick(index) : undefined}
               >
                 {columns.map((col) => {
                   const value = item[col.key];
