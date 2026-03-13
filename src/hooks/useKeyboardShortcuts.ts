@@ -11,8 +11,8 @@ const TAB_IDS = [
   "rules",
   "agents",
   "hooks",
+  "plugins",
   "context",
-  "learn",
 ] as const;
 
 function isInputFocused(): boolean {

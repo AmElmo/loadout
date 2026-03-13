@@ -22,8 +22,8 @@ const SHORTCUT_GROUPS: ShortcutGroup[] = [
       { keys: `${mod}+4`, action: "Go to Rules" },
       { keys: `${mod}+5`, action: "Go to Subagents" },
       { keys: `${mod}+6`, action: "Go to Hooks" },
-      { keys: `${mod}+7`, action: "Go to Context" },
-      { keys: `${mod}+8`, action: "Go to Learn" },
+      { keys: `${mod}+7`, action: "Go to Plugins" },
+      { keys: `${mod}+8`, action: "Go to Context" },
     ],
   },
   {

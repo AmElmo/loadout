@@ -1,4 +1,4 @@
-import { useMemo, useState } from "react";
+import { useMemo, useRef, useState } from "react";
 import { RefreshCw, AlertCircle } from "lucide-react";
 import { useQuery } from "@tanstack/react-query";
 import { scanPlugins } from "@/lib/api/plugins";
@@ -6,9 +6,12 @@ import { PluginList, MarketplaceSection } from "@/components/plugins";
 import { SearchBar } from "@/components/filters";
 import { Button } from "@/components/ui/button";
 import { useInfiniteList } from "@/hooks/useInfiniteList";
+import { useShortcutAction } from "@/hooks/useKeyboardShortcuts";
 
 export function Plugins() {
   const [searchQuery, setSearchQuery] = useState("");
+  const searchRef = useRef<HTMLInputElement>(null);
+  useShortcutAction("focus-search", () => searchRef.current?.focus());
 
   const {
     data: result,
@@ -20,6 +23,8 @@ export function Plugins() {
     queryKey: ["plugins", null],
     queryFn: () => scanPlugins(),
   });
+
+  useShortcutAction("refresh", () => refetch());
 
   const filteredPlugins = useMemo(() => {
     if (!result) return [];
@@ -62,6 +67,7 @@ export function Plugins() {
       {result && result.installed.length > 0 && (
         <div className="mb-4">
           <SearchBar
+            ref={searchRef}
             value={searchQuery}
             onChange={setSearchQuery}
             placeholder="Search plugins..."
