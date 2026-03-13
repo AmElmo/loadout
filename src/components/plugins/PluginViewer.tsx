@@ -8,11 +8,16 @@ import {
   Bot,
   FileCode2,
   BookOpen,
+  ArrowLeft,
+  Copy,
+  Check,
 } from "lucide-react";
-import { useCallback } from "react";
-import type { PluginItem, PluginSourceVariant, SourceTool } from "@/types";
+import { useCallback, useState } from "react";
+import type { PluginItem, PluginSkillInfo, PluginSourceVariant, SourceTool } from "@/types";
 import { ToolLogo } from "@/components/ToolLogo";
 import { OpenPathButton } from "@/components/ui/open-path-button";
+import { Button } from "@/components/ui/button";
+import { MarkdownPreview } from "@/components/ui/markdown-preview";
 import { useEscapeKey } from "@/hooks/useEscapeKey";
 import { DialogOverlay } from "@/components/ui/dialog-overlay";
 import { PluginComponentSection } from "./PluginComponentSection";
@@ -29,13 +34,116 @@ interface PluginViewerProps {
 }
 
 export function PluginViewer({ plugin, onClose }: PluginViewerProps) {
-  const stableOnClose = useCallback(() => onClose(), [onClose]);
-  useEscapeKey(stableOnClose);
+  const [selectedSkill, setSelectedSkill] = useState<PluginSkillInfo | null>(null);
+  const [copied, setCopied] = useState(false);
+
+  const handleClose = useCallback(() => {
+    if (selectedSkill) {
+      setSelectedSkill(null);
+    } else {
+      onClose();
+    }
+  }, [selectedSkill, onClose]);
+
+  useEscapeKey(handleClose);
 
   const variantLabel = SOURCE_VARIANT_LABELS[plugin.sourceVariant];
   const sourceTool = plugin.sourceTool as SourceTool;
   const details = plugin.componentDetails;
 
+  const handleCopy = async () => {
+    if (!selectedSkill?.content) return;
+    await navigator.clipboard.writeText(selectedSkill.content);
+    setCopied(true);
+    setTimeout(() => setCopied(false), 2000);
+  };
+
+  // Skill content view
+  if (selectedSkill) {
+    return (
+      <DialogOverlay onClose={onClose}>
+        <div className="flex h-[85vh] w-full max-w-3xl flex-col rounded-lg border border-border bg-background shadow-xl">
+          {/* Header with back button */}
+          <div className="flex items-center justify-between border-b border-border px-4 py-3">
+            <div className="flex items-center gap-3">
+              <button
+                onClick={() => setSelectedSkill(null)}
+                className="rounded-md p-1 hover:bg-muted"
+                aria-label="Back to plugin"
+              >
+                <ArrowLeft className="h-4 w-4" />
+              </button>
+              <Hammer className="h-4 w-4 text-muted-foreground" />
+              <h2 className="text-lg font-semibold">{selectedSkill.name}</h2>
+              <span className="text-[11px] text-muted-foreground">
+                {plugin.name}
+              </span>
+            </div>
+            <button
+              onClick={onClose}
+              className="rounded-md p-1 hover:bg-muted"
+              aria-label="Close"
+            >
+              <X className="h-5 w-5" />
+            </button>
+          </div>
+
+          {/* Description */}
+          {selectedSkill.description && (
+            <div className="border-b border-border bg-muted/30 px-4 py-2">
+              <p className="text-sm text-muted-foreground">
+                {selectedSkill.description}
+              </p>
+            </div>
+          )}
+
+          {/* Content */}
+          <div className="relative flex-1 overflow-hidden">
+            {selectedSkill.content && (
+              <div className="absolute right-2 top-[3.25rem] z-10">
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={handleCopy}
+                  className="bg-background"
+                >
+                  {copied ? (
+                    <Check className="mr-1.5 h-3.5 w-3.5" />
+                  ) : (
+                    <Copy className="mr-1.5 h-3.5 w-3.5" />
+                  )}
+                  {copied ? "Copied" : "Copy"}
+                </Button>
+              </div>
+            )}
+            {selectedSkill.content ? (
+              <MarkdownPreview
+                content={selectedSkill.content}
+                className="h-full"
+              />
+            ) : (
+              <div className="flex h-full items-center justify-center text-sm text-muted-foreground">
+                No content available
+              </div>
+            )}
+          </div>
+
+          {/* Footer */}
+          <div className="flex items-center justify-between border-t border-border px-4 py-2">
+            <div className="flex min-w-0 items-center gap-2 text-xs text-muted-foreground">
+              <FolderOpen className="h-3.5 w-3.5 shrink-0" />
+              <span className="truncate font-mono" title={plugin.path}>
+                {plugin.path}
+              </span>
+            </div>
+            <OpenPathButton path={plugin.path} variant="outline" size="sm" />
+          </div>
+        </div>
+      </DialogOverlay>
+    );
+  }
+
+  // Plugin overview
   return (
     <DialogOverlay onClose={onClose}>
       <div className="flex h-[85vh] w-full max-w-3xl flex-col rounded-lg border border-border bg-background shadow-xl">
@@ -133,7 +241,10 @@ export function PluginViewer({ plugin, onClose }: PluginViewerProps) {
                   { key: "name", label: "Name" },
                   { key: "description", label: "Description" },
                 ]}
-                expandableKey="content"
+                onItemClick={(index) => {
+                  const skill = details.skills[index];
+                  if (skill.content) setSelectedSkill(skill);
+                }}
               />
             )}
 

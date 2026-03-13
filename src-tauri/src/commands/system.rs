@@ -58,7 +58,7 @@ fn is_safe_reveal_path(path: &Path) -> bool {
     };
 
     // Known AI config directories under home (synced with workspace scanner signals)
-    let allowed_prefixes = [
+    let mut allowed_prefixes = vec![
         home.join(".claude"),
         home.join(".codex"),
         home.join(".gemini"),
@@ -73,6 +73,13 @@ fn is_safe_reveal_path(path: &Path) -> bool {
         home.join(".vscode"),  // Copilot MCP config
         home.join(".github"),  // Copilot instructions
     ];
+
+    // Platform-specific AI application data directories
+    #[cfg(target_os = "macos")]
+    {
+        let app_support = home.join("Library").join("Application Support");
+        allowed_prefixes.push(app_support.join("Claude"));
+    }
 
     if allowed_prefixes
         .iter()
