@@ -10,6 +10,7 @@ import { useMutation, useQueryClient } from "@tanstack/react-query";
 import type { MCPItem, HealthTestResult } from "@/types";
 import { testMCPHealth } from "@/lib/api/mcps";
 import { Button } from "@/components/ui/button";
+import { DialogOverlay } from "@/components/ui/dialog-overlay";
 import { useEscapeKey } from "@/hooks/useEscapeKey";
 
 interface TestHealthDialogProps {
@@ -37,12 +38,7 @@ export function TestHealthDialog({ mcp, onClose }: TestHealthDialogProps) {
   });
 
   return (
-    <div
-      className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4"
-      onClick={(e) => {
-        if (e.target === e.currentTarget) onClose();
-      }}
-    >
+    <DialogOverlay onClose={onClose}>
       <div className="w-full max-w-md rounded-lg border border-border bg-background shadow-xl">
         {/* Header */}
         <div className="flex items-center justify-between border-b border-border px-4 py-3">
@@ -138,6 +134,6 @@ export function TestHealthDialog({ mcp, onClose }: TestHealthDialogProps) {
           )}
         </div>
       </div>
-    </div>
+    </DialogOverlay>
   );
 }

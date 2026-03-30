@@ -16,6 +16,7 @@ import {
 } from "lucide-react";
 import type { RepoScanResult, RepoWithoutRules, SourceTool } from "@/types";
 import { Button } from "@/components/ui/button";
+import { DialogOverlay } from "@/components/ui/dialog-overlay";
 import { ToolLogo } from "@/components/ToolLogo";
 import { invoke } from "@tauri-apps/api/core";
 import { listen } from "@tauri-apps/api/event";
@@ -85,10 +86,10 @@ function CliOutputStream({ text, toolLabel }: { text: string; toolLabel: string 
   return (
     <div
       ref={scrollRef}
-      className="max-h-48 overflow-auto bg-[#1a1a2e] p-3 font-mono text-xs leading-relaxed text-green-400/90"
+      className="max-h-48 overflow-auto bg-muted p-3 font-mono text-xs leading-relaxed text-green-700 dark:text-green-400/90"
     >
       <span className="whitespace-pre-wrap break-all">{text}</span>
-      <span className="inline-block h-3.5 w-[2px] animate-pulse bg-green-400/70" />
+      <span className="inline-block h-3.5 w-[2px] animate-pulse bg-green-700/70 dark:bg-green-400/70" />
     </div>
   );
 }
@@ -393,7 +394,7 @@ export function RepoScanModal({ onClose }: RepoScanModalProps) {
   };
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4">
+    <DialogOverlay onClose={onClose}>
       <div className="flex max-h-[85vh] w-full max-w-3xl flex-col rounded-lg border border-border bg-background shadow-xl">
         {/* Header */}
         <div className="flex items-center justify-between border-b border-border px-5 py-4">
@@ -476,6 +477,6 @@ export function RepoScanModal({ onClose }: RepoScanModalProps) {
           </div>
         )}
       </div>
-    </div>
+    </DialogOverlay>
   );
 }

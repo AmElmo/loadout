@@ -26,7 +26,7 @@ import type {
   DiscoveredWorkspace,
 } from "@/types";
 import { ToolLogo } from "@/components/ToolLogo";
-import { ALL_TOOLS, toolLabel, toolTextColor } from "@/config/tools";
+import { ALL_TOOLS, toolLabel, toolTextColor, toolAccentColor } from "@/config/tools";
 
 // ---------------------------------------------------------------------------
 // Stat Card
@@ -56,7 +56,7 @@ function StatCard({
       onClick={onClick}
       className={cn(
         "group flex flex-col rounded-lg border border-border bg-card p-5 text-left transition-all",
-        "hover:border-primary/30 hover:ring-1 hover:ring-primary/20"
+        "hover:border-primary/20 hover:ring-1 hover:ring-primary/15"
       )}
     >
       <div className="flex items-center justify-between">
@@ -105,6 +105,7 @@ interface ToolRowProps {
   skillCount: number;
   ruleCount: number;
   hookCount: number;
+  maxTotal: number;
 }
 
 function ToolRow({
@@ -113,6 +114,7 @@ function ToolRow({
   skillCount,
   ruleCount,
   hookCount,
+  maxTotal,
 }: ToolRowProps) {
   const total = mcpCount + skillCount + ruleCount + hookCount;
   if (total === 0) return null;
@@ -124,6 +126,8 @@ function ToolRow({
     { label: "hook", count: hookCount },
   ].filter((s) => s.count > 0);
 
+  const pct = maxTotal > 0 ? (total / maxTotal) * 100 : 0;
+
   return (
     <div className="flex items-center gap-3 rounded-md px-3 py-2.5 transition-colors hover:bg-muted/50">
       <span className={cn("shrink-0", toolTextColor(tool))}>
@@ -132,11 +136,19 @@ function ToolRow({
       <span className={cn("w-16 text-sm font-medium", toolTextColor(tool))}>
         {toolLabel(tool)}
       </span>
-      <span className="text-sm text-muted-foreground">
-        {segments
-          .map((s) => `${s.count} ${s.label}${s.count !== 1 ? "s" : ""}`)
-          .join(" \u00b7 ")}
-      </span>
+      <div className="min-w-0 flex-1">
+        <span className="text-sm text-muted-foreground">
+          {segments
+            .map((s) => `${s.count} ${s.label}${s.count !== 1 ? "s" : ""}`)
+            .join(" \u00b7 ")}
+        </span>
+        <div className="mt-1 h-[2px] w-full rounded-full bg-muted">
+          <div
+            className="h-full rounded-full"
+            style={{ width: `${pct}%`, background: toolAccentColor(tool) }}
+          />
+        </div>
+      </div>
     </div>
   );
 }
@@ -464,18 +476,24 @@ export function Home() {
             Tool Coverage
           </h3>
           <div className="space-y-0.5">
-            {toolCoverage.map(
-              ({ tool, mcpCount, skillCount, ruleCount, hookCount }) => (
-                <ToolRow
-                  key={tool}
-                  tool={tool}
-                  mcpCount={mcpCount}
-                  skillCount={skillCount}
-                  ruleCount={ruleCount}
-                  hookCount={hookCount}
-                />
-              )
-            )}
+            {(() => {
+              const maxTotal = Math.max(
+                ...toolCoverage.map((t) => t.mcpCount + t.skillCount + t.ruleCount + t.hookCount)
+              );
+              return toolCoverage.map(
+                ({ tool, mcpCount, skillCount, ruleCount, hookCount }) => (
+                  <ToolRow
+                    key={tool}
+                    tool={tool}
+                    mcpCount={mcpCount}
+                    skillCount={skillCount}
+                    ruleCount={ruleCount}
+                    hookCount={hookCount}
+                    maxTotal={maxTotal}
+                  />
+                )
+              );
+            })()}
           </div>
         </div>
       )}

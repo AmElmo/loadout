@@ -6,6 +6,7 @@ import type { SkillConflict, SkillVersion } from "@/types";
 import { getSkillConflictDetails, resolveSkillConflict } from "@/lib/api/skills";
 import { ToolBadge } from "@/components/mcps/ToolBadge";
 import { Button } from "@/components/ui/button";
+import { DialogOverlay } from "@/components/ui/dialog-overlay";
 import { useEscapeKey } from "@/hooks/useEscapeKey";
 import { cn } from "@/lib/utils";
 
@@ -65,7 +66,7 @@ export function ConflictResolutionDialog({
 
   if (resolveMutation.isSuccess) {
     return (
-      <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4">
+      <DialogOverlay onClose={onClose}>
         <div className="w-full max-w-md rounded-lg border border-border bg-background p-6 shadow-xl">
           <div className="text-center">
             <div className="mx-auto mb-3 flex h-12 w-12 items-center justify-center rounded-full bg-green-500/10">
@@ -82,12 +83,12 @@ export function ConflictResolutionDialog({
             </Button>
           </div>
         </div>
-      </div>
+      </DialogOverlay>
     );
   }
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4">
+    <DialogOverlay onClose={onClose}>
       <div className="flex h-[85vh] w-full max-w-4xl flex-col rounded-lg border border-border bg-background shadow-xl">
         {/* Header */}
         <div className="flex items-center justify-between border-b border-border px-4 py-3">
@@ -195,7 +196,7 @@ export function ConflictResolutionDialog({
           </Button>
         </div>
       </div>
-    </div>
+    </DialogOverlay>
   );
 }
 

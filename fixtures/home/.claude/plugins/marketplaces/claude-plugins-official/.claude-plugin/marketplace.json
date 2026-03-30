@@ -1,0 +1,40 @@
+{
+  "$schema": "https://anthropic.com/claude-code/marketplace.schema.json",
+  "name": "claude-plugins-official",
+  "description": "Official Claude Code plugins by Anthropic",
+  "owner": { "name": "Anthropic", "email": "plugins@anthropic.com" },
+  "plugins": [
+    {
+      "name": "commit-commands",
+      "description": "Smart commit message generation and git workflow commands",
+      "version": "1.0.0",
+      "author": { "name": "Anthropic" },
+      "source": "./plugins/commit-commands",
+      "category": "productivity"
+    },
+    {
+      "name": "code-quality",
+      "description": "Code quality analysis, linting, and best practices enforcement",
+      "version": "2.1.0",
+      "author": { "name": "Anthropic" },
+      "source": "./plugins/code-quality",
+      "category": "development"
+    },
+    {
+      "name": "documentation",
+      "description": "Auto-generate and maintain project documentation",
+      "version": "1.2.0",
+      "author": { "name": "Anthropic" },
+      "source": "./plugins/documentation",
+      "category": "productivity"
+    },
+    {
+      "name": "testing",
+      "description": "Test generation and coverage analysis",
+      "version": "1.0.0",
+      "author": { "name": "Community" },
+      "source": "./plugins/testing",
+      "category": "development"
+    }
+  ]
+}

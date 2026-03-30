@@ -212,9 +212,9 @@ pub async fn fetch_agent_from_url(url: String) -> Result<FetchedAgent, String> {
                 owner, repo, ref_and_path
             ),
             GitHubUrl::Tree {
-                owner,
-                repo,
-                ref_and_path,
+                owner: _,
+                repo: _,
+                ref_and_path: _,
             } => {
                 // For a directory URL, we can't know the agent filename — try common patterns
                 // First try fetching as-is (the ref_and_path might point to a .md file)

@@ -58,7 +58,8 @@ fn is_safe_reveal_path(path: &Path) -> bool {
     };
 
     // Known AI config directories under home (synced with workspace scanner signals)
-    let allowed_prefixes = [
+    #[allow(unused_mut)]
+    let mut allowed_prefixes = vec![
         home.join(".claude"),
         home.join(".codex"),
         home.join(".gemini"),
@@ -73,6 +74,14 @@ fn is_safe_reveal_path(path: &Path) -> bool {
         home.join(".vscode"),  // Copilot MCP config
         home.join(".github"),  // Copilot instructions
     ];
+
+    // Platform-specific AI application data directories (macOS Application Support)
+    #[cfg(target_os = "macos")]
+    allowed_prefixes.push(
+        home.join("Library")
+            .join("Application Support")
+            .join("Claude"),
+    );
 
     if allowed_prefixes
         .iter()
@@ -227,9 +236,9 @@ pub fn save_skill_content(path: String, body: String) -> Result<(), String> {
         .map_err(|e| format!("Failed to read {}: {}", path, e))?;
 
     let trimmed = raw.trim();
-    let new_content = if trimmed.starts_with("---") {
+    let new_content = if let Some(after_prefix) = trimmed.strip_prefix("---") {
         // Preserve frontmatter: everything up to and including the closing ---
-        if let Some(end) = trimmed[3..].find("\n---") {
+        if let Some(end) = after_prefix.find("\n---") {
             let frontmatter = &trimmed[..3 + end + 4]; // include closing ---
             format!("{}\n\n{}\n", frontmatter, body.trim())
         } else {

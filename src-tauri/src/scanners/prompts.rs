@@ -288,7 +288,7 @@ pub fn scan_all_prompts(workspace_path: Option<&str>) -> Result<PromptScanResult
 fn scan_project_prompt(
     prompts: &mut Vec<PromptFile>,
     tool: PromptSourceTool,
-    project_root: &PathBuf,
+    project_root: &Path,
     filename: &str,
     config_dir: &str,
 ) {

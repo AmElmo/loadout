@@ -26,13 +26,14 @@ A Tauri 2.x desktop application with React + Vite frontend.
 ```bash
 pnpm tauri dev           # Start development (both frontend and backend)
 pnpm tauri:dev:fixtures  # Start dev with demo fixtures (uses LOADOUT_HOME)
+pnpm tauri:dev:empty     # Start dev with empty fixtures (all empty states)
 pnpm build               # Build frontend only
 pnpm tauri build         # Build full application
 ```
 
 ## Test Fixtures
 
-`fixtures/home/` contains a realistic mock home directory with configurations for Claude, Codex, and Gemini (skills, rules, hooks, MCPs, and project-level settings). Use `pnpm tauri:dev:fixtures` to run the app against these fixtures instead of your real home directory. The `LOADOUT_HOME` env var is only honored in debug builds.
+`fixtures/home/` contains a realistic mock home directory with configurations for Claude, Codex, and Gemini (skills, rules, hooks, MCPs, and project-level settings). Use `pnpm tauri:dev:fixtures` to run the app against these fixtures instead of your real home directory. `fixtures/empty/` is a bare directory with no AI tool configs — use `pnpm tauri:dev:empty` to see all empty states across the UI. The `LOADOUT_HOME` env var is only honored in debug builds.
 
 ## Conventions
 
@@ -66,23 +67,33 @@ The `type/` prefix must match the conventional commit type used in the PR merge 
 ### Flow
 
 ```
-feature branches → PRs → main → pnpm release [patch|minor|major] → git push origin main --tags → CI builds → draft release → review & publish
+feature branches → PRs → main → pnpm release → pnpm release:notes → edit & add screenshots → push → CI builds → publish
 ```
 
 ### How to cut a release
 
 1. Be on `main` with a clean working tree
-2. Run the release script:
+2. **Bump version + changelog:**
    ```bash
    pnpm release patch   # 0.1.0 → 0.1.1 (bug fixes)
    pnpm release minor   # 0.1.0 → 0.2.0 (new features)
    pnpm release major   # 0.1.0 → 1.0.0 (breaking changes)
    ```
    This bumps version in all 3 files, regenerates `Cargo.lock`, generates a `CHANGELOG.md` entry from conventional commits, and creates a commit + annotated tag.
-3. Review the commit: `git log --oneline -1 && git diff HEAD~1`
-4. Push: `git push origin main --tags`
-5. Wait ~15-20 min for GitHub Actions to build all platforms
-6. Go to [GitHub Releases](https://github.com/AmElmo/loadout/releases), review the draft, then publish
+3. **Review the commit:** `git log --oneline -1 && git diff HEAD~1`
+4. **Generate release notes:**
+   ```bash
+   pnpm release:notes
+   ```
+   Uses Claude Code CLI (`claude -p`) with your Max subscription. Reads the commit log, writes user-facing release notes to `.github/release-notes/vX.Y.Z.md` with `<!-- 📸 screenshot: ... -->` placeholders.
+5. **Add screenshots and edit copy.** Open `.github/release-notes/vX.Y.Z.md`, replace placeholders with images (upload to GitHub issue/comment to get URLs, or use relative paths), and tweak wording as needed.
+6. **Amend the release commit:**
+   ```bash
+   git add .github/release-notes && git commit --amend --no-edit
+   ```
+7. **Push:** `git push origin main --tags`
+8. **Wait ~15-20 min** for GitHub Actions to build all 4 platforms
+9. **Publish:** Go to [GitHub Releases](https://github.com/AmElmo/loadout/releases) — CI creates an unpublished **draft** with the release notes as the body. Review it, make any final edits, then click **Publish release**. Nothing is visible to users until you publish.
 
 ### What CI builds
 

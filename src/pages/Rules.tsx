@@ -1,4 +1,4 @@
-import { useMemo, useState } from "react";
+import { useMemo, useRef, useState } from "react";
 import { RefreshCw, AlertCircle, FolderOpen, FolderSearch } from "lucide-react";
 import { useQuery } from "@tanstack/react-query";
 import { useWorkspaceStore } from "@/stores/workspaceStore";
@@ -7,11 +7,15 @@ import { PromptsSection, RepoScanModal } from "@/components/config";
 import { SearchBar } from "@/components/filters";
 import { Button } from "@/components/ui/button";
 import { useInfiniteList } from "@/hooks/useInfiniteList";
+import { useShortcutAction } from "@/hooks/useKeyboardShortcuts";
 
 export function Rules() {
   const { current } = useWorkspaceStore();
   const [searchQuery, setSearchQuery] = useState("");
   const [showScanModal, setShowScanModal] = useState(false);
+  const searchRef = useRef<HTMLInputElement>(null);
+  useShortcutAction("focus-search", () => searchRef.current?.focus());
+  useShortcutAction("add-item", () => setShowScanModal(true));
 
   const {
     data: result,
@@ -23,6 +27,8 @@ export function Rules() {
     queryKey: ["rules", current?.repo_root ?? current?.path ?? null],
     queryFn: () => scanRules(current?.repo_root ?? current?.path),
   });
+
+  useShortcutAction("refresh", () => refetch());
 
   const filteredPrompts = useMemo(() => {
     if (!result) return [];
@@ -84,6 +90,7 @@ export function Rules() {
       {result && result.prompts.some((p) => p.exists) && (
         <div className="mb-4">
           <SearchBar
+            ref={searchRef}
             value={searchQuery}
             onChange={setSearchQuery}
             placeholder="Search rules..."

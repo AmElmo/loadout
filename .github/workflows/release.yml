@@ -59,6 +59,22 @@ jobs:
 
       - run: pnpm install --frozen-lockfile
 
+      - name: Load release notes
+        id: release_notes
+        shell: bash
+        run: |
+          NOTES_FILE=".github/release-notes/${{ github.ref_name }}.md"
+          if [ -f "$NOTES_FILE" ]; then
+            echo "found=true" >> "$GITHUB_OUTPUT"
+            # Use a delimiter to handle multiline content
+            echo "body<<RELEASE_NOTES_EOF" >> "$GITHUB_OUTPUT"
+            cat "$NOTES_FILE" >> "$GITHUB_OUTPUT"
+            echo "RELEASE_NOTES_EOF" >> "$GITHUB_OUTPUT"
+          else
+            echo "found=false" >> "$GITHUB_OUTPUT"
+            echo "body=See [CHANGELOG.md](https://github.com/AmElmo/loadout/blob/main/CHANGELOG.md) for the full history." >> "$GITHUB_OUTPUT"
+          fi
+
       - name: Import Apple certificate
         if: matrix.target == 'aarch64-apple-darwin' || matrix.target == 'x86_64-apple-darwin'
         env:
@@ -98,8 +114,7 @@ jobs:
         with:
           tagName: ${{ github.ref_name }}
           releaseName: "Loadout ${{ github.ref_name }}"
-          releaseBody: "See [CHANGELOG.md](https://github.com/AmElmo/loadout/blob/main/CHANGELOG.md) for the full history."
-          generateReleaseNotes: true
+          releaseBody: ${{ steps.release_notes.outputs.body }}
           releaseDraft: true
           prerelease: false
           args: --target ${{ matrix.target }}

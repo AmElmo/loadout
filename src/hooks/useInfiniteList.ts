@@ -34,7 +34,8 @@ export function useInfiniteList<T>(items: T[], batchSize = DEFAULT_BATCH_SIZE) {
 
     observer.observe(sentinel);
     return () => observer.disconnect();
-  }, [items.length, batchSize, sentinelRef.current]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps -- sentinelRef.current is set via callback ref
+  }, [items.length, batchSize]);
 
   const visibleItems = items.slice(0, visibleCount);
   const hasMore = visibleCount < items.length;

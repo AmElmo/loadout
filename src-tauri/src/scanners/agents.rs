@@ -8,7 +8,7 @@ use serde::{Deserialize, Serialize};
 use std::collections::hash_map::DefaultHasher;
 use std::collections::HashMap;
 use std::hash::{Hash, Hasher};
-use std::path::PathBuf;
+use std::path::{Path, PathBuf};
 
 /// Source tool for an agent (only Claude and Gemini support agents)
 #[derive(Debug, Clone, Copy, Serialize, Deserialize, PartialEq, Eq, Hash)]
@@ -212,7 +212,7 @@ fn scan_agent_directory(
 }
 
 /// Check if Gemini has enableAgents: true in settings.json
-fn check_gemini_agents_enabled(home_dir: &PathBuf) -> bool {
+fn check_gemini_agents_enabled(home_dir: &Path) -> bool {
     let settings_path = home_dir.join(".gemini").join("settings.json");
     if let Ok(content) = std::fs::read_to_string(&settings_path) {
         if let Ok(json) = serde_json::from_str::<serde_json::Value>(&content) {

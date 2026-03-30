@@ -1,0 +1,8 @@
+{
+  "name": "api-tester",
+  "version": "1.1.0",
+  "description": "API endpoint testing and documentation",
+  "mcpServers": {},
+  "contextFileName": "GEMINI.md",
+  "settings": {}
+}

@@ -1,0 +1,73 @@
+name: Update README Downloads
+
+on:
+  release:
+    types: [published]
+
+permissions:
+  contents: write
+
+jobs:
+  update-readme:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4
+        with:
+          ref: main
+
+      - name: Update download links and version badge
+        env:
+          TAG: ${{ github.event.release.tag_name }}
+        run: |
+          VERSION="${TAG#v}"
+          BASE="https://github.com/AmElmo/loadout/releases/latest/download"
+
+          python3 - "$VERSION" "$BASE" <<'PYEOF'
+          import sys, re
+
+          version = sys.argv[1]
+          base = sys.argv[2]
+
+          table = f"""<!-- DOWNLOAD_TABLE_START -->
+          | Platform | Download |
+          |----------|----------|
+          | macOS (Apple Silicon) | [`.dmg`]({base}/Loadout_{version}_aarch64.dmg) |
+          | macOS (Intel) | [`.dmg`]({base}/Loadout_{version}_x64.dmg) |
+          | Linux | [`.AppImage`]({base}/Loadout_{version}_amd64.AppImage) / [`.deb`]({base}/Loadout_{version}_amd64.deb) |
+          | Windows | [`.exe`]({base}/Loadout_{version}_x64-setup.exe) / [`.msi`]({base}/Loadout_{version}_x64_en-US.msi) |
+          <!-- DOWNLOAD_TABLE_END -->"""
+
+          # Remove leading whitespace from heredoc indentation
+          table = "\n".join(line.lstrip() for line in table.split("\n"))
+
+          with open("README.md", "r") as f:
+              content = f.read()
+
+          # Replace download table
+          content = re.sub(
+              r"<!-- DOWNLOAD_TABLE_START -->.*?<!-- DOWNLOAD_TABLE_END -->",
+              table,
+              content,
+              flags=re.DOTALL,
+          )
+
+          # Update static version badge
+          content = re.sub(
+              r"release-v[\d.]+-",
+              f"release-v{version}-",
+              content,
+          )
+
+          with open("README.md", "w") as f:
+              f.write(content)
+
+          print(f"Updated README for v{version}")
+          PYEOF
+
+      - name: Commit and push
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add README.md
+          git diff --staged --quiet || git commit -m "chore: update README download links for ${{ github.event.release.tag_name }}"
+          git push

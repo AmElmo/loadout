@@ -112,21 +112,19 @@ pub async fn create_rules_with_cli(
         let tk = tool_kind.clone();
         std::thread::spawn(move || {
             let reader = BufReader::new(stdout);
-            for raw in reader.lines() {
-                if let Ok(raw) = raw {
-                    let parsed = match tk.as_str() {
-                        "claude" => parse_claude_stream_line(&raw),
-                        "codex" => parse_codex_stream_line(&raw),
-                        "gemini" => parse_gemini_stream_line(&raw),
-                        _ => Some(raw),
-                    };
-                    if let Some(text) = parsed {
-                        if !text.is_empty() {
-                            let _ = app_clone.emit("cli-output", CliOutputLine {
-                                repo_path: rp.clone(),
-                                line: text,
-                            });
-                        }
+            for raw in reader.lines().map_while(Result::ok) {
+                let parsed = match tk.as_str() {
+                    "claude" => parse_claude_stream_line(&raw),
+                    "codex" => parse_codex_stream_line(&raw),
+                    "gemini" => parse_gemini_stream_line(&raw),
+                    _ => Some(raw),
+                };
+                if let Some(text) = parsed {
+                    if !text.is_empty() {
+                        let _ = app_clone.emit("cli-output", CliOutputLine {
+                            repo_path: rp.clone(),
+                            line: text,
+                        });
                     }
                 }
             }
@@ -139,21 +137,19 @@ pub async fn create_rules_with_cli(
         let rp = repo_path.clone();
         std::thread::spawn(move || {
             let reader = BufReader::new(stderr);
-            for line in reader.lines() {
-                if let Ok(line) = line {
-                    // Skip noisy stderr lines (credential caching, model refresh errors, etc.)
-                    let trimmed = line.trim();
-                    if trimmed.is_empty()
-                        || trimmed.starts_with("Loaded cached")
-                        || trimmed.contains("failed to refresh available models")
-                    {
-                        continue;
-                    }
-                    let _ = app_clone.emit("cli-output", CliOutputLine {
-                        repo_path: rp.clone(),
-                        line,
-                    });
+            for line in reader.lines().map_while(Result::ok) {
+                // Skip noisy stderr lines (credential caching, model refresh errors, etc.)
+                let trimmed = line.trim();
+                if trimmed.is_empty()
+                    || trimmed.starts_with("Loaded cached")
+                    || trimmed.contains("failed to refresh available models")
+                {
+                    continue;
                 }
+                let _ = app_clone.emit("cli-output", CliOutputLine {
+                    repo_path: rp.clone(),
+                    line,
+                });
             }
         });
     }

@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { RefreshCw, AlertCircle, FolderOpen, Plus } from "lucide-react";
 import { useQuery } from "@tanstack/react-query";
 import { useWorkspaceStore } from "@/stores/workspaceStore";
@@ -8,17 +8,22 @@ import { FilterBar, SearchBar } from "@/components/filters";
 import { AddMCPDialog } from "@/components/sync";
 import { Button } from "@/components/ui/button";
 import { useInfiniteList } from "@/hooks/useInfiniteList";
+import { useShortcutAction } from "@/hooks/useKeyboardShortcuts";
 import type { SourceTool } from "@/types";
 import { ALL_TOOLS } from "@/config/tools";
 
 export function MCPs() {
   const { current } = useWorkspaceStore();
   const [showAddDialog, setShowAddDialog] = useState(false);
+  const searchRef = useRef<HTMLInputElement>(null);
+  useShortcutAction("focus-search", () => searchRef.current?.focus());
+  useShortcutAction("add-item", () => setShowAddDialog(true));
   const [activeTools, setActiveTools] = useState<SourceTool[]>([]);
   const [activeScopes, setActiveScopes] = useState<string[]>([]);
   const [searchQuery, setSearchQuery] = useState("");
 
   useEffect(() => {
+    // eslint-disable-next-line react-hooks/set-state-in-effect -- reset filters when workspace changes
     if (!current) setActiveScopes([]);
   }, [current]);
 
@@ -32,6 +37,8 @@ export function MCPs() {
     queryKey: ["mcps", current?.repo_root ?? current?.path ?? null],
     queryFn: () => scanMCPs(current?.repo_root ?? current?.path),
   });
+
+  useShortcutAction("refresh", () => refetch());
 
   const availableTools = useMemo(() => {
     if (!mcps) return [];
@@ -116,6 +123,7 @@ export function MCPs() {
       {mcps && mcps.length > 0 && (
         <div className="mb-4 flex items-center gap-4">
           <SearchBar
+            ref={searchRef}
             value={searchQuery}
             onChange={setSearchQuery}
             placeholder="Search MCPs..."

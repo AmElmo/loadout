@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { RefreshCw, AlertCircle, FolderOpen, Download, AlertTriangle } from "lucide-react";
 import { useQuery } from "@tanstack/react-query";
 import { useWorkspaceStore } from "@/stores/workspaceStore";
@@ -8,6 +8,7 @@ import { FilterBar, SearchBar } from "@/components/filters";
 import { ImportAgentDialog } from "@/components/agents/ImportAgentDialog";
 import { Button } from "@/components/ui/button";
 import { useInfiniteList } from "@/hooks/useInfiniteList";
+import { useShortcutAction } from "@/hooks/useKeyboardShortcuts";
 import type { AgentSourceTool, SourceTool } from "@/types";
 import { groupAgents } from "@/lib/groupAgents";
 import { cn } from "@/lib/utils";
@@ -17,6 +18,9 @@ const AGENT_TOOL_ORDER: AgentSourceTool[] = ["claude", "gemini"];
 export function Agents() {
   const { current } = useWorkspaceStore();
   const [showImportDialog, setShowImportDialog] = useState(false);
+  const searchRef = useRef<HTMLInputElement>(null);
+  useShortcutAction("focus-search", () => searchRef.current?.focus());
+  useShortcutAction("add-item", () => setShowImportDialog(true));
   const [activeTools, setActiveTools] = useState<AgentSourceTool[]>([]);
   const [activeScopes, setActiveScopes] = useState<string[]>([]);
   const [searchQuery, setSearchQuery] = useState("");
@@ -27,6 +31,7 @@ export function Agents() {
   const [dragFileName, setDragFileName] = useState<string | undefined>();
 
   useEffect(() => {
+    // eslint-disable-next-line react-hooks/set-state-in-effect -- reset filters when workspace changes
     if (!current) setActiveScopes([]);
   }, [current]);
 
@@ -40,6 +45,8 @@ export function Agents() {
     queryKey: ["agents", current?.repo_root ?? current?.path ?? null],
     queryFn: () => scanAgents(current?.repo_root ?? current?.path),
   });
+
+  useShortcutAction("refresh", () => refetch());
 
   const groupedAgents = useMemo(() => {
     if (!result) return [];
@@ -206,6 +213,7 @@ export function Agents() {
       {result && groupedAgents.length > 0 && (
         <div className="mb-4 flex items-center gap-4">
           <SearchBar
+            ref={searchRef}
             value={searchQuery}
             onChange={setSearchQuery}
             placeholder="Search subagents..."

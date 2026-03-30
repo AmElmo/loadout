@@ -1,6 +1,7 @@
 pub mod agents;
 pub mod hooks;
 pub mod mcps;
+pub mod plugins;
 pub mod prompts;
 pub mod repos;
 pub mod skills;

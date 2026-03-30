@@ -98,7 +98,7 @@ pub fn resolve_skill_conflict(
     let targets: Vec<PathBuf> = target_paths
         .iter()
         .filter(|p| p.as_str() != chosen_path)
-        .map(|p| PathBuf::from(p))
+        .map(PathBuf::from)
         .collect();
 
     for target in &targets {

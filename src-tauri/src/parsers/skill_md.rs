@@ -20,12 +20,14 @@ use std::path::Path;
 /// Metadata section in SKILL.md frontmatter
 #[derive(Debug, Clone, Deserialize, Default)]
 #[serde(rename_all = "kebab-case")]
+#[allow(dead_code)]
 pub struct SkillMetadata {
     pub short_description: Option<String>,
 }
 
 /// Parsed skill from a SKILL.md file
 #[derive(Debug, Clone)]
+#[allow(dead_code)]
 pub struct ParsedSkill {
     pub name: String,
     pub description: String,

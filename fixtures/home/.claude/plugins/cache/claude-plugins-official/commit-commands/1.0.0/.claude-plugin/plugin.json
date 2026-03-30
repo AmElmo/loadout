@@ -1,0 +1,6 @@
+{
+  "name": "commit-commands",
+  "version": "1.0.0",
+  "description": "Smart commit message generation and git workflow commands",
+  "author": { "name": "Anthropic" }
+}

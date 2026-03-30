@@ -40,87 +40,68 @@ fn file_exists(path: &std::path::Path) -> bool {
 #[tauri::command]
 pub fn detect_installed_tools() -> Result<DetectionResult, String> {
     let home = crate::helpers::effective_home().ok_or("Could not determine home directory")?;
-    let mut tools = Vec::new();
-
-    // Claude
-    tools.push(DetectedTool {
-        id: "claude".to_string(),
-        label: "Claude".to_string(),
-        has_home_config: dir_exists(&home.join(".claude")) || file_exists(&home.join(".claude.json")),
-        has_binary: has_binary("claude"),
-    });
-
-    // Codex
-    tools.push(DetectedTool {
-        id: "codex".to_string(),
-        label: "Codex".to_string(),
-        has_home_config: dir_exists(&home.join(".codex")) || dir_exists(&home.join(".agents")),
-        has_binary: has_binary("codex"),
-    });
-
-    // Gemini
-    tools.push(DetectedTool {
-        id: "gemini".to_string(),
-        label: "Gemini".to_string(),
-        has_home_config: dir_exists(&home.join(".gemini")),
-        has_binary: has_binary("gemini"),
-    });
-
-    // Cursor
-    tools.push(DetectedTool {
-        id: "cursor".to_string(),
-        label: "Cursor".to_string(),
-        has_home_config: dir_exists(&home.join(".cursor")),
-        has_binary: has_binary("cursor"),
-    });
-
-    // Copilot (no binary — it's a VS Code extension)
-    tools.push(DetectedTool {
-        id: "copilot".to_string(),
-        label: "Copilot".to_string(),
-        has_home_config: dir_exists(&home.join(".copilot")),
-        has_binary: false,
-    });
-
-    // Windsurf
-    tools.push(DetectedTool {
-        id: "windsurf".to_string(),
-        label: "Windsurf".to_string(),
-        has_home_config: dir_exists(&home.join(".codeium").join("windsurf")),
-        has_binary: has_binary("windsurf"),
-    });
-
-    // Roo (VS Code extension, no binary)
-    tools.push(DetectedTool {
-        id: "roo".to_string(),
-        label: "Roo".to_string(),
-        has_home_config: dir_exists(&home.join(".roo")),
-        has_binary: false,
-    });
-
-    // Cline (VS Code extension, no binary)
-    tools.push(DetectedTool {
-        id: "cline".to_string(),
-        label: "Cline".to_string(),
-        has_home_config: dir_exists(&home.join(".cline")),
-        has_binary: false,
-    });
-
-    // Kilo (VS Code extension, no binary)
-    tools.push(DetectedTool {
-        id: "kilo".to_string(),
-        label: "Kilo".to_string(),
-        has_home_config: dir_exists(&home.join(".kilocode")),
-        has_binary: false,
-    });
-
-    // OpenCode
-    tools.push(DetectedTool {
-        id: "opencode".to_string(),
-        label: "OpenCode".to_string(),
-        has_home_config: file_exists(&home.join(".config").join("opencode").join("opencode.json")),
-        has_binary: has_binary("opencode"),
-    });
+    let tools = vec![
+        DetectedTool {
+            id: "claude".to_string(),
+            label: "Claude".to_string(),
+            has_home_config: dir_exists(&home.join(".claude")) || file_exists(&home.join(".claude.json")),
+            has_binary: has_binary("claude"),
+        },
+        DetectedTool {
+            id: "codex".to_string(),
+            label: "Codex".to_string(),
+            has_home_config: dir_exists(&home.join(".codex")) || dir_exists(&home.join(".agents")),
+            has_binary: has_binary("codex"),
+        },
+        DetectedTool {
+            id: "gemini".to_string(),
+            label: "Gemini".to_string(),
+            has_home_config: dir_exists(&home.join(".gemini")),
+            has_binary: has_binary("gemini"),
+        },
+        DetectedTool {
+            id: "cursor".to_string(),
+            label: "Cursor".to_string(),
+            has_home_config: dir_exists(&home.join(".cursor")),
+            has_binary: has_binary("cursor"),
+        },
+        DetectedTool {
+            id: "copilot".to_string(),
+            label: "Copilot".to_string(),
+            has_home_config: dir_exists(&home.join(".copilot")),
+            has_binary: false,
+        },
+        DetectedTool {
+            id: "windsurf".to_string(),
+            label: "Windsurf".to_string(),
+            has_home_config: dir_exists(&home.join(".codeium").join("windsurf")),
+            has_binary: has_binary("windsurf"),
+        },
+        DetectedTool {
+            id: "roo".to_string(),
+            label: "Roo".to_string(),
+            has_home_config: dir_exists(&home.join(".roo")),
+            has_binary: false,
+        },
+        DetectedTool {
+            id: "cline".to_string(),
+            label: "Cline".to_string(),
+            has_home_config: dir_exists(&home.join(".cline")),
+            has_binary: false,
+        },
+        DetectedTool {
+            id: "kilo".to_string(),
+            label: "Kilo".to_string(),
+            has_home_config: dir_exists(&home.join(".kilocode")),
+            has_binary: false,
+        },
+        DetectedTool {
+            id: "opencode".to_string(),
+            label: "OpenCode".to_string(),
+            has_home_config: file_exists(&home.join(".config").join("opencode").join("opencode.json")),
+            has_binary: has_binary("opencode"),
+        },
+    ];
 
     // Only return tools that have some signal
     let detected: Vec<DetectedTool> = tools

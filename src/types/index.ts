@@ -617,3 +617,106 @@ export interface FetchedAgent {
   permissionMode: string | null;
   sourceUrl: string | null;
 }
+
+// === Plugin Types ===
+
+export type PluginSourceTool = "claude" | "gemini";
+
+export type PluginSourceVariant = "claude-cli" | "claude-desktop" | "gemini-cli";
+
+export type PluginScope = "user" | "project" | "local" | "managed" | "system";
+
+export interface PluginSkillInfo {
+  name: string;
+  description: string | null;
+  content: string | null;
+}
+
+export interface PluginCommandInfo {
+  name: string;
+  description: string | null;
+}
+
+export interface PluginMCPInfo {
+  name: string;
+  mcpType: string;
+  url: string | null;
+  command: string | null;
+}
+
+export interface PluginHookInfo {
+  event: string;
+  matcher: string | null;
+  command: string;
+}
+
+export interface PluginAgentInfo {
+  name: string;
+  description: string | null;
+}
+
+export interface PluginLSPInfo {
+  language: string;
+  command: string;
+}
+
+export interface PluginComponents {
+  skills: number;
+  commands: number;
+  mcps: number;
+  hooks: number;
+  agents: number;
+  lspServers: number;
+}
+
+export interface PluginComponentDetails {
+  skills: PluginSkillInfo[];
+  commands: PluginCommandInfo[];
+  mcps: PluginMCPInfo[];
+  hooks: PluginHookInfo[];
+  agents: PluginAgentInfo[];
+  lspServers: PluginLSPInfo[];
+}
+
+export interface PluginItem {
+  id: string;
+  name: string;
+  description: string;
+  version: string;
+  author: string | null;
+  sourceTool: PluginSourceTool;
+  sourceVariant: PluginSourceVariant;
+  marketplace: string | null;
+  scope: PluginScope;
+  enabled: boolean;
+  path: string;
+  installedAt: string | null;
+  components: PluginComponents;
+  componentDetails: PluginComponentDetails;
+  category: string | null;
+  readme: string | null;
+}
+
+export interface MarketplacePluginItem {
+  name: string;
+  description: string;
+  version: string;
+  author: string | null;
+  category: string | null;
+  marketplace: string;
+  isInstalled: boolean;
+  sourceVariant: PluginSourceVariant;
+}
+
+export interface MarketplaceInfo {
+  name: string;
+  source: string;
+  sourceVariant: PluginSourceVariant;
+  lastUpdated: string | null;
+}
+
+export interface PluginScanResult {
+  installed: PluginItem[];
+  available: MarketplacePluginItem[];
+  marketplaces: MarketplaceInfo[];
+}
