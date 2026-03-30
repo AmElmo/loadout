@@ -1,5 +1,9 @@
 # Changelog
 
+## [0.2.2] - 2026-03-30
+
+- Maintenance release
+
 ## [0.2.1] - 2026-03-30
 
 ### Added
