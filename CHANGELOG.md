@@ -1,5 +1,27 @@
 # Changelog
 
+## [0.2.1] - 2026-03-30
+
+### Added
+
+- Configure macOS code signing and notarization in CI (#108)
+- Plugin skills viewer and path reveal fixes (#107)
+- Add direct download links and auto-update workflow for README (#98)
+- Add resizable sidebar with persistent width (#92)
+- Add vibrant orbital readme banner with concept icons (#91)
+- Add comprehensive keyboard shortcuts with settings panel and click-outside modal closing (#89)
+- Add plugins scanner with read-only visibility (#90)
+- Add dark/light/system theme toggle (LOA-28) (#88)
+- Add automated release notes generation with Claude Code CLI (#87)
+
+### Fixed
+
+- Resolve unused struct warnings and enhance Learn page timeline UI (#93)
+
+### Changed
+
+- Ui polish with color refinement and tool coverage visualization (#96)
+
 ## [0.2.0] - 2026-02-26
 
 - Maintenance release
