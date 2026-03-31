@@ -10,6 +10,7 @@ permissions:
 
 jobs:
   build:
+    timeout-minutes: 120
     strategy:
       fail-fast: false
       matrix:
@@ -102,7 +103,45 @@ jobs:
           # Add keychain to search list
           security list-keychains -d user -s "$KEYCHAIN_PATH" login.keychain-db
 
+      - name: Verify signing identity is available
+        if: matrix.target == 'aarch64-apple-darwin' || matrix.target == 'x86_64-apple-darwin'
+        env:
+          KEYCHAIN_PATH: ${{ runner.temp }}/app-signing.keychain-db
+        run: security find-identity -v -p codesigning "$KEYCHAIN_PATH"
+
+      - name: Verify Apple notarization access
+        if: matrix.target == 'aarch64-apple-darwin' || matrix.target == 'x86_64-apple-darwin'
+        env:
+          APPLE_ID: ${{ secrets.APPLE_ID }}
+          APPLE_PASSWORD: ${{ secrets.APPLE_PASSWORD }}
+          APPLE_TEAM_ID: ${{ secrets.APPLE_TEAM_ID }}
+        run: |
+          xcrun notarytool history \
+            --apple-id "$APPLE_ID" \
+            --password "$APPLE_PASSWORD" \
+            --team-id "$APPLE_TEAM_ID" > /tmp/notary-history.txt
+          head -n 20 /tmp/notary-history.txt
+
       - uses: tauri-apps/tauri-action@73fb865345c54760d875b94642314f8c0c894afa # v0
+        if: matrix.target == 'aarch64-apple-darwin' || matrix.target == 'x86_64-apple-darwin'
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          TAURI_SIGNING_PRIVATE_KEY: ${{ secrets.TAURI_SIGNING_PRIVATE_KEY }}
+          TAURI_SIGNING_PRIVATE_KEY_PASSWORD: ${{ secrets.TAURI_SIGNING_PRIVATE_KEY_PASSWORD }}
+          APPLE_SIGNING_IDENTITY: ${{ secrets.APPLE_SIGNING_IDENTITY }}
+          APPLE_ID: ${{ secrets.APPLE_ID }}
+          APPLE_PASSWORD: ${{ secrets.APPLE_PASSWORD }}
+          APPLE_TEAM_ID: ${{ secrets.APPLE_TEAM_ID }}
+        with:
+          tagName: ${{ github.ref_name }}
+          releaseName: "Loadout ${{ github.ref_name }}"
+          releaseBody: ${{ steps.release_notes.outputs.body }}
+          releaseDraft: true
+          prerelease: false
+          args: --target ${{ matrix.target }} --verbose
+
+      - uses: tauri-apps/tauri-action@73fb865345c54760d875b94642314f8c0c894afa # v0
+        if: matrix.target != 'aarch64-apple-darwin' && matrix.target != 'x86_64-apple-darwin'
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           TAURI_SIGNING_PRIVATE_KEY: ${{ secrets.TAURI_SIGNING_PRIVATE_KEY }}
@@ -119,6 +158,18 @@ jobs:
           prerelease: false
           args: --target ${{ matrix.target }} --verbose
           retryAttempts: 2
+
+      - name: Inspect recent notarization submissions
+        if: failure() && (matrix.target == 'aarch64-apple-darwin' || matrix.target == 'x86_64-apple-darwin')
+        env:
+          APPLE_ID: ${{ secrets.APPLE_ID }}
+          APPLE_PASSWORD: ${{ secrets.APPLE_PASSWORD }}
+          APPLE_TEAM_ID: ${{ secrets.APPLE_TEAM_ID }}
+        run: |
+          xcrun notarytool history \
+            --apple-id "$APPLE_ID" \
+            --password "$APPLE_PASSWORD" \
+            --team-id "$APPLE_TEAM_ID" | head -n 40 || true
 
   validate-updater:
     name: Validate updater metadata
