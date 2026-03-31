@@ -10,7 +10,7 @@ permissions:
 
 jobs:
   build:
-    timeout-minutes: 120
+    timeout-minutes: 45
     strategy:
       fail-fast: false
       matrix:
@@ -47,6 +47,17 @@ jobs:
         with:
           toolchain: stable
           targets: ${{ matrix.target }}
+
+      - name: Cache Rust build artifacts
+        uses: actions/cache@5a3ec84eff668545956fd18022155c47e93e2684 # v4
+        with:
+          path: |
+            ~/.cargo/registry
+            ~/.cargo/git
+            src-tauri/target
+          key: rust-${{ matrix.target }}-${{ hashFiles('src-tauri/Cargo.lock') }}
+          restore-keys: |
+            rust-${{ matrix.target }}-
 
       - name: Install Linux dependencies
         if: runner.os == 'Linux'
