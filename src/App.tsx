@@ -2,6 +2,7 @@ import { Sidebar } from "@/components/Sidebar";
 import { Header } from "@/components/Header";
 import { UpdateNotification } from "@/components/UpdateNotification";
 import { KeyboardShortcutsModal } from "@/components/KeyboardShortcutsModal";
+import { OnboardingOverlay } from "@/components/onboarding/OnboardingOverlay";
 import { Home } from "@/pages/Home";
 import { MCPs } from "@/pages/MCPs";
 import { Skills } from "@/pages/Skills";
@@ -14,12 +15,14 @@ import { Learn } from "@/pages/Learn";
 import { Repos } from "@/pages/Repos";
 import { useWorkspaceStore } from "@/stores/workspaceStore";
 import { useShortcutStore } from "@/stores/shortcutStore";
+import { useOnboardingStore } from "@/stores/onboardingStore";
 import { useKeyboardShortcuts } from "@/hooks/useKeyboardShortcuts";
 import { useEffect, useRef } from "react";
 
 function App() {
   const { activeTab, setSelectedRepo } = useWorkspaceStore();
   const showShortcutsModal = useShortcutStore((s) => s.showShortcutsModal);
+  const showOnboarding = useOnboardingStore((s) => s.showOnboarding);
   const mainRef = useRef<HTMLElement>(null);
   useKeyboardShortcuts();
 
@@ -68,6 +71,7 @@ function App() {
       </div>
       <UpdateNotification />
       {showShortcutsModal && <KeyboardShortcutsModal />}
+      {showOnboarding && <OnboardingOverlay />}
     </div>
   );
 }
