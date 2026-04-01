@@ -4,8 +4,8 @@ use crate::converters::{
     to_claude_json_preview, to_codex_toml_preview, to_gemini_json_preview, MCPServerInput,
 };
 use crate::helpers::github::{self, GitHubUrl};
-use crate::parsers::{parse_claude_config, parse_codex_config, parse_gemini_config};
 use crate::parsers::parse_skill_content;
+use crate::parsers::{parse_claude_config, parse_codex_config, parse_gemini_config};
 use crate::writers::{mcp_writer, skill_writer};
 use serde::{Deserialize, Serialize};
 use std::collections::HashMap;
@@ -598,7 +598,6 @@ struct GitHubContentEntry {
     download_url: Option<String>,
 }
 
-
 const MAX_FILE_SIZE: u64 = 100_000; // 100 KB limit per companion file
 const SKIP_DIRS: &[&str] = &[".git", ".github", "node_modules", "__pycache__"];
 
@@ -649,7 +648,11 @@ async fn fetch_github_directory(
             }
             // Recurse into subdirectories
             let sub_files = Box::pin(fetch_github_directory(
-                client, owner, repo, branch, &entry.path,
+                client,
+                owner,
+                repo,
+                branch,
+                &entry.path,
             ))
             .await?;
             files.extend(sub_files);
@@ -704,7 +707,6 @@ async fn fetch_github_directory(
 
     Ok(files)
 }
-
 
 /// Fetch a skill from a URL, parse its frontmatter, and return a preview
 #[tauri::command]
@@ -830,9 +832,9 @@ pub async fn fetch_skill_from_url(url: String) -> Result<FetchedSkill, String> {
                     .map_err(|e| format!("Failed to parse skill: {}", e))?;
 
                 // Fetch companion files from repo root
-                let files =
-                    fetch_github_directory(&client, &owner, &repo, "main", "").await
-                        .unwrap_or_default();
+                let files = fetch_github_directory(&client, &owner, &repo, "main", "")
+                    .await
+                    .unwrap_or_default();
 
                 return Ok(FetchedSkill {
                     name: parsed.name,
@@ -895,8 +897,8 @@ pub fn parse_skill_file_content(content: String, filename: String) -> Result<Fet
 #[tauri::command]
 pub fn read_skill_file(path: String) -> Result<FetchedSkill, String> {
     let path_buf = PathBuf::from(&path);
-    let content = std::fs::read_to_string(&path_buf)
-        .map_err(|e| format!("Failed to read file: {}", e))?;
+    let content =
+        std::fs::read_to_string(&path_buf).map_err(|e| format!("Failed to read file: {}", e))?;
 
     let filename = path_buf
         .file_name()
@@ -908,11 +910,7 @@ pub fn read_skill_file(path: String) -> Result<FetchedSkill, String> {
         .parent()
         .and_then(|p| p.file_name())
         .map(|n| n.to_string_lossy().to_string())
-        .unwrap_or_else(|| {
-            filename
-                .trim_end_matches(".md")
-                .to_string()
-        });
+        .unwrap_or_else(|| filename.trim_end_matches(".md").to_string());
 
     let parsed = parse_skill_content(&content, &fallback_name)
         .map_err(|e| format!("Failed to parse skill: {}", e))?;
@@ -1003,7 +1001,34 @@ pub fn install_skill_to_tools(request: InstallSkillRequest) -> Result<WriteResul
 mod tests {
     use super::*;
     use std::fs;
-    use tempfile::NamedTempFile;
+    use std::path::Path;
+    use std::sync::{Mutex, OnceLock};
+    use tempfile::{NamedTempFile, TempDir};
+
+    fn with_loadout_home<T>(home: &Path, f: impl FnOnce() -> T) -> T {
+        static LOCK: OnceLock<Mutex<()>> = OnceLock::new();
+        let _guard = LOCK.get_or_init(|| Mutex::new(())).lock().unwrap();
+
+        let previous = std::env::var("LOADOUT_HOME").ok();
+        std::env::set_var("LOADOUT_HOME", home);
+        let result = f();
+        if let Some(prev) = previous {
+            std::env::set_var("LOADOUT_HOME", prev);
+        } else {
+            std::env::remove_var("LOADOUT_HOME");
+        }
+        result
+    }
+
+    #[cfg(unix)]
+    fn create_dir_symlink(src: &Path, dst: &Path) -> std::io::Result<()> {
+        std::os::unix::fs::symlink(src, dst)
+    }
+
+    #[cfg(windows)]
+    fn create_dir_symlink(src: &Path, dst: &Path) -> std::io::Result<()> {
+        std::os::windows::fs::symlink_dir(src, dst)
+    }
 
     #[test]
     fn test_install_skill_rejects_unknown_method() {
@@ -1184,5 +1209,194 @@ mod tests {
 
         assert_eq!(mcp.mcp_type, "http");
         assert_eq!(mcp.url.as_deref(), Some("https://mcp.linear.app/mcp"));
+    }
+
+    #[test]
+    fn test_remove_mcp_from_specific_tool_only_updates_selected_config() {
+        let home = TempDir::new().unwrap();
+
+        with_loadout_home(home.path(), || {
+            let claude_path = home.path().join(".claude.json");
+            let gemini_path = home.path().join(".gemini").join("settings.json");
+            fs::create_dir_all(gemini_path.parent().unwrap()).unwrap();
+
+            fs::write(
+                &claude_path,
+                r#"{
+  "mcpServers": {
+    "github": { "command": "npx" },
+    "keep": { "command": "node" }
+  }
+}"#,
+            )
+            .unwrap();
+            fs::write(
+                &gemini_path,
+                r#"{
+  "mcpServers": {
+    "github": { "command": "npx" }
+  }
+}"#,
+            )
+            .unwrap();
+
+            let result = remove_mcp_from_tools(RemoveMCPRequest {
+                name: "github".to_string(),
+                target_tools: vec!["claude".to_string()],
+            })
+            .unwrap();
+
+            assert!(result.success);
+            assert_eq!(result.errors, Vec::<String>::new());
+            assert_eq!(
+                result.removed_files,
+                vec![claude_path.to_string_lossy().to_string()]
+            );
+
+            let claude_content = fs::read_to_string(&claude_path).unwrap();
+            assert!(!claude_content.contains("\"github\""));
+            assert!(claude_content.contains("\"keep\""));
+
+            let gemini_content = fs::read_to_string(&gemini_path).unwrap();
+            assert!(gemini_content.contains("\"github\""));
+        });
+    }
+
+    #[test]
+    fn test_remove_linked_skill_from_one_tool_keeps_canonical_and_other_links() {
+        let home = TempDir::new().unwrap();
+
+        with_loadout_home(home.path(), || {
+            let canonical = home
+                .path()
+                .join(".agents")
+                .join("skills")
+                .join("shared-skill");
+            fs::create_dir_all(&canonical).unwrap();
+            fs::write(canonical.join("SKILL.md"), "# Shared skill").unwrap();
+
+            let claude_link = home
+                .path()
+                .join(".claude")
+                .join("skills")
+                .join("shared-skill");
+            let gemini_link = home
+                .path()
+                .join(".gemini")
+                .join("skills")
+                .join("shared-skill");
+            fs::create_dir_all(claude_link.parent().unwrap()).unwrap();
+            fs::create_dir_all(gemini_link.parent().unwrap()).unwrap();
+            create_dir_symlink(&canonical, &claude_link).unwrap();
+            create_dir_symlink(&canonical, &gemini_link).unwrap();
+
+            let result = remove_skill_from_tools(RemoveSkillRequest {
+                name: "shared-skill".to_string(),
+                target_tools: vec!["claude".to_string()],
+                remove_canonical: false,
+            })
+            .unwrap();
+
+            assert!(result.success);
+            assert_eq!(result.errors, Vec::<String>::new());
+            assert_eq!(
+                result.removed_files,
+                vec![claude_link.to_string_lossy().to_string()]
+            );
+            assert!(!claude_link.exists());
+            assert!(fs::symlink_metadata(&gemini_link)
+                .unwrap()
+                .file_type()
+                .is_symlink());
+            assert!(canonical.join("SKILL.md").exists());
+        });
+    }
+
+    #[test]
+    fn test_remove_linked_skill_from_all_tools_also_removes_canonical_copy() {
+        let home = TempDir::new().unwrap();
+
+        with_loadout_home(home.path(), || {
+            let canonical = home
+                .path()
+                .join(".agents")
+                .join("skills")
+                .join("shared-skill");
+            fs::create_dir_all(&canonical).unwrap();
+            fs::write(canonical.join("SKILL.md"), "# Shared skill").unwrap();
+
+            let claude_link = home
+                .path()
+                .join(".claude")
+                .join("skills")
+                .join("shared-skill");
+            let gemini_link = home
+                .path()
+                .join(".gemini")
+                .join("skills")
+                .join("shared-skill");
+            fs::create_dir_all(claude_link.parent().unwrap()).unwrap();
+            fs::create_dir_all(gemini_link.parent().unwrap()).unwrap();
+            create_dir_symlink(&canonical, &claude_link).unwrap();
+            create_dir_symlink(&canonical, &gemini_link).unwrap();
+
+            let result = remove_skill_from_tools(RemoveSkillRequest {
+                name: "shared-skill".to_string(),
+                target_tools: vec!["claude".to_string(), "gemini".to_string()],
+                remove_canonical: true,
+            })
+            .unwrap();
+
+            assert!(result.success);
+            assert_eq!(result.errors, Vec::<String>::new());
+            assert_eq!(
+                result.removed_files,
+                vec![
+                    claude_link.to_string_lossy().to_string(),
+                    gemini_link.to_string_lossy().to_string(),
+                    canonical.to_string_lossy().to_string(),
+                ]
+            );
+            assert!(!claude_link.exists());
+            assert!(!gemini_link.exists());
+            assert!(!canonical.exists());
+        });
+    }
+
+    #[test]
+    fn test_remove_skill_deletes_broken_symlink() {
+        let home = TempDir::new().unwrap();
+
+        with_loadout_home(home.path(), || {
+            let canonical = home
+                .path()
+                .join(".agents")
+                .join("skills")
+                .join("shared-skill");
+            fs::create_dir_all(canonical.parent().unwrap()).unwrap();
+
+            let claude_link = home
+                .path()
+                .join(".claude")
+                .join("skills")
+                .join("shared-skill");
+            fs::create_dir_all(claude_link.parent().unwrap()).unwrap();
+            create_dir_symlink(&canonical, &claude_link).unwrap();
+
+            let result = remove_skill_from_tools(RemoveSkillRequest {
+                name: "shared-skill".to_string(),
+                target_tools: vec!["claude".to_string()],
+                remove_canonical: false,
+            })
+            .unwrap();
+
+            assert!(result.success);
+            assert_eq!(result.errors, Vec::<String>::new());
+            assert_eq!(
+                result.removed_files,
+                vec![claude_link.to_string_lossy().to_string()]
+            );
+            assert!(!claude_link.exists());
+        });
     }
 }
