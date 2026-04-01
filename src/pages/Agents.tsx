@@ -1,7 +1,6 @@
-import { useEffect, useMemo, useRef, useState } from "react";
-import { RefreshCw, AlertCircle, FolderOpen, Download, AlertTriangle } from "lucide-react";
+import { useMemo, useRef, useState } from "react";
+import { RefreshCw, AlertCircle, Download, AlertTriangle } from "lucide-react";
 import { useQuery } from "@tanstack/react-query";
-import { useWorkspaceStore } from "@/stores/workspaceStore";
 import { scanAgents } from "@/lib/api/agents";
 import { AgentList, AgentConflictWarning } from "@/components/agents";
 import { FilterBar, SearchBar } from "@/components/filters";
@@ -16,24 +15,17 @@ import { cn } from "@/lib/utils";
 const AGENT_TOOL_ORDER: AgentSourceTool[] = ["claude", "gemini"];
 
 export function Agents() {
-  const { current } = useWorkspaceStore();
   const [showImportDialog, setShowImportDialog] = useState(false);
   const searchRef = useRef<HTMLInputElement>(null);
   useShortcutAction("focus-search", () => searchRef.current?.focus());
   useShortcutAction("add-item", () => setShowImportDialog(true));
   const [activeTools, setActiveTools] = useState<AgentSourceTool[]>([]);
-  const [activeScopes, setActiveScopes] = useState<string[]>([]);
   const [searchQuery, setSearchQuery] = useState("");
 
   // Drag-and-drop state
   const [isDragOver, setIsDragOver] = useState(false);
   const [dragFileContent, setDragFileContent] = useState<string | undefined>();
   const [dragFileName, setDragFileName] = useState<string | undefined>();
-
-  useEffect(() => {
-    // eslint-disable-next-line react-hooks/set-state-in-effect -- reset filters when workspace changes
-    if (!current) setActiveScopes([]);
-  }, [current]);
 
   const {
     data: result,
@@ -42,8 +34,8 @@ export function Agents() {
     refetch,
     isRefetching,
   } = useQuery({
-    queryKey: ["agents", current?.repo_root ?? current?.path ?? null],
-    queryFn: () => scanAgents(current?.repo_root ?? current?.path),
+    queryKey: ["agents", null],
+    queryFn: () => scanAgents(undefined),
   });
 
   useShortcutAction("refresh", () => refetch());
@@ -72,9 +64,6 @@ export function Agents() {
       ) {
         return false;
       }
-      if (activeScopes.length > 0 && !activeScopes.includes(group.scope)) {
-        return false;
-      }
       if (
         query &&
         !group.name.toLowerCase().includes(query) &&
@@ -84,18 +73,16 @@ export function Agents() {
       }
       return true;
     });
-  }, [groupedAgents, activeTools, activeScopes, searchQuery]);
+  }, [groupedAgents, activeTools, searchQuery]);
 
   const { visibleItems, hasMore, sentinelRef } = useInfiniteList(filteredAgents);
 
   const hasActiveFilters =
     activeTools.length > 0 ||
-    activeScopes.length > 0 ||
     searchQuery.length > 0;
 
   function clearFilters() {
     setActiveTools([]);
-    setActiveScopes([]);
     setSearchQuery("");
   }
 
@@ -182,16 +169,6 @@ export function Agents() {
         </div>
       </div>
 
-      {!current && (
-        <div className="mb-4 flex items-center gap-2 rounded-lg border border-border bg-muted/50 px-3 py-2 text-sm text-muted-foreground">
-          <FolderOpen className="h-4 w-4 shrink-0" />
-          <span>
-            Showing user-level subagents. Select a workspace to also see
-            project-level subagents.
-          </span>
-        </div>
-      )}
-
       {/* Gemini enableAgents warning */}
       {result && !result.geminiAgentsEnabled && result.agents.some((a) => a.sourceTool === "gemini") && (
         <div className="mb-4 flex items-center gap-2 rounded-lg border border-yellow-500/20 bg-yellow-500/5 px-3 py-2 text-sm text-yellow-600">
@@ -223,9 +200,9 @@ export function Agents() {
             onToolsChange={(tools) =>
               setActiveTools(tools as AgentSourceTool[])
             }
-            activeScopes={activeScopes}
-            onScopesChange={setActiveScopes}
-            showScopeFilter={!!current}
+            activeScopes={[]}
+            onScopesChange={() => {}}
+            showScopeFilter={false}
             availableTools={availableTools as SourceTool[]}
           />
         </div>

@@ -13,6 +13,7 @@ const TAB_IDS = [
   "hooks",
   "plugins",
   "context",
+  "repos",
 ] as const;
 
 function isInputFocused(): boolean {
@@ -26,7 +27,7 @@ function isInputFocused(): boolean {
 
 /**
  * Global keyboard shortcut listener.
- * Mount once in App.tsx — handles navigation, workspace switcher, modal toggles,
+ * Mount once in App.tsx — handles navigation, modal toggles,
  * and dispatches page-level actions via the shortcut store.
  */
 export function useKeyboardShortcuts() {
@@ -36,30 +37,16 @@ export function useKeyboardShortcuts() {
     (s) => s.setShowShortcutsModal
   );
   const showShortcutsModal = useShortcutStore((s) => s.showShortcutsModal);
-  const toggleWorkspaceSwitcher = useShortcutStore(
-    (s) => s.toggleWorkspaceSwitcher
-  );
-  const showWorkspaceSwitcher = useShortcutStore(
-    (s) => s.showWorkspaceSwitcher
-  );
-  const setShowWorkspaceSwitcher = useShortcutStore(
-    (s) => s.setShowWorkspaceSwitcher
-  );
 
   useEffect(() => {
     function handleKeyDown(e: KeyboardEvent) {
       const mod = isMac ? e.metaKey : e.ctrlKey;
 
-      // Esc: close shortcuts modal, then workspace switcher (priority order)
+      // Esc: close shortcuts modal
       if (e.key === "Escape") {
         if (showShortcutsModal) {
           e.preventDefault();
           setShowShortcutsModal(false);
-          return;
-        }
-        if (showWorkspaceSwitcher) {
-          e.preventDefault();
-          setShowWorkspaceSwitcher(false);
           return;
         }
         // Esc for dialogs is handled by useEscapeKey in each dialog
@@ -76,20 +63,12 @@ export function useKeyboardShortcuts() {
       // Don't process further shortcuts while shortcuts modal is open
       if (showShortcutsModal) return;
 
-      // Cmd+K — toggle workspace switcher
-      if (mod && !e.shiftKey && e.key === "k") {
-        e.preventDefault();
-        toggleWorkspaceSwitcher();
-        return;
-      }
-
-      // Cmd+1 through Cmd+8 — tab navigation
+      // Cmd+1 through Cmd+9 — tab navigation
       if (mod && !e.shiftKey) {
         const digit = parseInt(e.key, 10);
         if (digit >= 1 && digit <= TAB_IDS.length) {
           e.preventDefault();
           setActiveTab(TAB_IDS[digit - 1]);
-          setShowWorkspaceSwitcher(false);
           return;
         }
       }
@@ -117,21 +96,15 @@ export function useKeyboardShortcuts() {
         dispatch("refresh");
         return;
       }
-
-      // Item actions (Cmd+Shift+S/O/T) are reserved but not yet wired —
-      // they require per-item focus tracking which is not yet implemented.
     }
 
     window.addEventListener("keydown", handleKeyDown);
     return () => window.removeEventListener("keydown", handleKeyDown);
   }, [
     showShortcutsModal,
-    showWorkspaceSwitcher,
     setActiveTab,
     dispatch,
     setShowShortcutsModal,
-    toggleWorkspaceSwitcher,
-    setShowWorkspaceSwitcher,
   ]);
 }
 

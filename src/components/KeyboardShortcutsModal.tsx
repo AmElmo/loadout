@@ -24,13 +24,7 @@ const SHORTCUT_GROUPS: ShortcutGroup[] = [
       { keys: `${mod}+6`, action: "Go to Hooks" },
       { keys: `${mod}+7`, action: "Go to Plugins" },
       { keys: `${mod}+8`, action: "Go to Context" },
-    ],
-  },
-  {
-    title: "Workspace",
-    shortcuts: [
-      { keys: `${mod}+K`, action: "Open workspace switcher" },
-      { keys: "Esc", action: "Close workspace switcher" },
+      { keys: `${mod}+9`, action: "Go to Repos" },
     ],
   },
   {

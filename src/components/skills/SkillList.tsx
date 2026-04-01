@@ -8,9 +8,10 @@ interface SkillListProps {
   skills: GroupedSkill[];
   hasActiveFilters?: boolean;
   onClearFilters?: () => void;
+  workspacePath?: string;
 }
 
-export function SkillList({ skills, hasActiveFilters, onClearFilters }: SkillListProps) {
+export function SkillList({ skills, hasActiveFilters, onClearFilters, workspacePath }: SkillListProps) {
   const [selectedSkill, setSelectedSkill] = useState<GroupedSkill | null>(null);
 
   if (skills.length === 0) {
@@ -86,6 +87,7 @@ export function SkillList({ skills, hasActiveFilters, onClearFilters }: SkillLis
         <SkillViewer
           group={selectedSkill}
           onClose={() => setSelectedSkill(null)}
+          workspacePath={workspacePath}
         />
       )}
     </>

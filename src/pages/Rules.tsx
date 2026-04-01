@@ -1,7 +1,6 @@
 import { useMemo, useRef, useState } from "react";
-import { RefreshCw, AlertCircle, FolderOpen, FolderSearch } from "lucide-react";
+import { RefreshCw, AlertCircle, FolderSearch } from "lucide-react";
 import { useQuery } from "@tanstack/react-query";
-import { useWorkspaceStore } from "@/stores/workspaceStore";
 import { scanRules } from "@/lib/api/config";
 import { PromptsSection, RepoScanModal } from "@/components/config";
 import { SearchBar } from "@/components/filters";
@@ -10,7 +9,6 @@ import { useInfiniteList } from "@/hooks/useInfiniteList";
 import { useShortcutAction } from "@/hooks/useKeyboardShortcuts";
 
 export function Rules() {
-  const { current } = useWorkspaceStore();
   const [searchQuery, setSearchQuery] = useState("");
   const [showScanModal, setShowScanModal] = useState(false);
   const searchRef = useRef<HTMLInputElement>(null);
@@ -24,8 +22,8 @@ export function Rules() {
     refetch,
     isRefetching,
   } = useQuery({
-    queryKey: ["rules", current?.repo_root ?? current?.path ?? null],
-    queryFn: () => scanRules(current?.repo_root ?? current?.path),
+    queryKey: ["rules", null],
+    queryFn: () => scanRules(undefined),
   });
 
   useShortcutAction("refresh", () => refetch());
@@ -77,16 +75,6 @@ export function Rules() {
         <RepoScanModal onClose={() => setShowScanModal(false)} />
       )}
 
-      {!current && (
-        <div className="mb-4 flex items-center gap-2 rounded-lg border border-border bg-muted/50 px-3 py-2 text-sm text-muted-foreground">
-          <FolderOpen className="h-4 w-4 shrink-0" />
-          <span>
-            Showing user-level rules only. Select a workspace to also see
-            project-level rules.
-          </span>
-        </div>
-      )}
-
       {result && result.prompts.some((p) => p.exists) && (
         <div className="mb-4">
           <SearchBar
@@ -120,7 +108,7 @@ export function Rules() {
         <>
           <PromptsSection
             prompts={visibleItems}
-            workspaceName={current?.name}
+            workspaceName={undefined}
           />
           {hasMore && <div ref={sentinelRef} className="h-4" />}
         </>

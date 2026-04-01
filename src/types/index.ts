@@ -61,15 +61,6 @@ export interface LoadoutItem {
 }
 
 /**
- * Workspace info returned from the backend
- */
-export interface WorkspaceInfo {
-  path: string;
-  repo_root: string | null;
-  name: string;
-}
-
-/**
  * MCP Server configuration (normalized) - legacy type
  * @deprecated Use MCPItem instead
  */
