@@ -234,13 +234,24 @@ jobs:
               with urlopen(req) as resp:
                   return resp.read()
 
+          # /releases/tags/{tag} returns 404 for draft releases, so list
+          # all releases (includes drafts) and match by tag_name instead.
           release = None
           for attempt in range(10):
               try:
-                  release = fetch_json(f"{api_base}/releases/tags/{tag}")
-              except HTTPError as exc:
-                  if exc.code != 404 or attempt == 9:
+                  all_releases = fetch_json(f"{api_base}/releases?per_page=10")
+              except HTTPError:
+                  if attempt == 9:
                       raise
+                  time.sleep(10)
+                  continue
+
+              release = next(
+                  (r for r in all_releases if r.get("tag_name") == tag), None
+              )
+              if release is None:
+                  if attempt == 9:
+                      break
                   time.sleep(10)
                   continue
 
