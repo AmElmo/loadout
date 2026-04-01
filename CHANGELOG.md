@@ -1,5 +1,19 @@
 # Changelog
 
+## [0.3.0] - 2026-04-01
+
+### Added
+
+- Revamp workspace navigation with Repos page and simplified sidebar (#120)
+- Add delete flows for MCPs, skills, and agents (LOA-38) (#118)
+
+### Fixed
+
+- Correct asset paths and add landing page resources (#119)
+- Add macOS bundle category and prune Desktop/Documents from scans (#113)
+- Use list releases API to find drafts in updater validation
+- Darken modal backdrop for better focus (#114)
+
 ## [0.2.3] - 2026-04-01
 
 ### Fixed
