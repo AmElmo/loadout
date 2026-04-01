@@ -1,5 +1,11 @@
 # Changelog
 
+## [0.2.3] - 2026-04-01
+
+### Fixed
+
+- Harden macOS release notarization (#111)
+
 ## [0.2.2] - 2026-03-30
 
 - Maintenance release
