@@ -236,7 +236,7 @@ function computeToolBreakdown(
 }
 
 export function Home() {
-  const { setActiveTab } = useWorkspaceStore();
+  const { setActiveTab, setSelectedRepo } = useWorkspaceStore();
 
   // Always scan user-level only (no workspace dependency)
   const {
@@ -508,11 +508,19 @@ export function Home() {
         </div>
       ) : meaningfulWorkspaces.length > 0 ? (
         <div className="mt-6 rounded-lg border border-border bg-card p-4">
-          <h3 className="mb-1 text-sm font-medium text-muted-foreground">
-            Across Your Projects
-          </h3>
+          <div className="mb-1 flex items-center justify-between">
+            <h3 className="text-sm font-medium text-muted-foreground">
+              Across Your Projects
+            </h3>
+            <button
+              onClick={() => setActiveTab("repos")}
+              className="text-xs text-primary hover:underline"
+            >
+              View all
+            </button>
+          </div>
           <p className="mb-3 text-xs text-muted-foreground">
-            {meaningfulWorkspaces.length} workspace{meaningfulWorkspaces.length !== 1 ? "s" : ""}{" "}
+            {meaningfulWorkspaces.length} repositor{meaningfulWorkspaces.length !== 1 ? "ies" : "y"}{" "}
             with project-level AI configs
           </p>
 
@@ -580,9 +588,10 @@ export function Home() {
           {/* All workspaces (filtered) */}
           <div className="mt-3 space-y-0.5">
             {filteredWorkspaces.map((ws) => (
-              <div
+              <button
                 key={ws.path}
-                className="flex items-center gap-2 rounded-md px-3 py-1.5 text-sm hover:bg-muted/50"
+                onClick={() => { setSelectedRepo(ws); setActiveTab("repos"); }}
+                className="flex w-full items-center gap-2 rounded-md px-3 py-1.5 text-left text-sm hover:bg-muted/50"
               >
                 <FolderOpen className="h-3.5 w-3.5 shrink-0 text-muted-foreground" />
                 <span className="min-w-0 truncate font-medium text-xs">
@@ -598,7 +607,7 @@ export function Home() {
                     </span>
                   ))}
                 </div>
-              </div>
+              </button>
             ))}
           </div>
         </div>

@@ -11,6 +11,7 @@ import { Hooks } from "@/pages/Hooks";
 import { Plugins } from "@/pages/Plugins";
 import { Context } from "@/pages/Context";
 import { Learn } from "@/pages/Learn";
+import { Repos } from "@/pages/Repos";
 import { useWorkspaceStore } from "@/stores/workspaceStore";
 import { useShortcutStore } from "@/stores/shortcutStore";
 import { useKeyboardShortcuts } from "@/hooks/useKeyboardShortcuts";
@@ -44,6 +45,8 @@ function App() {
         return <Plugins />;
       case "context":
         return <Context />;
+      case "repos":
+        return <Repos />;
       case "learn":
         return <Learn />;
       default:
