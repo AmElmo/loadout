@@ -183,7 +183,8 @@ jobs:
     runs-on: ubuntu-22.04
     needs: build
     permissions:
-      contents: read
+      # Draft releases are only visible to tokens with push access.
+      contents: write
 
     steps:
       - name: Validate latest.json on draft release
