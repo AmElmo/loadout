@@ -186,6 +186,61 @@ pub fn sync_agent_to_tools(request: SyncAgentRequest) -> Result<AgentWriteResult
     })
 }
 
+/// Request to remove an agent from one or more tools
+#[derive(Debug, Clone, Deserialize)]
+#[serde(rename_all = "camelCase")]
+pub struct RemoveAgentRequest {
+    /// Agent filename (without .md extension)
+    pub filename: String,
+    /// Target tools to remove from
+    pub target_tools: Vec<String>,
+    /// Scope: user or project
+    pub scope: String,
+    /// Workspace path (required for project scope)
+    pub workspace_path: Option<String>,
+}
+
+/// Remove an agent from selected tools (delete .md files)
+#[tauri::command]
+pub fn remove_agent_from_tools(request: RemoveAgentRequest) -> Result<AgentWriteResult, String> {
+    let safe_name = agent_writer::validate_agent_name(&request.filename)?;
+    if request.target_tools.is_empty() {
+        return Err("At least one target tool must be selected".to_string());
+    }
+
+    let mut modified_files = Vec::new();
+    let mut errors = Vec::new();
+
+    for tool in &request.target_tools {
+        let agents_dir = match agent_writer::agents_dir_for_tool_pub(
+            tool,
+            &request.scope,
+            request.workspace_path.as_deref(),
+        ) {
+            Ok(d) => d,
+            Err(e) => {
+                errors.push(format!("{}: {}", tool, e));
+                continue;
+            }
+        };
+        let agent_path = agents_dir.join(format!("{}.md", safe_name));
+
+        match std::fs::remove_file(&agent_path) {
+            Ok(()) => modified_files.push(agent_path.to_string_lossy().to_string()),
+            Err(e) if e.kind() == std::io::ErrorKind::NotFound => {
+                // Already gone — idempotent success
+            }
+            Err(e) => errors.push(format!("{}: {}", tool, e)),
+        }
+    }
+
+    Ok(AgentWriteResult {
+        success: errors.is_empty(),
+        modified_files,
+        errors,
+    })
+}
+
 // ---------------------------------------------------------------------------
 // Import commands: fetch from URL, read from file, parse from content
 // ---------------------------------------------------------------------------

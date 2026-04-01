@@ -422,6 +422,144 @@ pub fn sync_mcp_to_tools(request: SyncMCPRequest) -> Result<WriteResult, String>
     write_mcp_to_target_tools(&request.name, &mcp, &request.target_tools)
 }
 
+/// Request to remove an MCP from one or more tools
+#[derive(Debug, Clone, Deserialize)]
+#[serde(rename_all = "camelCase")]
+pub struct RemoveMCPRequest {
+    pub name: String,
+    pub target_tools: Vec<String>,
+}
+
+/// Request to remove a skill from one or more tools
+#[derive(Debug, Clone, Deserialize)]
+#[serde(rename_all = "camelCase")]
+pub struct RemoveSkillRequest {
+    pub name: String,
+    pub target_tools: Vec<String>,
+    /// Whether to also remove the canonical copy in ~/.agents/skills/
+    pub remove_canonical: bool,
+}
+
+/// Result of a remove operation
+#[derive(Debug, Clone, Serialize)]
+#[serde(rename_all = "camelCase")]
+pub struct RemoveResult {
+    pub success: bool,
+    pub removed_files: Vec<String>,
+    pub errors: Vec<String>,
+}
+
+/// Remove an MCP from selected tools' config files
+#[tauri::command]
+pub fn remove_mcp_from_tools(request: RemoveMCPRequest) -> Result<RemoveResult, String> {
+    if request.name.trim().is_empty() {
+        return Err("MCP name is required".to_string());
+    }
+    if request.target_tools.is_empty() {
+        return Err("At least one target tool must be selected".to_string());
+    }
+
+    let mut removed_files = Vec::new();
+    let mut errors = Vec::new();
+
+    for tool in &request.target_tools {
+        let path = match mcp_config_path(tool) {
+            Ok(p) => p,
+            Err(e) => {
+                errors.push(e);
+                continue;
+            }
+        };
+
+        let result = match tool.as_str() {
+            "codex" => mcp_writer::remove_mcp_from_codex(&request.name, &path),
+            "opencode" => mcp_writer::remove_mcp_from_opencode(&request.name, &path),
+            // All other tools use mcpServers JSON format
+            _ => mcp_writer::remove_mcp_from_json(&request.name, &path),
+        };
+
+        match result {
+            Ok(()) => removed_files.push(path.to_string_lossy().to_string()),
+            Err(e) => errors.push(format!("{}: {}", tool, e)),
+        }
+    }
+
+    Ok(RemoveResult {
+        success: errors.is_empty(),
+        removed_files,
+        errors,
+    })
+}
+
+/// Remove a skill from selected tools (delete files/symlinks)
+#[tauri::command]
+pub fn remove_skill_from_tools(request: RemoveSkillRequest) -> Result<RemoveResult, String> {
+    let safe_name = skill_writer::validate_skill_name(&request.name)?;
+    if request.target_tools.is_empty() {
+        return Err("At least one target tool must be selected".to_string());
+    }
+
+    let home = crate::helpers::effective_home().ok_or("Could not determine home directory")?;
+    let mut removed_files = Vec::new();
+    let mut errors = Vec::new();
+
+    for tool in &request.target_tools {
+        let skills_dir = match skill_writer::skill_dir_for_tool_pub(tool) {
+            Ok(d) => d,
+            Err(e) => {
+                errors.push(format!("{}: {}", tool, e));
+                continue;
+            }
+        };
+        let skill_path = skills_dir.join(&safe_name);
+
+        match remove_path(&skill_path) {
+            Ok(true) => removed_files.push(skill_path.to_string_lossy().to_string()),
+            Ok(false) => {} // Didn't exist — idempotent success
+            Err(e) => errors.push(format!("{}: {}", tool, e)),
+        }
+    }
+
+    // Optionally remove canonical copy
+    if request.remove_canonical {
+        let canonical = home.join(".agents").join("skills").join(&safe_name);
+        match remove_path(&canonical) {
+            Ok(true) => removed_files.push(canonical.to_string_lossy().to_string()),
+            Ok(false) => {}
+            Err(e) => errors.push(format!("canonical: {}", e)),
+        }
+    }
+
+    Ok(RemoveResult {
+        success: errors.is_empty(),
+        removed_files,
+        errors,
+    })
+}
+
+/// Remove a path — handles regular files/dirs, symlinks, and broken symlinks.
+/// Returns Ok(true) if something was removed, Ok(false) if path didn't exist.
+fn remove_path(path: &std::path::Path) -> Result<bool, String> {
+    // Use symlink_metadata to detect symlinks (including broken ones)
+    match std::fs::symlink_metadata(path) {
+        Ok(meta) => {
+            if meta.file_type().is_symlink() {
+                std::fs::remove_file(path)
+                    .map_err(|e| format!("Failed to remove symlink {}: {}", path.display(), e))?;
+            } else if meta.is_dir() {
+                std::fs::remove_dir_all(path)
+                    .map_err(|e| format!("Failed to remove directory {}: {}", path.display(), e))?;
+            } else {
+                std::fs::remove_file(path)
+                    .map_err(|e| format!("Failed to remove file {}: {}", path.display(), e))?;
+            }
+            Ok(true)
+        }
+        Err(e) if e.kind() == std::io::ErrorKind::NotFound => Ok(false),
+        Err(e) => Err(format!("Failed to access {}: {}", path.display(), e)),
+    }
+}
+
 /// Convert a GitHub URL to a raw content URL (used in tests)
 #[cfg(test)]
 fn github_to_raw_url(url: &str) -> Option<String> {

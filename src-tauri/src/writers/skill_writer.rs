@@ -53,6 +53,11 @@ pub fn validate_skill_name(name: &str) -> Result<String, String> {
     Ok(trimmed.to_string())
 }
 
+/// Tool-specific user-level skill directories (public for use by remove commands)
+pub fn skill_dir_for_tool_pub(tool: &str) -> Result<PathBuf, String> {
+    skill_dir_for_tool(tool)
+}
+
 /// Tool-specific user-level skill directories
 fn skill_dir_for_tool(tool: &str) -> Result<PathBuf, String> {
     let home = crate::helpers::effective_home().ok_or("Could not determine home directory")?;

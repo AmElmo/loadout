@@ -1,10 +1,10 @@
-import { ChevronDown, ChevronUp, Share2, Activity } from "lucide-react";
+import { ChevronDown, ChevronUp, Share2, Activity, Trash2 } from "lucide-react";
 import { useState } from "react";
 import type { MCPItem } from "@/types";
 import { cn } from "@/lib/utils";
-import { syncMCPToTools } from "@/lib/api/sync";
-import { ALL_TOOLS } from "@/config/tools";
-import { SyncDialog } from "@/components/sync";
+import { syncMCPToTools, removeMCPFromTools } from "@/lib/api/sync";
+import { ALL_TOOLS, TOOL_CONFIG } from "@/config/tools";
+import { SyncDialog, RemoveDialog } from "@/components/sync";
 import { Button } from "@/components/ui/button";
 import { OpenPathButton } from "@/components/ui/open-path-button";
 import { HealthBadge } from "./HealthBadge";
@@ -20,6 +20,7 @@ export function MCPCard({ mcp }: MCPCardProps) {
   const [expanded, setExpanded] = useState(false);
   const [showSync, setShowSync] = useState(false);
   const [showTest, setShowTest] = useState(false);
+  const [showRemove, setShowRemove] = useState(false);
 
   const envKeys = Object.keys(mcp.env);
   const hasEnv = envKeys.length > 0;
@@ -171,6 +172,19 @@ export function MCPCard({ mcp }: MCPCardProps) {
                 Sync to Other Tools
               </Button>
             )}
+
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={(e) => {
+                e.stopPropagation();
+                setShowRemove(true);
+              }}
+              className="text-red-500 hover:text-red-600"
+            >
+              <Trash2 className="mr-2 h-3.5 w-3.5" />
+              Remove
+            </Button>
           </div>
         </div>
       )}
@@ -193,6 +207,22 @@ export function MCPCard({ mcp }: MCPCardProps) {
             })
           }
           onClose={() => setShowSync(false)}
+          queryKey="mcps"
+        />
+      )}
+
+      {showRemove && (
+        <RemoveDialog
+          type="mcp"
+          name={mcp.name}
+          tools={mcp.configuredIn.map((tool) => ({
+            tool,
+            detail: `Remove ${mcp.name} entry from ${TOOL_CONFIG[tool]?.label ?? tool}'s config file`,
+          }))}
+          onRemove={(targetTools) =>
+            removeMCPFromTools({ name: mcp.name, targetTools })
+          }
+          onClose={() => setShowRemove(false)}
           queryKey="mcps"
         />
       )}

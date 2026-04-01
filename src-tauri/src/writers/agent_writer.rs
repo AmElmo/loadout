@@ -37,6 +37,15 @@ pub fn validate_agent_name(name: &str) -> Result<String, String> {
     Ok(trimmed.to_string())
 }
 
+/// Get the agents directory path for a tool + scope (public for use by remove commands)
+pub fn agents_dir_for_tool_pub(
+    tool: &str,
+    scope: &str,
+    workspace_path: Option<&str>,
+) -> Result<PathBuf, String> {
+    agents_dir_for_tool(tool, scope, workspace_path)
+}
+
 /// Get the agents directory path for a tool + scope
 fn agents_dir_for_tool(
     tool: &str,

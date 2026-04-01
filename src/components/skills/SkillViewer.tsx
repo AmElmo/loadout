@@ -1,12 +1,12 @@
-import { X, Copy, Check, FolderOpen, Share2, Link2, AlertTriangle } from "lucide-react";
+import { X, Copy, Check, FolderOpen, Share2, Link2, AlertTriangle, Trash2 } from "lucide-react";
 import { useState, useCallback } from "react";
 import { useQueryClient } from "@tanstack/react-query";
 import type { GroupedSkill, SkillItem } from "@/types";
-import { installSkillToTools } from "@/lib/api/sync";
+import { installSkillToTools, removeSkillFromTools } from "@/lib/api/sync";
 import { saveSkillContent } from "@/lib/api/system";
 import { ToolBadges, ToolBadge } from "@/components/mcps/ToolBadge";
 import { TokenBadge } from "@/components/context";
-import { SyncDialog } from "@/components/sync";
+import { SyncDialog, RemoveDialog } from "@/components/sync";
 import { MaturityBadge } from "./MaturityBadge";
 import { SkillIcon } from "./SkillIcon";
 import { Button } from "@/components/ui/button";
@@ -26,6 +26,7 @@ export function SkillViewer({ group, onClose }: SkillViewerProps) {
   const queryClient = useQueryClient();
   const [copied, setCopied] = useState(false);
   const [showSync, setShowSync] = useState(false);
+  const [showRemove, setShowRemove] = useState(false);
   const [isDirty, setIsDirty] = useState(false);
   const stableOnClose = useCallback(() => onClose(), [onClose]);
   useEscapeKey(stableOnClose);
@@ -228,6 +229,15 @@ export function SkillViewer({ group, onClose }: SkillViewerProps) {
                 Sync to Other Tools
               </Button>
             )}
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={() => setShowRemove(true)}
+              className="text-red-500 hover:text-red-600"
+            >
+              <Trash2 className="mr-1.5 h-3.5 w-3.5" />
+              Remove
+            </Button>
           </div>
         </div>
       </div>
@@ -258,6 +268,35 @@ export function SkillViewer({ group, onClose }: SkillViewerProps) {
             })
           }
           onClose={() => setShowSync(false)}
+          queryKey="skills"
+        />
+      )}
+
+      {showRemove && (
+        <RemoveDialog
+          type="skill"
+          name={group.name}
+          tools={group.variants.map((v) => ({
+            tool: v.sourceTool,
+            detail: v.isSymlinked
+              ? `Delete the symlink at ${v.path}`
+              : `Delete the skill files at ${v.path}`,
+          }))}
+          allSelectedDetail={
+            isLinked && canonicalPath
+              ? `Also delete the canonical copy at ${canonicalPath}`
+              : undefined
+          }
+          onRemove={(targetTools) => {
+            const allToolsSelected =
+              targetTools.length === group.installedTools.length;
+            return removeSkillFromTools({
+              name: group.name,
+              targetTools,
+              removeCanonical: allToolsSelected && isLinked,
+            });
+          }}
+          onClose={() => setShowRemove(false)}
           queryKey="skills"
         />
       )}
