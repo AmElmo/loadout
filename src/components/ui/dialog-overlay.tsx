@@ -19,7 +19,7 @@ export function DialogOverlay({ onClose, children, className }: DialogOverlayPro
   return (
     <div
       className={cn(
-        "fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4",
+        "fixed inset-0 z-50 flex items-center justify-center bg-black/70 backdrop-blur-sm p-4",
         className,
       )}
       onClick={handleBackdropClick}
