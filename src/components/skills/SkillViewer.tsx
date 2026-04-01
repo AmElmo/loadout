@@ -8,7 +8,6 @@ import { ToolBadges, ToolBadge } from "@/components/mcps/ToolBadge";
 import { TokenBadge } from "@/components/context";
 import { SyncDialog, RemoveDialog } from "@/components/sync";
 import { MaturityBadge } from "./MaturityBadge";
-import { useWorkspaceStore } from "@/stores/workspaceStore";
 import { SkillIcon } from "./SkillIcon";
 import { Button } from "@/components/ui/button";
 import { DialogOverlay } from "@/components/ui/dialog-overlay";
@@ -25,7 +24,6 @@ interface SkillViewerProps {
 
 export function SkillViewer({ group, onClose }: SkillViewerProps) {
   const queryClient = useQueryClient();
-  const { current } = useWorkspaceStore();
   const [copied, setCopied] = useState(false);
   const [showSync, setShowSync] = useState(false);
   const [showRemove, setShowRemove] = useState(false);
@@ -297,9 +295,7 @@ export function SkillViewer({ group, onClose }: SkillViewerProps) {
               targetTools,
               removeCanonical: allToolsSelected && isLinked,
               scope: group.scope,
-              workspacePath: group.scope === "project"
-                ? (current?.repo_root ?? current?.path)
-                : undefined,
+              workspacePath: undefined,
             });
           }}
           onClose={() => setShowRemove(false)}
