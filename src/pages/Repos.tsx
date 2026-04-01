@@ -414,7 +414,7 @@ export function Repos() {
         <div>
           <h2 className="text-2xl font-semibold">Repos</h2>
           <p className="mt-1 text-muted-foreground">
-            Project-level AI configurations across your repositories
+            All codebases where AI coding tools are configured
           </p>
         </div>
         <Button
