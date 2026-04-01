@@ -255,8 +255,7 @@ fn extract_git_metadata(repo_path: &Path) -> RepoWithoutRules {
 
 /// Scan for git repos without rules files
 pub fn scan_repos_without_rules(max_depth: u32) -> Result<RepoScanResult, String> {
-    let home_dir =
-        crate::helpers::effective_home().ok_or("Could not determine home directory")?;
+    let home_dir = crate::helpers::effective_home().ok_or("Could not determine home directory")?;
     let start = std::time::Instant::now();
 
     // Check if git is available

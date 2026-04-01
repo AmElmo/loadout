@@ -15,10 +15,10 @@ use commands::{
     fetch_mcp_tools, fetch_skill_from_url, get_skill_conflict_details, install_agent_to_tools,
     install_skill_to_tools, parse_agent_file_content, parse_skill_file_content,
     preview_mcp_configs, read_agent_file, read_skill_file, remove_agent_from_tools,
-    remove_mcp_from_tools, remove_skill_from_tools, resolve_skill_conflict,
-    reveal_in_file_manager, save_file_content, save_skill_content, scan_agents, scan_hooks,
-    scan_mcps, scan_plugins, scan_repos_without_rules, scan_rules, scan_skills,
-    sync_agent_to_tools, sync_mcp_to_tools, test_mcp_health,
+    remove_mcp_from_tools, remove_skill_from_tools, resolve_skill_conflict, reveal_in_file_manager,
+    save_file_content, save_skill_content, scan_agents, scan_hooks, scan_mcps, scan_plugins,
+    scan_repos_without_rules, scan_rules, scan_skills, sync_agent_to_tools, sync_mcp_to_tools,
+    test_mcp_health,
 };
 use scanners::workspaces::{discover_workspaces, DiscoveryResult};
 

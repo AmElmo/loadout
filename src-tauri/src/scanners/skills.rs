@@ -125,90 +125,200 @@ pub fn scan_all_skills(workspace_path: Option<&str>) -> Result<SkillScanResult, 
     // Scan Claude Code skills
     // User-level: ~/.claude/skills/<name>/SKILL.md
     let claude_user_path = home_dir.join(".claude").join("skills");
-    scan_skill_directory(&claude_user_path, SkillSourceTool::Claude, SkillScope::User, &mut entries);
+    scan_skill_directory(
+        &claude_user_path,
+        SkillSourceTool::Claude,
+        SkillScope::User,
+        &mut entries,
+    );
 
     // Project-level: $PROJECT_ROOT/.claude/skills/<name>/SKILL.md
     if let Some(ws_path) = workspace_path {
         let claude_project_path = PathBuf::from(ws_path).join(".claude").join("skills");
-        scan_skill_directory(&claude_project_path, SkillSourceTool::Claude, SkillScope::Project, &mut entries);
+        scan_skill_directory(
+            &claude_project_path,
+            SkillSourceTool::Claude,
+            SkillScope::Project,
+            &mut entries,
+        );
     }
 
     // Scan Claude Code legacy commands (merged with skills)
     // User-level: ~/.claude/commands/<name>.md
     let claude_user_commands = home_dir.join(".claude").join("commands");
-    scan_command_directory(&claude_user_commands, SkillSourceTool::Claude, SkillScope::User, &mut entries);
+    scan_command_directory(
+        &claude_user_commands,
+        SkillSourceTool::Claude,
+        SkillScope::User,
+        &mut entries,
+    );
 
     // Project-level: $PROJECT_ROOT/.claude/commands/<name>.md
     if let Some(ws_path) = workspace_path {
         let claude_project_commands = PathBuf::from(ws_path).join(".claude").join("commands");
-        scan_command_directory(&claude_project_commands, SkillSourceTool::Claude, SkillScope::Project, &mut entries);
+        scan_command_directory(
+            &claude_project_commands,
+            SkillSourceTool::Claude,
+            SkillScope::Project,
+            &mut entries,
+        );
     }
 
     // Scan Codex CLI skills
     // User-level: $HOME/.agents/skills/<name>/SKILL.md
     let codex_user_path = home_dir.join(".agents").join("skills");
-    scan_skill_directory(&codex_user_path, SkillSourceTool::Codex, SkillScope::User, &mut entries);
+    scan_skill_directory(
+        &codex_user_path,
+        SkillSourceTool::Codex,
+        SkillScope::User,
+        &mut entries,
+    );
 
     // Project-level: $PROJECT_ROOT/.codex/skills/<name>/SKILL.md
     if let Some(ws_path) = workspace_path {
         let codex_project_path = PathBuf::from(ws_path).join(".codex").join("skills");
-        scan_skill_directory(&codex_project_path, SkillSourceTool::Codex, SkillScope::Project, &mut entries);
+        scan_skill_directory(
+            &codex_project_path,
+            SkillSourceTool::Codex,
+            SkillScope::Project,
+            &mut entries,
+        );
     }
 
     // Scan Gemini CLI skills
     // User-level: ~/.gemini/skills/<name>/SKILL.md
     let gemini_user_path = home_dir.join(".gemini").join("skills");
-    scan_skill_directory(&gemini_user_path, SkillSourceTool::Gemini, SkillScope::User, &mut entries);
+    scan_skill_directory(
+        &gemini_user_path,
+        SkillSourceTool::Gemini,
+        SkillScope::User,
+        &mut entries,
+    );
 
     // Project-level: $PROJECT_ROOT/.gemini/skills/<name>/SKILL.md
     if let Some(ws_path) = workspace_path {
         let gemini_project_path = PathBuf::from(ws_path).join(".gemini").join("skills");
-        scan_skill_directory(&gemini_project_path, SkillSourceTool::Gemini, SkillScope::Project, &mut entries);
+        scan_skill_directory(
+            &gemini_project_path,
+            SkillSourceTool::Gemini,
+            SkillScope::Project,
+            &mut entries,
+        );
     }
 
     // === Cursor Skills ===
-    scan_skill_directory(&home_dir.join(".cursor").join("skills"), SkillSourceTool::Cursor, SkillScope::User, &mut entries);
+    scan_skill_directory(
+        &home_dir.join(".cursor").join("skills"),
+        SkillSourceTool::Cursor,
+        SkillScope::User,
+        &mut entries,
+    );
     if let Some(ws_path) = workspace_path {
-        scan_skill_directory(&PathBuf::from(ws_path).join(".cursor").join("skills"), SkillSourceTool::Cursor, SkillScope::Project, &mut entries);
+        scan_skill_directory(
+            &PathBuf::from(ws_path).join(".cursor").join("skills"),
+            SkillSourceTool::Cursor,
+            SkillScope::Project,
+            &mut entries,
+        );
     }
 
     // === Copilot Skills ===
-    scan_skill_directory(&home_dir.join(".copilot").join("skills"), SkillSourceTool::Copilot, SkillScope::User, &mut entries);
+    scan_skill_directory(
+        &home_dir.join(".copilot").join("skills"),
+        SkillSourceTool::Copilot,
+        SkillScope::User,
+        &mut entries,
+    );
     if let Some(ws_path) = workspace_path {
         let ws = PathBuf::from(ws_path);
-        scan_skill_directory(&ws.join(".github").join("skills"), SkillSourceTool::Copilot, SkillScope::Project, &mut entries);
+        scan_skill_directory(
+            &ws.join(".github").join("skills"),
+            SkillSourceTool::Copilot,
+            SkillScope::Project,
+            &mut entries,
+        );
     }
 
     // === Windsurf Skills ===
-    scan_skill_directory(&home_dir.join(".codeium").join("windsurf").join("skills"), SkillSourceTool::Windsurf, SkillScope::User, &mut entries);
+    scan_skill_directory(
+        &home_dir.join(".codeium").join("windsurf").join("skills"),
+        SkillSourceTool::Windsurf,
+        SkillScope::User,
+        &mut entries,
+    );
     if let Some(ws_path) = workspace_path {
-        scan_skill_directory(&PathBuf::from(ws_path).join(".windsurf").join("skills"), SkillSourceTool::Windsurf, SkillScope::Project, &mut entries);
+        scan_skill_directory(
+            &PathBuf::from(ws_path).join(".windsurf").join("skills"),
+            SkillSourceTool::Windsurf,
+            SkillScope::Project,
+            &mut entries,
+        );
     }
 
     // === Roo Skills ===
-    scan_skill_directory(&home_dir.join(".roo").join("skills"), SkillSourceTool::Roo, SkillScope::User, &mut entries);
+    scan_skill_directory(
+        &home_dir.join(".roo").join("skills"),
+        SkillSourceTool::Roo,
+        SkillScope::User,
+        &mut entries,
+    );
     if let Some(ws_path) = workspace_path {
         let ws = PathBuf::from(ws_path);
-        scan_skill_directory(&ws.join(".roo").join("skills"), SkillSourceTool::Roo, SkillScope::Project, &mut entries);
+        scan_skill_directory(
+            &ws.join(".roo").join("skills"),
+            SkillSourceTool::Roo,
+            SkillScope::Project,
+            &mut entries,
+        );
     }
 
     // === Cline Skills ===
-    scan_skill_directory(&home_dir.join(".cline").join("skills"), SkillSourceTool::Cline, SkillScope::User, &mut entries);
+    scan_skill_directory(
+        &home_dir.join(".cline").join("skills"),
+        SkillSourceTool::Cline,
+        SkillScope::User,
+        &mut entries,
+    );
     if let Some(ws_path) = workspace_path {
-        scan_skill_directory(&PathBuf::from(ws_path).join(".cline").join("skills"), SkillSourceTool::Cline, SkillScope::Project, &mut entries);
+        scan_skill_directory(
+            &PathBuf::from(ws_path).join(".cline").join("skills"),
+            SkillSourceTool::Cline,
+            SkillScope::Project,
+            &mut entries,
+        );
     }
 
     // === Kilo Skills ===
-    scan_skill_directory(&home_dir.join(".kilocode").join("skills"), SkillSourceTool::Kilo, SkillScope::User, &mut entries);
+    scan_skill_directory(
+        &home_dir.join(".kilocode").join("skills"),
+        SkillSourceTool::Kilo,
+        SkillScope::User,
+        &mut entries,
+    );
     if let Some(ws_path) = workspace_path {
-        scan_skill_directory(&PathBuf::from(ws_path).join(".kilocode").join("skills"), SkillSourceTool::Kilo, SkillScope::Project, &mut entries);
+        scan_skill_directory(
+            &PathBuf::from(ws_path).join(".kilocode").join("skills"),
+            SkillSourceTool::Kilo,
+            SkillScope::Project,
+            &mut entries,
+        );
     }
 
     // === OpenCode Skills ===
-    scan_skill_directory(&home_dir.join(".config").join("opencode").join("skills"), SkillSourceTool::OpenCode, SkillScope::User, &mut entries);
+    scan_skill_directory(
+        &home_dir.join(".config").join("opencode").join("skills"),
+        SkillSourceTool::OpenCode,
+        SkillScope::User,
+        &mut entries,
+    );
     if let Some(ws_path) = workspace_path {
         let ws = PathBuf::from(ws_path);
-        scan_skill_directory(&ws.join(".opencode").join("skills"), SkillSourceTool::OpenCode, SkillScope::Project, &mut entries);
+        scan_skill_directory(
+            &ws.join(".opencode").join("skills"),
+            SkillSourceTool::OpenCode,
+            SkillScope::Project,
+            &mut entries,
+        );
     }
 
     // Process entries: detect conflicts and shadowing
@@ -249,26 +359,24 @@ fn scan_skill_directory(
             };
 
             if sym_meta.file_type().is_symlink() {
-                let symlink_target = std::fs::read_link(&child_path)
-                    .ok()
-                    .map(|t| {
-                        // Resolve relative targets against the parent
-                        if t.is_relative() {
-                            child_path.parent()
-                                .map(|p| p.join(&t))
-                                .unwrap_or(t)
-                        } else {
-                            t
-                        }
-                    });
+                let symlink_target = std::fs::read_link(&child_path).ok().map(|t| {
+                    // Resolve relative targets against the parent
+                    if t.is_relative() {
+                        child_path.parent().map(|p| p.join(&t)).unwrap_or(t)
+                    } else {
+                        t
+                    }
+                });
 
-                let target_str = symlink_target.as_ref()
+                let target_str = symlink_target
+                    .as_ref()
                     .map(|t| t.to_string_lossy().to_string());
 
                 // Check if the symlink is broken (target doesn't exist)
                 if !child_path.exists() {
                     // Broken symlink — surface it with minimal info
-                    let skill_name = child_path.file_name()
+                    let skill_name = child_path
+                        .file_name()
                         .map(|n| n.to_string_lossy().to_string())
                         .unwrap_or_else(|| "unknown".to_string());
 
@@ -434,9 +542,16 @@ fn process_skill_entries(entries: Vec<RawSkillEntry>) -> (Vec<SkillItem>, Vec<Sk
     // First pass: determine shadowing within same tool
     for (name, group) in &by_name {
         for tool in [
-            SkillSourceTool::Claude, SkillSourceTool::Codex, SkillSourceTool::Gemini,
-            SkillSourceTool::Cursor, SkillSourceTool::Copilot, SkillSourceTool::Windsurf,
-            SkillSourceTool::Roo, SkillSourceTool::Cline, SkillSourceTool::Kilo, SkillSourceTool::OpenCode,
+            SkillSourceTool::Claude,
+            SkillSourceTool::Codex,
+            SkillSourceTool::Gemini,
+            SkillSourceTool::Cursor,
+            SkillSourceTool::Copilot,
+            SkillSourceTool::Windsurf,
+            SkillSourceTool::Roo,
+            SkillSourceTool::Cline,
+            SkillSourceTool::Kilo,
+            SkillSourceTool::OpenCode,
         ] {
             let tool_skills: Vec<_> = group.iter().filter(|e| e.source_tool == tool).collect();
 
@@ -453,12 +568,18 @@ fn process_skill_entries(entries: Vec<RawSkillEntry>) -> (Vec<SkillItem>, Vec<Sk
     // Second pass: detect conflicts (same name, different content across tools)
     for (name, group) in &by_name {
         // Check if there are different content hashes
-        let unique_hashes: std::collections::HashSet<u64> = group.iter().map(|e| e.content_hash).collect();
+        let unique_hashes: std::collections::HashSet<u64> =
+            group.iter().map(|e| e.content_hash).collect();
 
         if unique_hashes.len() > 1 {
             // There's a conflict - different content for same skill name
             let conflicting_paths: Vec<String> = group.iter().map(|e| e.path.clone()).collect();
-            let tools: Vec<SkillSourceTool> = group.iter().map(|e| e.source_tool).collect::<std::collections::HashSet<_>>().into_iter().collect();
+            let tools: Vec<SkillSourceTool> = group
+                .iter()
+                .map(|e| e.source_tool)
+                .collect::<std::collections::HashSet<_>>()
+                .into_iter()
+                .collect();
 
             conflicts.push(SkillConflict {
                 name: name.clone(),
@@ -474,8 +595,12 @@ fn process_skill_entries(entries: Vec<RawSkillEntry>) -> (Vec<SkillItem>, Vec<Sk
             SkillSourceTool::Claude | SkillSourceTool::Codex => SkillMaturity::Stable,
             SkillSourceTool::Gemini => SkillMaturity::Experimental,
             SkillSourceTool::Cursor => SkillMaturity::Experimental,
-            SkillSourceTool::Copilot | SkillSourceTool::Windsurf | SkillSourceTool::Roo
-            | SkillSourceTool::Cline | SkillSourceTool::Kilo | SkillSourceTool::OpenCode => SkillMaturity::Stable,
+            SkillSourceTool::Copilot
+            | SkillSourceTool::Windsurf
+            | SkillSourceTool::Roo
+            | SkillSourceTool::Cline
+            | SkillSourceTool::Kilo
+            | SkillSourceTool::OpenCode => SkillMaturity::Stable,
         };
 
         // Check if this skill is shadowed
@@ -521,7 +646,8 @@ fn process_skill_entries(entries: Vec<RawSkillEntry>) -> (Vec<SkillItem>, Vec<Sk
 
     // Sort by name, then by scope (project first), then by tool
     skills.sort_by(|a, b| {
-        a.name.cmp(&b.name)
+        a.name
+            .cmp(&b.name)
             .then_with(|| {
                 // Project skills first
                 match (&a.scope, &b.scope) {
@@ -592,8 +718,14 @@ mod tests {
 
         let (skills, _) = process_skill_entries(entries);
 
-        let claude_skill = skills.iter().find(|s| s.source_tool == SkillSourceTool::Claude).unwrap();
-        let gemini_skill = skills.iter().find(|s| s.source_tool == SkillSourceTool::Gemini).unwrap();
+        let claude_skill = skills
+            .iter()
+            .find(|s| s.source_tool == SkillSourceTool::Claude)
+            .unwrap();
+        let gemini_skill = skills
+            .iter()
+            .find(|s| s.source_tool == SkillSourceTool::Gemini)
+            .unwrap();
 
         assert_eq!(claude_skill.maturity, SkillMaturity::Stable);
         assert_eq!(gemini_skill.maturity, SkillMaturity::Experimental);
@@ -666,7 +798,10 @@ mod tests {
 
         let (skills, _) = process_skill_entries(entries);
 
-        let project_skill = skills.iter().find(|s| s.scope == SkillScope::Project).unwrap();
+        let project_skill = skills
+            .iter()
+            .find(|s| s.scope == SkillScope::Project)
+            .unwrap();
         let user_skill = skills.iter().find(|s| s.scope == SkillScope::User).unwrap();
 
         assert!(!project_skill.is_shadowed);

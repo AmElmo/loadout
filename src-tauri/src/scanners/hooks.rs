@@ -128,7 +128,11 @@ pub fn scan_all_hooks(workspace_path: Option<&str>) -> Result<HookScanResult, St
     for filename in &["settings.json", "settings.local.json"] {
         let claude_user_path = home_dir.join(".claude").join(filename);
         if let Ok(settings) = parse_claude_settings(&claude_user_path) {
-            hooks.extend(collect_claude_hooks(&settings, &claude_user_path, HookScope::User));
+            hooks.extend(collect_claude_hooks(
+                &settings,
+                &claude_user_path,
+                HookScope::User,
+            ));
         }
     }
 
@@ -136,7 +140,11 @@ pub fn scan_all_hooks(workspace_path: Option<&str>) -> Result<HookScanResult, St
     let gemini_user_path = home_dir.join(".gemini").join("settings.json");
     let gemini_user_config = parse_gemini_config(&gemini_user_path).unwrap_or_default();
     let gemini_hooks_enabled = gemini_user_config.experiments.enable_hooks;
-    hooks.extend(collect_gemini_hooks(&gemini_user_config, &gemini_user_path, HookScope::User));
+    hooks.extend(collect_gemini_hooks(
+        &gemini_user_config,
+        &gemini_user_path,
+        HookScope::User,
+    ));
 
     // --- Project-level hooks ---
 
@@ -148,7 +156,11 @@ pub fn scan_all_hooks(workspace_path: Option<&str>) -> Result<HookScanResult, St
             let claude_project_path = ws.join(".claude").join(filename);
             if claude_project_path.exists() {
                 if let Ok(settings) = parse_claude_settings(&claude_project_path) {
-                    hooks.extend(collect_claude_hooks(&settings, &claude_project_path, HookScope::Project));
+                    hooks.extend(collect_claude_hooks(
+                        &settings,
+                        &claude_project_path,
+                        HookScope::Project,
+                    ));
                 }
             }
         }
@@ -157,7 +169,11 @@ pub fn scan_all_hooks(workspace_path: Option<&str>) -> Result<HookScanResult, St
         let gemini_project_path = ws.join(".gemini").join("settings.json");
         if gemini_project_path.exists() {
             if let Ok(config) = parse_gemini_config(&gemini_project_path) {
-                hooks.extend(collect_gemini_hooks(&config, &gemini_project_path, HookScope::Project));
+                hooks.extend(collect_gemini_hooks(
+                    &config,
+                    &gemini_project_path,
+                    HookScope::Project,
+                ));
             }
         }
     }
@@ -165,13 +181,23 @@ pub fn scan_all_hooks(workspace_path: Option<&str>) -> Result<HookScanResult, St
     // === Cursor hooks (read-only) ===
     // User-level: ~/.cursor/hooks.json
     let cursor_user_hooks = home_dir.join(".cursor").join("hooks.json");
-    collect_generic_hooks_json(&cursor_user_hooks, HookSourceTool::Cursor, HookScope::User, &mut hooks);
+    collect_generic_hooks_json(
+        &cursor_user_hooks,
+        HookSourceTool::Cursor,
+        HookScope::User,
+        &mut hooks,
+    );
 
     // Project-level: .cursor/hooks.json
     if let Some(ws_path) = workspace_path {
         let ws = std::path::Path::new(ws_path);
         let cursor_project_hooks = ws.join(".cursor").join("hooks.json");
-        collect_generic_hooks_json(&cursor_project_hooks, HookSourceTool::Cursor, HookScope::Project, &mut hooks);
+        collect_generic_hooks_json(
+            &cursor_project_hooks,
+            HookSourceTool::Cursor,
+            HookScope::Project,
+            &mut hooks,
+        );
     }
 
     // === Copilot hooks (read-only) ===
@@ -184,7 +210,12 @@ pub fn scan_all_hooks(workspace_path: Option<&str>) -> Result<HookScanResult, St
                 for entry in read_dir.flatten() {
                     let path = entry.path();
                     if path.extension().and_then(|e| e.to_str()) == Some("json") {
-                        collect_generic_hooks_json(&path, HookSourceTool::Copilot, HookScope::Project, &mut hooks);
+                        collect_generic_hooks_json(
+                            &path,
+                            HookSourceTool::Copilot,
+                            HookScope::Project,
+                            &mut hooks,
+                        );
                     }
                 }
             }
@@ -193,14 +224,27 @@ pub fn scan_all_hooks(workspace_path: Option<&str>) -> Result<HookScanResult, St
 
     // === Windsurf hooks (read-only) ===
     // User-level: ~/.codeium/windsurf/hooks.json
-    let windsurf_user_hooks = home_dir.join(".codeium").join("windsurf").join("hooks.json");
-    collect_generic_hooks_json(&windsurf_user_hooks, HookSourceTool::Windsurf, HookScope::User, &mut hooks);
+    let windsurf_user_hooks = home_dir
+        .join(".codeium")
+        .join("windsurf")
+        .join("hooks.json");
+    collect_generic_hooks_json(
+        &windsurf_user_hooks,
+        HookSourceTool::Windsurf,
+        HookScope::User,
+        &mut hooks,
+    );
 
     // Project-level: .windsurf/hooks.json
     if let Some(ws_path) = workspace_path {
         let ws = std::path::Path::new(ws_path);
         let windsurf_project_hooks = ws.join(".windsurf").join("hooks.json");
-        collect_generic_hooks_json(&windsurf_project_hooks, HookSourceTool::Windsurf, HookScope::Project, &mut hooks);
+        collect_generic_hooks_json(
+            &windsurf_project_hooks,
+            HookSourceTool::Windsurf,
+            HookScope::Project,
+            &mut hooks,
+        );
     }
 
     // === Cline hooks (read-only) ===
@@ -208,7 +252,12 @@ pub fn scan_all_hooks(workspace_path: Option<&str>) -> Result<HookScanResult, St
     if let Some(ws_path) = workspace_path {
         let ws = std::path::Path::new(ws_path);
         let cline_project_hooks = ws.join(".cline").join("hooks.json");
-        collect_generic_hooks_json(&cline_project_hooks, HookSourceTool::Cline, HookScope::Project, &mut hooks);
+        collect_generic_hooks_json(
+            &cline_project_hooks,
+            HookSourceTool::Cline,
+            HookScope::Project,
+            &mut hooks,
+        );
     }
 
     // Sort by scope (user first), then tool, then event
@@ -244,7 +293,9 @@ fn collect_generic_hooks_json(
     };
 
     // Try parsing as { "event_name": [...matchers] } format
-    if let Ok(parsed) = serde_json::from_str::<HashMap<String, Vec<crate::parsers::HookMatcher>>>(&content) {
+    if let Ok(parsed) =
+        serde_json::from_str::<HashMap<String, Vec<crate::parsers::HookMatcher>>>(&content)
+    {
         for (event, matchers) in parsed {
             for matcher_entry in matchers {
                 for action in &matcher_entry.hooks {
@@ -255,7 +306,10 @@ fn collect_generic_hooks_json(
                             event: event.clone(),
                             matcher: matcher_entry.matcher.clone(),
                             command: cmd.clone(),
-                            action_type: action.action_type.clone().unwrap_or_else(|| "command".to_string()),
+                            action_type: action
+                                .action_type
+                                .clone()
+                                .unwrap_or_else(|| "command".to_string()),
                             path: path.to_string_lossy().to_string(),
                         });
                     }

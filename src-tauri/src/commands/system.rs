@@ -71,8 +71,8 @@ fn is_safe_reveal_path(path: &Path) -> bool {
         home.join(".cline"),
         home.join(".kilocode"),
         home.join(".opencode"),
-        home.join(".vscode"),  // Copilot MCP config
-        home.join(".github"),  // Copilot instructions
+        home.join(".vscode"), // Copilot MCP config
+        home.join(".github"), // Copilot instructions
     ];
 
     // Platform-specific AI application data directories (macOS Application Support)
@@ -152,12 +152,8 @@ pub fn reveal_in_file_manager(path: String) -> Result<(), String> {
     let requested = PathBuf::from(&path);
 
     // Normalize first to resolve .. segments, then validate scope
-    let normalized = normalize_path(&requested).ok_or_else(|| {
-        format!(
-            "Path contains invalid traversal components: {}",
-            path
-        )
-    })?;
+    let normalized = normalize_path(&requested)
+        .ok_or_else(|| format!("Path contains invalid traversal components: {}", path))?;
 
     if !is_safe_reveal_path(&normalized) {
         return Err(format!(
@@ -311,7 +307,11 @@ mod tests {
     fn safe_path_rejects_dotdot_traversal() {
         // ~/.claude/../Documents/secret should NOT pass
         let home = crate::helpers::effective_home().unwrap();
-        let traversal = home.join(".claude").join("..").join("Documents").join("secret");
+        let traversal = home
+            .join(".claude")
+            .join("..")
+            .join("Documents")
+            .join("secret");
         assert!(!is_safe_reveal_path(&traversal));
     }
 
