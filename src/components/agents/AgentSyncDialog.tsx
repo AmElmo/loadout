@@ -14,9 +14,10 @@ const AGENT_TOOLS: AgentSourceTool[] = ["claude", "gemini"];
 interface AgentSyncDialogProps {
   group: GroupedAgent;
   onClose: () => void;
+  workspacePath?: string;
 }
 
-export function AgentSyncDialog({ group, onClose }: AgentSyncDialogProps) {
+export function AgentSyncDialog({ group, onClose, workspacePath }: AgentSyncDialogProps) {
   const queryClient = useQueryClient();
   const stableOnClose = useCallback(() => onClose(), [onClose]);
   useEscapeKey(stableOnClose);
@@ -35,7 +36,7 @@ export function AgentSyncDialog({ group, onClose }: AgentSyncDialogProps) {
         sourcePath: group.primary.path,
         targetTools,
         scope: group.scope,
-        workspacePath: undefined,
+        workspacePath,
       });
     },
     onSuccess: () => {

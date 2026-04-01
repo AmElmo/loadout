@@ -20,9 +20,10 @@ import { useEscapeKey } from "@/hooks/useEscapeKey";
 interface SkillViewerProps {
   group: GroupedSkill;
   onClose: () => void;
+  workspacePath?: string;
 }
 
-export function SkillViewer({ group, onClose }: SkillViewerProps) {
+export function SkillViewer({ group, onClose, workspacePath }: SkillViewerProps) {
   const queryClient = useQueryClient();
   const [copied, setCopied] = useState(false);
   const [showSync, setShowSync] = useState(false);
@@ -295,7 +296,7 @@ export function SkillViewer({ group, onClose }: SkillViewerProps) {
               targetTools,
               removeCanonical: allToolsSelected && isLinked,
               scope: group.scope,
-              workspacePath: undefined,
+              workspacePath,
             });
           }}
           onClose={() => setShowRemove(false)}

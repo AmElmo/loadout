@@ -21,9 +21,10 @@ const AGENT_TOOLS: AgentSourceTool[] = ["claude", "gemini"];
 interface AgentViewerProps {
   group: GroupedAgent;
   onClose: () => void;
+  workspacePath?: string;
 }
 
-export function AgentViewer({ group, onClose }: AgentViewerProps) {
+export function AgentViewer({ group, onClose, workspacePath }: AgentViewerProps) {
   const queryClient = useQueryClient();
   const [copied, setCopied] = useState(false);
   const [showSync, setShowSync] = useState(false);
@@ -229,6 +230,7 @@ export function AgentViewer({ group, onClose }: AgentViewerProps) {
         <AgentSyncDialog
           group={group}
           onClose={() => setShowSync(false)}
+          workspacePath={workspacePath}
         />
       )}
 
@@ -248,7 +250,7 @@ export function AgentViewer({ group, onClose }: AgentViewerProps) {
                 ?.replace(/\.md$/, "") ?? group.name,
               targetTools: targetTools as AgentSourceTool[],
               scope: group.scope,
-              workspacePath: undefined,
+              workspacePath,
             })
           }
           onClose={() => setShowRemove(false)}

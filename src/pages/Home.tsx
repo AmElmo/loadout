@@ -213,7 +213,7 @@ function wsToolDots(ws: DiscoveredWorkspace): SourceTool[] {
 
 /** Workspace has at least one meaningful project-level config (not just a .claude/ session dir) */
 function wsHasAnyConfig(ws: DiscoveredWorkspace): boolean {
-  return wsHasMCPs(ws) || wsHasSkills(ws) || wsHasRules(ws);
+  return ws.toolCount > 0;
 }
 
 // ---------------------------------------------------------------------------

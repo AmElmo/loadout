@@ -55,25 +55,8 @@ function wsToolDots(ws: DiscoveredWorkspace): SourceTool[] {
   return result;
 }
 
-function wsHasMCPs(ws: DiscoveredWorkspace): boolean {
-  return ws.signals.hasMcpJson || ws.signals.hasCursorMcps;
-}
-
-function wsHasSkills(ws: DiscoveredWorkspace): boolean {
-  return ws.signals.hasClaudeSkills || ws.signals.hasCodexSkills || ws.signals.hasGeminiSkills;
-}
-
-function wsHasRules(ws: DiscoveredWorkspace): boolean {
-  const s = ws.signals;
-  return (
-    s.hasClaudePrompt || s.hasCodexPrompt || s.hasGeminiPrompt ||
-    s.hasCursorRules || s.hasCopilotRules || s.hasWindsurfRules ||
-    s.hasRooRules || s.hasClineRules || s.hasKiloRules || s.hasOpenCodeRules
-  );
-}
-
 function wsHasAnyConfig(ws: DiscoveredWorkspace): boolean {
-  return wsHasMCPs(ws) || wsHasSkills(ws) || wsHasRules(ws) || ws.signals.hasClaudeConfig || ws.signals.hasCodexConfig || ws.signals.hasGeminiConfig;
+  return ws.toolCount > 0;
 }
 
 // ---------------------------------------------------------------------------
@@ -234,7 +217,7 @@ function RepoDetail({ repo }: { repo: DiscoveredWorkspace }) {
 
           {activeSection === "skills" && (
             projectSkills.length > 0 ? (
-              <SkillList skills={projectSkills} hasActiveFilters={false} onClearFilters={() => {}} />
+              <SkillList skills={projectSkills} hasActiveFilters={false} onClearFilters={() => {}} workspacePath={repoPath} />
             ) : (
               <EmptySection label="skills" />
             )
@@ -258,7 +241,7 @@ function RepoDetail({ repo }: { repo: DiscoveredWorkspace }) {
 
           {activeSection === "agents" && (
             projectAgents.length > 0 ? (
-              <AgentList agents={projectAgents} hasActiveFilters={false} onClearFilters={() => {}} />
+              <AgentList agents={projectAgents} hasActiveFilters={false} onClearFilters={() => {}} workspacePath={repoPath} />
             ) : (
               <EmptySection label="subagents" />
             )
