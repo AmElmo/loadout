@@ -1,6 +1,6 @@
 [package]
 name = "loadout"
-version = "0.3.0"
+version = "0.4.0"
 description = "Unified AI CLI Configuration Management Tool"
 authors = ["Julien Berthomier"]
 license = "MIT"
