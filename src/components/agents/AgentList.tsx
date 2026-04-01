@@ -8,12 +8,14 @@ interface AgentListProps {
   agents: GroupedAgent[];
   hasActiveFilters?: boolean;
   onClearFilters?: () => void;
+  workspacePath?: string;
 }
 
 export function AgentList({
   agents,
   hasActiveFilters,
   onClearFilters,
+  workspacePath,
 }: AgentListProps) {
   const [selectedAgent, setSelectedAgent] = useState<GroupedAgent | null>(null);
 
@@ -80,6 +82,7 @@ export function AgentList({
         <AgentViewer
           group={selectedAgent}
           onClose={() => setSelectedAgent(null)}
+          workspacePath={workspacePath}
         />
       )}
     </>

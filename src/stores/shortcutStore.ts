@@ -7,13 +7,9 @@ interface ShortcutState {
   actionCounter: Record<ShortcutAction, number>;
   /** Whether the keyboard shortcuts modal is open */
   showShortcutsModal: boolean;
-  /** Whether the workspace switcher is open */
-  showWorkspaceSwitcher: boolean;
 
   dispatch: (action: ShortcutAction) => void;
   setShowShortcutsModal: (show: boolean) => void;
-  toggleWorkspaceSwitcher: () => void;
-  setShowWorkspaceSwitcher: (show: boolean) => void;
 }
 
 export type { ShortcutAction };
@@ -25,7 +21,6 @@ export const useShortcutStore = create<ShortcutState>()((set) => ({
     refresh: 0,
   },
   showShortcutsModal: false,
-  showWorkspaceSwitcher: false,
 
   dispatch: (action) =>
     set((state) => ({
@@ -35,7 +30,4 @@ export const useShortcutStore = create<ShortcutState>()((set) => ({
       },
     })),
   setShowShortcutsModal: (show) => set({ showShortcutsModal: show }),
-  toggleWorkspaceSwitcher: () =>
-    set((state) => ({ showWorkspaceSwitcher: !state.showWorkspaceSwitcher })),
-  setShowWorkspaceSwitcher: (show) => set({ showWorkspaceSwitcher: show }),
 }));

@@ -22,10 +22,7 @@ pub enum GitHubUrl {
         ref_and_path: String,
     },
     /// Bare repo: github.com/org/repo
-    Repo {
-        owner: String,
-        repo: String,
-    },
+    Repo { owner: String, repo: String },
 }
 
 /// Parse a GitHub URL into structured components.

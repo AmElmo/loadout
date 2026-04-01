@@ -76,13 +76,26 @@ pub fn scan_all_prompts(workspace_path: Option<&str>) -> Result<PromptScanResult
 
     // === Global main prompts ===
     let global_paths = vec![
-        (PromptSourceTool::Claude, home_dir.join(".claude").join("CLAUDE.md")),
-        (PromptSourceTool::Codex, home_dir.join(".codex").join("AGENTS.md")),
-        (PromptSourceTool::Gemini, home_dir.join(".gemini").join("GEMINI.md")),
+        (
+            PromptSourceTool::Claude,
+            home_dir.join(".claude").join("CLAUDE.md"),
+        ),
+        (
+            PromptSourceTool::Codex,
+            home_dir.join(".codex").join("AGENTS.md"),
+        ),
+        (
+            PromptSourceTool::Gemini,
+            home_dir.join(".gemini").join("GEMINI.md"),
+        ),
     ];
 
     for (tool, path) in global_paths {
-        let name = path.file_name().unwrap_or_default().to_string_lossy().to_string();
+        let name = path
+            .file_name()
+            .unwrap_or_default()
+            .to_string_lossy()
+            .to_string();
         prompts.push(scan_prompt_file(&name, tool, PromptScope::User, &path));
     }
 
@@ -299,15 +312,30 @@ fn scan_project_prompt(
     let dir_exists = dir_path.exists();
 
     if root_exists {
-        prompts.push(scan_prompt_file(filename, tool, PromptScope::Project, &root_path));
+        prompts.push(scan_prompt_file(
+            filename,
+            tool,
+            PromptScope::Project,
+            &root_path,
+        ));
     }
     if dir_exists {
         let name = format!("{}/{}", config_dir, filename);
-        prompts.push(scan_prompt_file(&name, tool, PromptScope::Project, &dir_path));
+        prompts.push(scan_prompt_file(
+            &name,
+            tool,
+            PromptScope::Project,
+            &dir_path,
+        ));
     }
     // If neither exists, show the root-level path as missing
     if !root_exists && !dir_exists {
-        prompts.push(scan_prompt_file(filename, tool, PromptScope::Project, &root_path));
+        prompts.push(scan_prompt_file(
+            filename,
+            tool,
+            PromptScope::Project,
+            &root_path,
+        ));
     }
 }
 
@@ -563,7 +591,12 @@ fn scan_subdirectory_rules(prompts: &mut Vec<PromptFile>, project_root: &Path) {
 }
 
 /// Scan a single prompt file
-fn scan_prompt_file(name: &str, tool: PromptSourceTool, scope: PromptScope, path: &PathBuf) -> PromptFile {
+fn scan_prompt_file(
+    name: &str,
+    tool: PromptSourceTool,
+    scope: PromptScope,
+    path: &PathBuf,
+) -> PromptFile {
     let exists = path.exists();
     let (content, size) = if exists {
         match fs::read_to_string(path) {
@@ -606,7 +639,12 @@ mod tests {
         let mut file = fs::File::create(&path).unwrap();
         writeln!(file, "# System Prompt\nBe helpful.").unwrap();
 
-        let result = scan_prompt_file("CLAUDE.md", PromptSourceTool::Claude, PromptScope::User, &path);
+        let result = scan_prompt_file(
+            "CLAUDE.md",
+            PromptSourceTool::Claude,
+            PromptScope::User,
+            &path,
+        );
         assert!(result.exists);
         assert_eq!(result.name, "CLAUDE.md");
         assert!(result.content.contains("Be helpful"));
@@ -618,7 +656,12 @@ mod tests {
     #[test]
     fn test_scan_prompt_file_missing() {
         let path = PathBuf::from("/nonexistent/CLAUDE.md");
-        let result = scan_prompt_file("CLAUDE.md", PromptSourceTool::Claude, PromptScope::User, &path);
+        let result = scan_prompt_file(
+            "CLAUDE.md",
+            PromptSourceTool::Claude,
+            PromptScope::User,
+            &path,
+        );
         assert!(!result.exists);
         assert!(result.content.is_empty());
         assert_eq!(result.size, 0);
@@ -730,7 +773,11 @@ mod tests {
         let rules_dir = dir.path().join("rules");
         fs::create_dir(&rules_dir).unwrap();
 
-        fs::write(rules_dir.join("general.md"), "# General rules\nAlways applies.").unwrap();
+        fs::write(
+            rules_dir.join("general.md"),
+            "# General rules\nAlways applies.",
+        )
+        .unwrap();
 
         let mut prompts = Vec::new();
         scan_rules_directory(
@@ -789,12 +836,21 @@ mod tests {
         // Both should be scoped
         assert!(prompts.len() >= 2);
 
-        let agents = prompts.iter().find(|p| p.name.ends_with("api/AGENTS.md")).unwrap();
+        let agents = prompts
+            .iter()
+            .find(|p| p.name.ends_with("api/AGENTS.md"))
+            .unwrap();
         assert!(agents.is_scoped);
         assert_eq!(agents.scoped_paths.as_ref().unwrap(), &vec!["src/api/**"]);
 
-        let claude = prompts.iter().find(|p| p.name.ends_with("backend/CLAUDE.md")).unwrap();
+        let claude = prompts
+            .iter()
+            .find(|p| p.name.ends_with("backend/CLAUDE.md"))
+            .unwrap();
         assert!(claude.is_scoped);
-        assert_eq!(claude.scoped_paths.as_ref().unwrap(), &vec!["src/backend/**"]);
+        assert_eq!(
+            claude.scoped_paths.as_ref().unwrap(),
+            &vec!["src/backend/**"]
+        );
     }
 }

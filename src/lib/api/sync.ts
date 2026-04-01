@@ -6,6 +6,9 @@ import type {
   SyncMCPRequest,
   PreviewResult,
   WriteResult,
+  RemoveMCPRequest,
+  RemoveSkillRequest,
+  RemoveResult,
 } from "@/types";
 
 /**
@@ -70,4 +73,22 @@ export async function syncMCPToTools(
   request: SyncMCPRequest
 ): Promise<WriteResult> {
   return invoke<WriteResult>("sync_mcp_to_tools", { request });
+}
+
+/**
+ * Remove an MCP from one or more tools' config files
+ */
+export async function removeMCPFromTools(
+  request: RemoveMCPRequest
+): Promise<RemoveResult> {
+  return invoke<RemoveResult>("remove_mcp_from_tools", { request });
+}
+
+/**
+ * Remove a skill from one or more tools (delete files/symlinks)
+ */
+export async function removeSkillFromTools(
+  request: RemoveSkillRequest
+): Promise<RemoveResult> {
+  return invoke<RemoveResult>("remove_skill_from_tools", { request });
 }

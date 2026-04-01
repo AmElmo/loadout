@@ -11,20 +11,26 @@ import { Hooks } from "@/pages/Hooks";
 import { Plugins } from "@/pages/Plugins";
 import { Context } from "@/pages/Context";
 import { Learn } from "@/pages/Learn";
+import { Repos } from "@/pages/Repos";
 import { useWorkspaceStore } from "@/stores/workspaceStore";
 import { useShortcutStore } from "@/stores/shortcutStore";
 import { useKeyboardShortcuts } from "@/hooks/useKeyboardShortcuts";
 import { useEffect, useRef } from "react";
 
 function App() {
-  const { activeTab } = useWorkspaceStore();
+  const { activeTab, setSelectedRepo } = useWorkspaceStore();
   const showShortcutsModal = useShortcutStore((s) => s.showShortcutsModal);
   const mainRef = useRef<HTMLElement>(null);
   useKeyboardShortcuts();
 
   useEffect(() => {
     mainRef.current?.scrollTo(0, 0);
-  }, [activeTab]);
+    // Clear selected repo when navigating away from repos tab
+    if (activeTab !== "repos") {
+      // eslint-disable-next-line react-hooks/set-state-in-effect -- intentional: reset repo selection on tab change
+      setSelectedRepo(null);
+    }
+  }, [activeTab, setSelectedRepo]);
 
   const renderPage = () => {
     switch (activeTab) {
@@ -44,6 +50,8 @@ function App() {
         return <Plugins />;
       case "context":
         return <Context />;
+      case "repos":
+        return <Repos />;
       case "learn":
         return <Learn />;
       default:

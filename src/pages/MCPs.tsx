@@ -1,7 +1,6 @@
-import { useEffect, useMemo, useRef, useState } from "react";
-import { RefreshCw, AlertCircle, FolderOpen, Plus } from "lucide-react";
+import { useMemo, useRef, useState } from "react";
+import { RefreshCw, AlertCircle, Plus } from "lucide-react";
 import { useQuery } from "@tanstack/react-query";
-import { useWorkspaceStore } from "@/stores/workspaceStore";
 import { scanMCPs } from "@/lib/api/mcps";
 import { MCPList } from "@/components/mcps";
 import { FilterBar, SearchBar } from "@/components/filters";
@@ -13,19 +12,12 @@ import type { SourceTool } from "@/types";
 import { ALL_TOOLS } from "@/config/tools";
 
 export function MCPs() {
-  const { current } = useWorkspaceStore();
   const [showAddDialog, setShowAddDialog] = useState(false);
   const searchRef = useRef<HTMLInputElement>(null);
   useShortcutAction("focus-search", () => searchRef.current?.focus());
   useShortcutAction("add-item", () => setShowAddDialog(true));
   const [activeTools, setActiveTools] = useState<SourceTool[]>([]);
-  const [activeScopes, setActiveScopes] = useState<string[]>([]);
   const [searchQuery, setSearchQuery] = useState("");
-
-  useEffect(() => {
-    // eslint-disable-next-line react-hooks/set-state-in-effect -- reset filters when workspace changes
-    if (!current) setActiveScopes([]);
-  }, [current]);
 
   const {
     data: mcps,
@@ -34,8 +26,8 @@ export function MCPs() {
     refetch,
     isRefetching,
   } = useQuery({
-    queryKey: ["mcps", current?.repo_root ?? current?.path ?? null],
-    queryFn: () => scanMCPs(current?.repo_root ?? current?.path),
+    queryKey: ["mcps", null],
+    queryFn: () => scanMCPs(undefined),
   });
 
   useShortcutAction("refresh", () => refetch());
@@ -59,25 +51,19 @@ export function MCPs() {
       ) {
         return false;
       }
-      if (activeScopes.length > 0) {
-        const scopeValue =
-          mcp.scope === "project" || mcp.scope === "repo" ? "project" : "user";
-        if (!activeScopes.includes(scopeValue)) return false;
-      }
       if (query && !mcp.name.toLowerCase().includes(query)) {
         return false;
       }
       return true;
     });
-  }, [mcps, activeTools, activeScopes, searchQuery]);
+  }, [mcps, activeTools, searchQuery]);
 
   const { visibleItems, hasMore, sentinelRef } = useInfiniteList(filteredMcps);
 
-  const hasActiveFilters = activeTools.length > 0 || activeScopes.length > 0 || searchQuery.length > 0;
+  const hasActiveFilters = activeTools.length > 0 || searchQuery.length > 0;
 
   function clearFilters() {
     setActiveTools([]);
-    setActiveScopes([]);
     setSearchQuery("");
   }
 
@@ -110,16 +96,6 @@ export function MCPs() {
         </div>
       </div>
 
-      {!current && (
-        <div className="mb-4 flex items-center gap-2 rounded-lg border border-border bg-muted/50 px-3 py-2 text-sm text-muted-foreground">
-          <FolderOpen className="h-4 w-4 shrink-0" />
-          <span>
-            Showing user-level MCPs. Select a workspace to also see
-            project-level configs.
-          </span>
-        </div>
-      )}
-
       {mcps && mcps.length > 0 && (
         <div className="mb-4 flex items-center gap-4">
           <SearchBar
@@ -131,9 +107,9 @@ export function MCPs() {
           <FilterBar
             activeTools={activeTools}
             onToolsChange={setActiveTools}
-            activeScopes={activeScopes}
-            onScopesChange={setActiveScopes}
-            showScopeFilter={!!current}
+            activeScopes={[]}
+            onScopesChange={() => {}}
+            showScopeFilter={false}
             availableTools={availableTools}
           />
         </div>

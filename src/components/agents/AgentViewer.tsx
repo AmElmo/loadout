@@ -1,12 +1,14 @@
-import { X, Copy, Check, FolderOpen, Share2 } from "lucide-react";
+import { X, Copy, Check, FolderOpen, Share2, Trash2 } from "lucide-react";
 import { useState, useCallback } from "react";
 import { useQueryClient } from "@tanstack/react-query";
 import type { GroupedAgent, AgentItem, AgentSourceTool } from "@/types";
 import { saveSkillContent } from "@/lib/api/system";
+import { removeAgentFromTools } from "@/lib/api/agents";
 import { ToolLogo } from "@/components/ToolLogo";
 import { TOOL_CONFIG } from "@/config/tools";
 import { MaturityBadge } from "@/components/skills/MaturityBadge";
 import { ItemIcon } from "@/components/ItemIcon";
+import { RemoveDialog } from "@/components/sync";
 import { AgentSyncDialog } from "./AgentSyncDialog";
 import { Button } from "@/components/ui/button";
 import { DialogOverlay } from "@/components/ui/dialog-overlay";
@@ -14,18 +16,19 @@ import { MarkdownPreview } from "@/components/ui/markdown-preview";
 import { OpenPathButton } from "@/components/ui/open-path-button";
 import { cn } from "@/lib/utils";
 import { useEscapeKey } from "@/hooks/useEscapeKey";
-
 const AGENT_TOOLS: AgentSourceTool[] = ["claude", "gemini"];
 
 interface AgentViewerProps {
   group: GroupedAgent;
   onClose: () => void;
+  workspacePath?: string;
 }
 
-export function AgentViewer({ group, onClose }: AgentViewerProps) {
+export function AgentViewer({ group, onClose, workspacePath }: AgentViewerProps) {
   const queryClient = useQueryClient();
   const [copied, setCopied] = useState(false);
   const [showSync, setShowSync] = useState(false);
+  const [showRemove, setShowRemove] = useState(false);
   const stableOnClose = useCallback(() => onClose(), [onClose]);
   useEscapeKey(stableOnClose);
   const [activeVariant, setActiveVariant] = useState<AgentItem>(group.primary);
@@ -210,6 +213,15 @@ export function AgentViewer({ group, onClose }: AgentViewerProps) {
                 Sync to Other Tools
               </Button>
             )}
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={() => setShowRemove(true)}
+              className="text-red-500 hover:text-red-600"
+            >
+              <Trash2 className="mr-1.5 h-3.5 w-3.5" />
+              Remove
+            </Button>
           </div>
         </div>
       </div>
@@ -218,6 +230,31 @@ export function AgentViewer({ group, onClose }: AgentViewerProps) {
         <AgentSyncDialog
           group={group}
           onClose={() => setShowSync(false)}
+          workspacePath={workspacePath}
+        />
+      )}
+
+      {showRemove && (
+        <RemoveDialog
+          type="agent"
+          name={group.name}
+          tools={group.installedTools.map((tool) => ({
+            tool,
+            detail: `Delete the agent file from ${TOOL_CONFIG[tool]?.label ?? tool}'s agents directory`,
+          }))}
+          onRemove={(targetTools) =>
+            removeAgentFromTools({
+              filename: group.primary.path
+                .split("/")
+                .pop()
+                ?.replace(/\.md$/, "") ?? group.name,
+              targetTools: targetTools as AgentSourceTool[],
+              scope: group.scope,
+              workspacePath,
+            })
+          }
+          onClose={() => setShowRemove(false)}
+          queryKey="agents"
         />
       )}
     </DialogOverlay>

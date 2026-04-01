@@ -196,6 +196,69 @@ pub fn write_mcp_to_opencode(name: &str, mcp: &MCPServerInput, path: &Path) -> R
     atomic_write(path, &output)
 }
 
+/// Remove an MCP server entry from a Claude-style JSON config (mcpServers key).
+/// Works for Claude, Cursor, Copilot, Windsurf, Roo, Cline, Kilo.
+pub fn remove_mcp_from_json(name: &str, path: &Path) -> Result<(), String> {
+    if !path.exists() {
+        return Ok(()); // File doesn't exist — treat as success (idempotent)
+    }
+
+    let content = fs::read_to_string(path)
+        .map_err(|e| format!("Failed to read {}: {}", path.display(), e))?;
+    let mut root: Value = serde_json::from_str(&content)
+        .map_err(|e| format!("Failed to parse {}: {}", path.display(), e))?;
+
+    if let Some(servers) = root.get_mut("mcpServers").and_then(|s| s.as_object_mut()) {
+        servers.remove(name);
+    }
+
+    let output = serde_json::to_string_pretty(&root)
+        .map_err(|e| format!("Failed to serialize JSON: {}", e))?;
+
+    atomic_write(path, &output)
+}
+
+/// Remove an MCP server entry from Codex TOML config
+pub fn remove_mcp_from_codex(name: &str, path: &Path) -> Result<(), String> {
+    if !path.exists() {
+        return Ok(());
+    }
+
+    let content = fs::read_to_string(path)
+        .map_err(|e| format!("Failed to read {}: {}", path.display(), e))?;
+    let mut doc: DocumentMut = content
+        .parse::<DocumentMut>()
+        .map_err(|e| format!("Failed to parse TOML {}: {}", path.display(), e))?;
+
+    if let Some(servers) = doc.get_mut("mcp_servers").and_then(|s| s.as_table_mut()) {
+        servers.remove(name);
+    }
+
+    let output = doc.to_string();
+    atomic_write(path, &output)
+}
+
+/// Remove an MCP server entry from OpenCode config (uses `mcp` key)
+pub fn remove_mcp_from_opencode(name: &str, path: &Path) -> Result<(), String> {
+    if !path.exists() {
+        return Ok(());
+    }
+
+    let content = fs::read_to_string(path)
+        .map_err(|e| format!("Failed to read {}: {}", path.display(), e))?;
+    let mut root: Value = serde_json::from_str(&content)
+        .map_err(|e| format!("Failed to parse {}: {}", path.display(), e))?;
+
+    if let Some(mcp) = root.get_mut("mcp").and_then(|s| s.as_object_mut()) {
+        mcp.remove(name);
+    }
+
+    let output = serde_json::to_string_pretty(&root)
+        .map_err(|e| format!("Failed to serialize JSON: {}", e))?;
+
+    atomic_write(path, &output)
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;

@@ -61,15 +61,6 @@ export interface LoadoutItem {
 }
 
 /**
- * Workspace info returned from the backend
- */
-export interface WorkspaceInfo {
-  path: string;
-  repo_root: string | null;
-  name: string;
-}
-
-/**
  * MCP Server configuration (normalized) - legacy type
  * @deprecated Use MCPItem instead
  */
@@ -399,6 +390,51 @@ export interface WriteResult {
   canonicalPath: string | null;
   /** True if symlink creation failed and fell back to copy */
   symlinkFailed: boolean;
+}
+
+/**
+ * Request to remove an MCP from one or more tools
+ */
+export interface RemoveMCPRequest {
+  name: string;
+  targetTools: SourceTool[];
+  /** Scope: user or project */
+  scope: Scope;
+  /** Config file path (used for project-scoped MCPs to target the correct file) */
+  configPath?: string;
+}
+
+/**
+ * Request to remove a skill from one or more tools
+ */
+export interface RemoveSkillRequest {
+  name: string;
+  targetTools: SourceTool[];
+  /** Whether to also remove the canonical copy in ~/.agents/skills/ */
+  removeCanonical: boolean;
+  /** Scope: user or project */
+  scope: SkillScope;
+  /** Workspace path (required for project scope) */
+  workspacePath?: string;
+}
+
+/**
+ * Request to remove an agent from one or more tools
+ */
+export interface RemoveAgentRequest {
+  filename: string;
+  targetTools: AgentSourceTool[];
+  scope: AgentScope;
+  workspacePath?: string;
+}
+
+/**
+ * Result of a remove operation
+ */
+export interface RemoveResult {
+  success: boolean;
+  removedFiles: string[];
+  errors: string[];
 }
 
 /**

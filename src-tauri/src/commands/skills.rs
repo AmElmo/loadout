@@ -67,7 +67,10 @@ pub fn get_skill_conflict_details(
     }
 
     if versions.is_empty() {
-        return Err(format!("No valid versions found for skill '{}'", skill_name));
+        return Err(format!(
+            "No valid versions found for skill '{}'",
+            skill_name
+        ));
     }
 
     Ok(versions)
@@ -85,10 +88,7 @@ pub fn resolve_skill_conflict(
 ) -> Result<(), String> {
     let source = PathBuf::from(&chosen_path);
     if !source.exists() {
-        return Err(format!(
-            "Source file does not exist: {}",
-            chosen_path
-        ));
+        return Err(format!("Source file does not exist: {}", chosen_path));
     }
 
     let content = std::fs::read_to_string(&source)
@@ -163,15 +163,27 @@ fn days_to_ymd(days_since_epoch: i64) -> (i64, i64, i64) {
 fn infer_tool_and_scope(path: &str, _skill_name: &str) -> (SkillSourceTool, String) {
     let tool = if path.contains("/.claude/") || path.contains("\\.claude\\") {
         SkillSourceTool::Claude
-    } else if path.contains("/.agents/") || path.contains("\\.agents\\") || path.contains("/.codex/") || path.contains("\\.codex\\") {
+    } else if path.contains("/.agents/")
+        || path.contains("\\.agents\\")
+        || path.contains("/.codex/")
+        || path.contains("\\.codex\\")
+    {
         SkillSourceTool::Codex
     } else if path.contains("/.gemini/") || path.contains("\\.gemini\\") {
         SkillSourceTool::Gemini
     } else if path.contains("/.cursor/") || path.contains("\\.cursor\\") {
         SkillSourceTool::Cursor
-    } else if path.contains("/.copilot/") || path.contains("\\.copilot\\") || path.contains("/.github/") || path.contains("\\.github\\") {
+    } else if path.contains("/.copilot/")
+        || path.contains("\\.copilot\\")
+        || path.contains("/.github/")
+        || path.contains("\\.github\\")
+    {
         SkillSourceTool::Copilot
-    } else if path.contains("/.codeium/") || path.contains("\\.codeium\\") || path.contains("/.windsurf/") || path.contains("\\.windsurf\\") {
+    } else if path.contains("/.codeium/")
+        || path.contains("\\.codeium\\")
+        || path.contains("/.windsurf/")
+        || path.contains("\\.windsurf\\")
+    {
         SkillSourceTool::Windsurf
     } else if path.contains("/.roo/") || path.contains("\\.roo\\") {
         SkillSourceTool::Roo
@@ -179,7 +191,10 @@ fn infer_tool_and_scope(path: &str, _skill_name: &str) -> (SkillSourceTool, Stri
         SkillSourceTool::Cline
     } else if path.contains("/.kilocode/") || path.contains("\\.kilocode\\") {
         SkillSourceTool::Kilo
-    } else if path.contains("/opencode/") || path.contains("/.opencode/") || path.contains("\\.opencode\\") {
+    } else if path.contains("/opencode/")
+        || path.contains("/.opencode/")
+        || path.contains("\\.opencode\\")
+    {
         SkillSourceTool::OpenCode
     } else {
         SkillSourceTool::Claude // fallback

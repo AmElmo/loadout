@@ -7,12 +7,8 @@ import { SearchBar } from "@/components/filters";
 import { Button } from "@/components/ui/button";
 import { useInfiniteList } from "@/hooks/useInfiniteList";
 import { useShortcutAction } from "@/hooks/useKeyboardShortcuts";
-import { useWorkspaceStore } from "@/stores/workspaceStore";
-
 export function Hooks() {
   const [searchQuery, setSearchQuery] = useState("");
-  const workspace = useWorkspaceStore((s) => s.current);
-  const workspacePath = workspace?.path ?? undefined;
   const searchRef = useRef<HTMLInputElement>(null);
   useShortcutAction("focus-search", () => searchRef.current?.focus());
 
@@ -23,8 +19,8 @@ export function Hooks() {
     refetch,
     isRefetching,
   } = useQuery({
-    queryKey: ["hooks", workspacePath ?? null],
-    queryFn: () => scanHooks(workspacePath),
+    queryKey: ["hooks", null],
+    queryFn: () => scanHooks(undefined),
   });
 
   useShortcutAction("refresh", () => refetch());

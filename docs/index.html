@@ -273,7 +273,7 @@
       position: relative;
       z-index: 2;
       margin-top: 64px;
-      max-width: 900px;
+      max-width: 1200px;
       width: 100%;
       animation: fadeInUp 0.8s ease-out 0.6s both;
     }
@@ -886,13 +886,21 @@
 
         <button class="showcase-tab" data-tab="3">
           <div class="showcase-tab-title">
+            <svg viewBox="0 0 24 24" fill="none" stroke="#3B82F6" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M15 22v-4a4.8 4.8 0 0 0-1-3.5c3 0 6-2 6-5.5.08-1.25-.27-2.48-1-3.5.28-1.15.28-2.35 0-3.5 0 0-1 0-3 1.5-2.64-.5-5.36-.5-8 0C6 2 5 2 5 2c-.3 1.15-.3 2.35 0 3.5A5.403 5.403 0 0 0 4 9c0 3.5 3 5.5 6 5.5-.39.49-.68 1.05-.85 1.65-.17.6-.22 1.23-.15 1.85v4"/><path d="M9 18c-4.51 2-5-2-7-2"/></svg>
+            Repos
+          </div>
+          <div class="showcase-tab-desc">Browse all codebases on your machine with AI tool configs. See MCPs, skills, rules, and hooks at project level.</div>
+        </button>
+
+        <button class="showcase-tab" data-tab="4">
+          <div class="showcase-tab-title">
             <svg viewBox="0 0 24 24" fill="none" stroke="#3B82F6" stroke-width="2" stroke-linecap="round"><path d="M17 1l4 4-4 4"/><path d="M3 11V9a4 4 0 0 1 4-4h14"/><path d="M7 23l-4-4 4-4"/><path d="M21 13v2a4 4 0 0 1-4 4H3"/></svg>
             Cross-tool Sync
           </div>
           <div class="showcase-tab-desc">Add an MCP or skill to one tool, sync it to all the others in one click. No more copy-pasting configs.</div>
         </button>
 
-        <button class="showcase-tab" data-tab="4">
+        <button class="showcase-tab" data-tab="5">
           <div class="showcase-tab-title">
             <svg viewBox="0 0 24 24" fill="none" stroke="#3B82F6" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 3v16a2 2 0 0 0 2 2h16"/><path d="M18 17V9"/><path d="M13 17V5"/><path d="M8 17v-3"/></svg>
             Context Budget
@@ -900,7 +908,7 @@
           <div class="showcase-tab-desc">See how many tokens your rules, skills, and MCP definitions consume. Know what's always loaded vs. on-demand.</div>
         </button>
 
-        <button class="showcase-tab" data-tab="5">
+        <button class="showcase-tab" data-tab="6">
           <div class="showcase-tab-title">
             <svg viewBox="0 0 24 24" fill="none" stroke="#3B82F6" stroke-width="2" stroke-linecap="round"><path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"/><polyline points="22 4 12 14.01 9 11.01"/></svg>
             Supported Tools
@@ -908,13 +916,14 @@
           <div class="showcase-tab-desc">10 AI coding tools supported with their config formats and file paths, all auto-detected.</div>
         </button>
 
-        <button class="showcase-tab" data-tab="6">
+        <button class="showcase-tab" data-tab="7">
           <div class="showcase-tab-title">
             <svg viewBox="0 0 24 24" fill="none" stroke="#3B82F6" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 7v14"/><path d="M3 18a1 1 0 0 1-1-1V4a1 1 0 0 1 1-1h5a4 4 0 0 1 4 4 4 4 0 0 1 4-4h5a1 1 0 0 1 1 1v13a1 1 0 0 1-1 1h-6a3 3 0 0 0-3 3 3 3 0 0 0-3-3z"/></svg>
             Learn
           </div>
           <div class="showcase-tab-desc">Concept cards explaining MCPs, skills, subagents, rules, hooks, plugins, context windows, and scoping.</div>
         </button>
+
       </div>
 
       <!-- Screenshot panel -->
@@ -930,15 +939,18 @@
             <img src="./assets/skills_page.png" alt="Skills Management" loading="lazy">
           </div>
           <div class="showcase-slide" data-slide="3">
-            <img src="./assets/sync_skills_modal.png" alt="Cross-tool Sync" loading="lazy">
+            <img src="./assets/repos_page.png" alt="Repos" loading="lazy">
           </div>
           <div class="showcase-slide" data-slide="4">
-            <img src="./assets/context_page.png" alt="Context Budget" loading="lazy">
+            <img src="./assets/sync_skills_modal.png" alt="Cross-tool Sync" loading="lazy">
           </div>
           <div class="showcase-slide" data-slide="5">
-            <img src="./assets/list_tools_supported.png" alt="Supported Tools" loading="lazy">
+            <img src="./assets/context_page.png" alt="Context Budget" loading="lazy">
           </div>
           <div class="showcase-slide" data-slide="6">
+            <img src="./assets/list_tools_supported.png" alt="Supported Tools" loading="lazy">
+          </div>
+          <div class="showcase-slide" data-slide="7">
             <img src="./assets/learn_page.png" alt="Learn" loading="lazy">
           </div>
         </div>

@@ -60,24 +60,38 @@ pub async fn create_rules_with_cli(
     //   Codex:  exec --json
     //   Gemini: -p --output-format stream-json
     let (cmd_name, args) = match tool.as_str() {
-        "claude" => ("claude", vec![
-            "-p".into(), prompt.clone(),
-            "--output-format".into(), "stream-json".into(),
-            "--verbose".into(),
-            "--include-partial-messages".into(),
-            "--allowedTools".into(), "Read,Write,Edit,Glob,Grep,Bash".into(),
-        ]),
-        "codex" => ("codex", vec![
-            "exec".into(),
-            "--json".into(),
-            "--full-auto".into(),
-            prompt.clone(),
-        ]),
-        "gemini" => ("gemini", vec![
-            "-p".into(), prompt.clone(),
-            "--output-format".into(), "stream-json".into(),
-            "-y".into(),
-        ]),
+        "claude" => (
+            "claude",
+            vec![
+                "-p".into(),
+                prompt.clone(),
+                "--output-format".into(),
+                "stream-json".into(),
+                "--verbose".into(),
+                "--include-partial-messages".into(),
+                "--allowedTools".into(),
+                "Read,Write,Edit,Glob,Grep,Bash".into(),
+            ],
+        ),
+        "codex" => (
+            "codex",
+            vec![
+                "exec".into(),
+                "--json".into(),
+                "--full-auto".into(),
+                prompt.clone(),
+            ],
+        ),
+        "gemini" => (
+            "gemini",
+            vec![
+                "-p".into(),
+                prompt.clone(),
+                "--output-format".into(),
+                "stream-json".into(),
+                "-y".into(),
+            ],
+        ),
         _ => unreachable!(),
     };
 
@@ -121,10 +135,13 @@ pub async fn create_rules_with_cli(
                 };
                 if let Some(text) = parsed {
                     if !text.is_empty() {
-                        let _ = app_clone.emit("cli-output", CliOutputLine {
-                            repo_path: rp.clone(),
-                            line: text,
-                        });
+                        let _ = app_clone.emit(
+                            "cli-output",
+                            CliOutputLine {
+                                repo_path: rp.clone(),
+                                line: text,
+                            },
+                        );
                     }
                 }
             }
@@ -146,10 +163,13 @@ pub async fn create_rules_with_cli(
                 {
                     continue;
                 }
-                let _ = app_clone.emit("cli-output", CliOutputLine {
-                    repo_path: rp.clone(),
-                    line,
-                });
+                let _ = app_clone.emit(
+                    "cli-output",
+                    CliOutputLine {
+                        repo_path: rp.clone(),
+                        line,
+                    },
+                );
             }
         });
     }
@@ -209,14 +229,19 @@ fn parse_claude_stream_line(raw: &str) -> Option<String> {
     let v: Value = serde_json::from_str(raw).ok()?;
     match v.get("type")?.as_str()? {
         "assistant" => {
-            let content = v.get("message")
+            let content = v
+                .get("message")
                 .and_then(|m| m.get("content"))
                 .and_then(|c| c.as_array())?;
             for block in content {
                 if block.get("type").and_then(|t| t.as_str()) == Some("tool_use") {
                     let name = block.get("name").and_then(|n| n.as_str()).unwrap_or("tool");
                     let input = block.get("input").cloned().unwrap_or(Value::Null);
-                    return Some(format!("⏵ {}: {}", name, summarise_tool_input(name, &input)));
+                    return Some(format!(
+                        "⏵ {}: {}",
+                        name,
+                        summarise_tool_input(name, &input)
+                    ));
                 }
             }
             None
@@ -248,36 +273,50 @@ fn parse_codex_stream_line(raw: &str) -> Option<String> {
     let item_type = item.get("type").and_then(|t| t.as_str()).unwrap_or("");
 
     match event_type {
-        "item.started" => {
-            match item_type {
-                "command_execution" => {
-                    let cmd = item.get("command").and_then(|c| c.as_str()).unwrap_or("");
-                    let display = truncate_str(cmd, 80);
-                    Some(format!("⏵ exec: {}", display))
-                }
-                _ => None,
+        "item.started" => match item_type {
+            "command_execution" => {
+                let cmd = item.get("command").and_then(|c| c.as_str()).unwrap_or("");
+                let display = truncate_str(cmd, 80);
+                Some(format!("⏵ exec: {}", display))
             }
-        }
+            _ => None,
+        },
         "item.completed" => {
             match item_type {
                 "reasoning" => {
                     let text = item.get("text").and_then(|t| t.as_str()).unwrap_or("");
-                    if text.is_empty() { None } else { Some(format!("{}\n", text)) }
+                    if text.is_empty() {
+                        None
+                    } else {
+                        Some(format!("{}\n", text))
+                    }
                 }
                 "agent_message" => {
                     let text = item.get("text").and_then(|t| t.as_str()).unwrap_or("");
-                    if text.is_empty() { None } else { Some(format!("{}\n", text)) }
+                    if text.is_empty() {
+                        None
+                    } else {
+                        Some(format!("{}\n", text))
+                    }
                 }
                 "command_execution" => {
-                    let cmd = item.get("command").and_then(|c| c.as_str()).unwrap_or("cmd");
+                    let cmd = item
+                        .get("command")
+                        .and_then(|c| c.as_str())
+                        .unwrap_or("cmd");
                     let exit = item.get("exit_code").and_then(|e| e.as_i64());
                     match exit {
                         Some(0) | None => None, // success — don't repeat
-                        Some(code) => Some(format!("⏵ exec failed ({}): {}", code, truncate_str(cmd, 60))),
+                        Some(code) => Some(format!(
+                            "⏵ exec failed ({}): {}",
+                            code,
+                            truncate_str(cmd, 60)
+                        )),
                     }
                 }
                 "file_change" => {
-                    let path = item.get("file_path")
+                    let path = item
+                        .get("file_path")
                         .or_else(|| item.get("path"))
                         .and_then(|p| p.as_str())
                         .unwrap_or("file");
@@ -309,11 +348,13 @@ fn parse_gemini_stream_line(raw: &str) -> Option<String> {
             None
         }
         "tool_use" => {
-            let name = v.get("name")
+            let name = v
+                .get("name")
                 .or_else(|| v.get("tool"))
                 .and_then(|n| n.as_str())
                 .unwrap_or("tool");
-            let args = v.get("args")
+            let args = v
+                .get("args")
                 .or_else(|| v.get("arguments"))
                 .cloned()
                 .unwrap_or(Value::Null);
@@ -344,7 +385,8 @@ fn summarise_tool_input(name: &str, input: &Value) -> String {
             .or_else(|| path_field("query"))
             .unwrap_or_default(),
         "Bash" | "exec" | "shell" | "run_command" => {
-            let cmd = input.get("command")
+            let cmd = input
+                .get("command")
                 .or_else(|| input.get("cmd"))
                 .and_then(|v| v.as_str())
                 .unwrap_or("");

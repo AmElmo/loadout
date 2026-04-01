@@ -108,14 +108,18 @@ pub fn install_agent_to_tools(request: InstallAgentRequest) -> Result<AgentWrite
 }
 
 /// Validate that source_path is inside an expected agent directory for the declared tool
-fn validate_source_path(source_path: &str, source_tool: &str, workspace_path: Option<&str>) -> Result<(), String> {
+fn validate_source_path(
+    source_path: &str,
+    source_tool: &str,
+    workspace_path: Option<&str>,
+) -> Result<(), String> {
     let path = std::path::Path::new(source_path);
-    let canonical = path.canonicalize()
+    let canonical = path
+        .canonicalize()
         .map_err(|e| format!("Cannot resolve source path: {}", e))?;
     let canonical_str = canonical.to_string_lossy();
 
-    let home = crate::helpers::effective_home()
-        .ok_or("Could not determine home directory")?;
+    let home = crate::helpers::effective_home().ok_or("Could not determine home directory")?;
 
     let tool_dir = match source_tool {
         "claude" => ".claude",
@@ -173,8 +177,69 @@ pub fn sync_agent_to_tools(request: SyncAgentRequest) -> Result<AgentWriteResult
     let mut errors = Vec::new();
 
     for tool in &request.target_tools {
-        match agent_writer::write_agent(&safe_name, &content, tool, &request.scope, request.workspace_path.as_deref()) {
+        match agent_writer::write_agent(
+            &safe_name,
+            &content,
+            tool,
+            &request.scope,
+            request.workspace_path.as_deref(),
+        ) {
             Ok(path) => modified_files.push(path),
+            Err(e) => errors.push(format!("{}: {}", tool, e)),
+        }
+    }
+
+    Ok(AgentWriteResult {
+        success: errors.is_empty(),
+        modified_files,
+        errors,
+    })
+}
+
+/// Request to remove an agent from one or more tools
+#[derive(Debug, Clone, Deserialize)]
+#[serde(rename_all = "camelCase")]
+pub struct RemoveAgentRequest {
+    /// Agent filename (without .md extension)
+    pub filename: String,
+    /// Target tools to remove from
+    pub target_tools: Vec<String>,
+    /// Scope: user or project
+    pub scope: String,
+    /// Workspace path (required for project scope)
+    pub workspace_path: Option<String>,
+}
+
+/// Remove an agent from selected tools (delete .md files)
+#[tauri::command]
+pub fn remove_agent_from_tools(request: RemoveAgentRequest) -> Result<AgentWriteResult, String> {
+    let safe_name = agent_writer::validate_agent_name(&request.filename)?;
+    if request.target_tools.is_empty() {
+        return Err("At least one target tool must be selected".to_string());
+    }
+
+    let mut modified_files = Vec::new();
+    let mut errors = Vec::new();
+
+    for tool in &request.target_tools {
+        let agents_dir = match agent_writer::agents_dir_for_tool_pub(
+            tool,
+            &request.scope,
+            request.workspace_path.as_deref(),
+        ) {
+            Ok(d) => d,
+            Err(e) => {
+                errors.push(format!("{}: {}", tool, e));
+                continue;
+            }
+        };
+        let agent_path = agents_dir.join(format!("{}.md", safe_name));
+
+        match std::fs::remove_file(&agent_path) {
+            Ok(()) => modified_files.push(agent_path.to_string_lossy().to_string()),
+            Err(e) if e.kind() == std::io::ErrorKind::NotFound => {
+                // Already gone — idempotent success
+            }
             Err(e) => errors.push(format!("{}: {}", tool, e)),
         }
     }
@@ -289,8 +354,8 @@ pub async fn fetch_agent_from_url(url: String) -> Result<FetchedAgent, String> {
 #[tauri::command]
 pub fn read_agent_file(path: String) -> Result<FetchedAgent, String> {
     let path_buf = std::path::PathBuf::from(&path);
-    let content = std::fs::read_to_string(&path_buf)
-        .map_err(|e| format!("Failed to read file: {}", e))?;
+    let content =
+        std::fs::read_to_string(&path_buf).map_err(|e| format!("Failed to read file: {}", e))?;
 
     let fallback_name = path_buf
         .file_stem()
@@ -335,4 +400,48 @@ pub fn parse_agent_file_content(content: String, filename: String) -> Result<Fet
         permission_mode: parsed.permission_mode,
         source_url: None,
     })
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use std::fs;
+    use tempfile::TempDir;
+
+    #[test]
+    fn test_remove_agent_from_project_scope_only_deletes_selected_tool_file() {
+        let workspace = TempDir::new().unwrap();
+        let claude_agent = workspace
+            .path()
+            .join(".claude")
+            .join("agents")
+            .join("reviewer.md");
+        let gemini_agent = workspace
+            .path()
+            .join(".gemini")
+            .join("agents")
+            .join("reviewer.md");
+
+        fs::create_dir_all(claude_agent.parent().unwrap()).unwrap();
+        fs::create_dir_all(gemini_agent.parent().unwrap()).unwrap();
+        fs::write(&claude_agent, "# Claude reviewer").unwrap();
+        fs::write(&gemini_agent, "# Gemini reviewer").unwrap();
+
+        let result = remove_agent_from_tools(RemoveAgentRequest {
+            filename: "reviewer".to_string(),
+            target_tools: vec!["claude".to_string()],
+            scope: "project".to_string(),
+            workspace_path: Some(workspace.path().to_string_lossy().to_string()),
+        })
+        .unwrap();
+
+        assert!(result.success);
+        assert_eq!(result.errors, Vec::<String>::new());
+        assert_eq!(
+            result.modified_files,
+            vec![claude_agent.to_string_lossy().to_string()]
+        );
+        assert!(!claude_agent.exists());
+        assert!(gemini_agent.exists());
+    }
 }

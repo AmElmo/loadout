@@ -27,8 +27,6 @@ import { TOOL_CONFIG } from "@/config/tools";
 import { cn } from "@/lib/utils";
 import { useEscapeKey } from "@/hooks/useEscapeKey";
 import { useSubmitShortcut } from "@/hooks/useSubmitShortcut";
-import { useWorkspaceStore } from "@/stores/workspaceStore";
-
 type ImportMode = "url" | "file";
 
 const AGENT_TOOLS: AgentSourceTool[] = ["claude", "gemini"];
@@ -45,7 +43,6 @@ export function ImportAgentDialog({
   initialFileName,
 }: ImportAgentDialogProps) {
   const queryClient = useQueryClient();
-  const { current } = useWorkspaceStore();
   const stableOnClose = useCallback(() => onClose(), [onClose]);
   useEscapeKey(stableOnClose);
 
@@ -131,7 +128,7 @@ export function ImportAgentDialog({
       content: preview.content,
       scope: "user",
       targetTools,
-      workspacePath: current?.path,
+      workspacePath: undefined,
     });
   };
 

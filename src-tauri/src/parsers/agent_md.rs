@@ -177,7 +177,10 @@ permissionMode: default
 You are a senior code reviewer. When analyzing code, focus on..."#;
         let agent = parse_agent_content(content, "fallback").unwrap();
         assert_eq!(agent.name, "code-reviewer");
-        assert_eq!(agent.description, "Reviews code for quality and best practices");
+        assert_eq!(
+            agent.description,
+            "Reviews code for quality and best practices"
+        );
         assert_eq!(agent.tools.as_deref(), Some("Read, Glob, Grep"));
         assert_eq!(agent.model.as_deref(), Some("sonnet"));
         assert_eq!(agent.max_turns, Some(50));
