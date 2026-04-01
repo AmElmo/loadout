@@ -28,10 +28,10 @@ Download the latest release for your platform:
 <!-- DOWNLOAD_TABLE_START -->
 | Platform | Download |
 |----------|----------|
-| macOS (Apple Silicon) | [`.dmg`](https://github.com/AmElmo/loadout/releases/latest/download/Loadout_0.2.3_aarch64.dmg) |
-| macOS (Intel) | [`.dmg`](https://github.com/AmElmo/loadout/releases/latest/download/Loadout_0.2.3_x64.dmg) |
-| Linux | [`.AppImage`](https://github.com/AmElmo/loadout/releases/latest/download/Loadout_0.2.3_amd64.AppImage) / [`.deb`](https://github.com/AmElmo/loadout/releases/latest/download/Loadout_0.2.3_amd64.deb) |
-| Windows | [`.exe`](https://github.com/AmElmo/loadout/releases/latest/download/Loadout_0.2.3_x64-setup.exe) / [`.msi`](https://github.com/AmElmo/loadout/releases/latest/download/Loadout_0.2.3_x64_en-US.msi) |
+| macOS (Apple Silicon) | [`.dmg`](https://github.com/AmElmo/loadout/releases/latest/download/Loadout_0.3.0_aarch64.dmg) |
+| macOS (Intel) | [`.dmg`](https://github.com/AmElmo/loadout/releases/latest/download/Loadout_0.3.0_x64.dmg) |
+| Linux | [`.AppImage`](https://github.com/AmElmo/loadout/releases/latest/download/Loadout_0.3.0_amd64.AppImage) / [`.deb`](https://github.com/AmElmo/loadout/releases/latest/download/Loadout_0.3.0_amd64.deb) |
+| Windows | [`.exe`](https://github.com/AmElmo/loadout/releases/latest/download/Loadout_0.3.0_x64-setup.exe) / [`.msi`](https://github.com/AmElmo/loadout/releases/latest/download/Loadout_0.3.0_x64_en-US.msi) |
 <!-- DOWNLOAD_TABLE_END -->
 
 Auto-updates are built in — Loadout checks for new versions on launch and every 4 hours.
