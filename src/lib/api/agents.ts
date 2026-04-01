@@ -5,6 +5,7 @@ import type {
   SyncAgentRequest,
   AgentWriteResult,
   FetchedAgent,
+  RemoveAgentRequest,
 } from "@/types";
 
 /**
@@ -60,4 +61,13 @@ export async function parseAgentFileContent(
   filename: string
 ): Promise<FetchedAgent> {
   return invoke<FetchedAgent>("parse_agent_file_content", { content, filename });
+}
+
+/**
+ * Remove an agent from one or more tools (delete .md files)
+ */
+export async function removeAgentFromTools(
+  request: RemoveAgentRequest
+): Promise<AgentWriteResult> {
+  return invoke<AgentWriteResult>("remove_agent_from_tools", { request });
 }

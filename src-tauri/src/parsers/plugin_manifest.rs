@@ -29,8 +29,7 @@ pub struct PluginJson {
 pub fn parse_plugin_json(path: &Path) -> Result<PluginJson, String> {
     let content = fs::read_to_string(path)
         .map_err(|e| format!("Failed to read {}: {}", path.display(), e))?;
-    serde_json::from_str(&content)
-        .map_err(|e| format!("Failed to parse {}: {}", path.display(), e))
+    serde_json::from_str(&content).map_err(|e| format!("Failed to parse {}: {}", path.display(), e))
 }
 
 // === gemini-extension.json ===
@@ -67,8 +66,7 @@ pub struct GeminiExtensionJson {
 pub fn parse_gemini_extension_json(path: &Path) -> Result<GeminiExtensionJson, String> {
     let content = fs::read_to_string(path)
         .map_err(|e| format!("Failed to read {}: {}", path.display(), e))?;
-    serde_json::from_str(&content)
-        .map_err(|e| format!("Failed to parse {}: {}", path.display(), e))
+    serde_json::from_str(&content).map_err(|e| format!("Failed to parse {}: {}", path.display(), e))
 }
 
 // === marketplace.json ===
@@ -112,8 +110,7 @@ pub struct MarketplaceJson {
 pub fn parse_marketplace_json(path: &Path) -> Result<MarketplaceJson, String> {
     let content = fs::read_to_string(path)
         .map_err(|e| format!("Failed to read {}: {}", path.display(), e))?;
-    serde_json::from_str(&content)
-        .map_err(|e| format!("Failed to parse {}: {}", path.display(), e))
+    serde_json::from_str(&content).map_err(|e| format!("Failed to parse {}: {}", path.display(), e))
 }
 
 // === installed_plugins.json ===
@@ -148,8 +145,7 @@ pub struct InstalledPluginsJson {
 pub fn parse_installed_plugins_json(path: &Path) -> Result<InstalledPluginsJson, String> {
     let content = fs::read_to_string(path)
         .map_err(|e| format!("Failed to read {}: {}", path.display(), e))?;
-    serde_json::from_str(&content)
-        .map_err(|e| format!("Failed to parse {}: {}", path.display(), e))
+    serde_json::from_str(&content).map_err(|e| format!("Failed to parse {}: {}", path.display(), e))
 }
 
 #[cfg(test)]
@@ -176,7 +172,8 @@ mod tests {
 
     #[test]
     fn test_parse_plugin_json_with_email() {
-        let json = r#"{"name":"plugin","author":{"name":"Anthropic","email":"support@anthropic.com"}}"#;
+        let json =
+            r#"{"name":"plugin","author":{"name":"Anthropic","email":"support@anthropic.com"}}"#;
         let parsed: PluginJson = serde_json::from_str(json).unwrap();
         let author = parsed.author.unwrap();
         assert_eq!(author.name, "Anthropic");
@@ -244,7 +241,10 @@ mod tests {
         let owner = parsed.owner.unwrap();
         assert_eq!(owner.name, "Anthropic");
         assert_eq!(owner.email, Some("hello@anthropic.com".to_string()));
-        assert_eq!(parsed.plugins[0].source, Some("./plugins/commit-commands".to_string()));
+        assert_eq!(
+            parsed.plugins[0].source,
+            Some("./plugins/commit-commands".to_string())
+        );
     }
 
     #[test]
@@ -265,9 +265,15 @@ mod tests {
         let entries = &parsed.plugins["commit@official"];
         assert_eq!(entries.len(), 1);
         assert_eq!(entries[0].scope, Some("user".to_string()));
-        assert_eq!(entries[0].install_path, Some("cache/official/commit/1.0.0".to_string()));
+        assert_eq!(
+            entries[0].install_path,
+            Some("cache/official/commit/1.0.0".to_string())
+        );
         assert_eq!(entries[0].version, Some("1.0.0".to_string()));
-        assert_eq!(entries[0].installed_at, Some("2026-02-19T03:32:02.466Z".to_string()));
+        assert_eq!(
+            entries[0].installed_at,
+            Some("2026-02-19T03:32:02.466Z".to_string())
+        );
     }
 
     #[test]
@@ -287,7 +293,10 @@ mod tests {
         }"#;
         let parsed: InstalledPluginsJson = serde_json::from_str(json).unwrap();
         let entries = &parsed.plugins["data@official"];
-        assert_eq!(entries[0].last_updated, Some("2026-02-20T10:00:00.000Z".to_string()));
+        assert_eq!(
+            entries[0].last_updated,
+            Some("2026-02-20T10:00:00.000Z".to_string())
+        );
         assert_eq!(entries[0].git_commit_sha, Some("abc123def456".to_string()));
     }
 

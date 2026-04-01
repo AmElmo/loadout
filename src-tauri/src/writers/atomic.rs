@@ -28,8 +28,8 @@ pub fn atomic_write(path: &Path, content: &str) -> Result<(), String> {
         .parent()
         .ok_or_else(|| "Invalid file path: no parent directory".to_string())?;
 
-    let mut temp = NamedTempFile::new_in(parent)
-        .map_err(|e| format!("Failed to create temp file: {}", e))?;
+    let mut temp =
+        NamedTempFile::new_in(parent).map_err(|e| format!("Failed to create temp file: {}", e))?;
 
     temp.write_all(content.as_bytes())
         .map_err(|e| format!("Failed to write to temp file: {}", e))?;

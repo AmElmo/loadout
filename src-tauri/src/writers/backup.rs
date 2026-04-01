@@ -55,9 +55,7 @@ impl Hasher for Fnv1aHasher {
 /// Uses FNV-1a over the canonical path bytes so the result is stable across
 /// Rust toolchain versions.
 fn path_hash(path: &Path) -> String {
-    let canonical = path
-        .canonicalize()
-        .unwrap_or_else(|_| path.to_path_buf());
+    let canonical = path.canonicalize().unwrap_or_else(|_| path.to_path_buf());
     let mut hasher = Fnv1aHasher::new();
     hasher.write(canonical.as_os_str().as_encoded_bytes());
     let hash = hasher.finish();
@@ -336,7 +334,10 @@ mod tests {
         run_cleanup_on_dir(backup_dir);
 
         // Should be pruned to MAX_BACKUPS_PER_FILE
-        assert_eq!(fs::read_dir(backup_dir).unwrap().count(), MAX_BACKUPS_PER_FILE);
+        assert_eq!(
+            fs::read_dir(backup_dir).unwrap().count(),
+            MAX_BACKUPS_PER_FILE
+        );
     }
 
     /// Helper: run the cleanup logic on an arbitrary directory (mirrors cleanup_old_backups).

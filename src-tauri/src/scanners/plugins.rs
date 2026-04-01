@@ -194,11 +194,9 @@ fn inventory_components(plugin_dir: &Path) -> (PluginComponents, PluginComponent
                     let skill_md = skill_dir.join("SKILL.md");
                     if skill_md.exists() {
                         let (name, desc, content) = match parse_skill_md(&skill_md) {
-                            Ok(parsed) => (
-                                parsed.name,
-                                Some(parsed.description),
-                                Some(parsed.content),
-                            ),
+                            Ok(parsed) => {
+                                (parsed.name, Some(parsed.description), Some(parsed.content))
+                            }
                             Err(_) => {
                                 let fallback = skill_dir
                                     .file_name()
@@ -207,7 +205,11 @@ fn inventory_components(plugin_dir: &Path) -> (PluginComponents, PluginComponent
                                 (fallback, None, None)
                             }
                         };
-                        details.skills.push(PluginSkillInfo { name, description: desc, content });
+                        details.skills.push(PluginSkillInfo {
+                            name,
+                            description: desc,
+                            content,
+                        });
                     }
                 }
             }
@@ -315,7 +317,9 @@ fn inventory_components(plugin_dir: &Path) -> (PluginComponents, PluginComponent
     details.mcps.sort_by(|a, b| a.name.cmp(&b.name));
     details.hooks.sort_by(|a, b| a.event.cmp(&b.event));
     details.agents.sort_by(|a, b| a.name.cmp(&b.name));
-    details.lsp_servers.sort_by(|a, b| a.language.cmp(&b.language));
+    details
+        .lsp_servers
+        .sort_by(|a, b| a.language.cmp(&b.language));
 
     let counts = PluginComponents {
         skills: details.skills.len(),
@@ -461,23 +465,22 @@ fn scan_claude_cli_plugins(home_dir: &Path) -> Vec<PluginItem> {
 
             // Read manifest
             let manifest_path = plugin_dir.join(".claude-plugin").join("plugin.json");
-            let (name, description, version, author) = if let Ok(manifest) =
-                parse_plugin_json(&manifest_path)
-            {
-                (
-                    manifest.name,
-                    manifest.description.unwrap_or_default(),
-                    manifest.version.unwrap_or_else(|| {
-                        entry.version.clone().unwrap_or_else(|| "0.0.0".to_string())
-                    }),
-                    manifest.author.map(|a| a.name),
-                )
-            } else {
-                // Fallback: derive name from key
-                let name = key.split('@').next().unwrap_or(key).to_string();
-                let version = entry.version.clone().unwrap_or_else(|| "0.0.0".to_string());
-                (name, String::new(), version, None)
-            };
+            let (name, description, version, author) =
+                if let Ok(manifest) = parse_plugin_json(&manifest_path) {
+                    (
+                        manifest.name,
+                        manifest.description.unwrap_or_default(),
+                        manifest.version.unwrap_or_else(|| {
+                            entry.version.clone().unwrap_or_else(|| "0.0.0".to_string())
+                        }),
+                        manifest.author.map(|a| a.name),
+                    )
+                } else {
+                    // Fallback: derive name from key
+                    let name = key.split('@').next().unwrap_or(key).to_string();
+                    let version = entry.version.clone().unwrap_or_else(|| "0.0.0".to_string());
+                    (name, String::new(), version, None)
+                };
 
             let scope = match entry.scope.as_deref() {
                 Some("project") => PluginScope::Project,
@@ -585,7 +588,10 @@ fn scan_cowork_plugins(home_dir: &Path) -> Vec<PluginItem> {
                     let stripped = install_path
                         .strip_prefix("mnt/.claude/")
                         .unwrap_or(install_path);
-                    cowork_plugins_dir.parent().unwrap_or(&org_dir).join(stripped)
+                    cowork_plugins_dir
+                        .parent()
+                        .unwrap_or(&org_dir)
+                        .join(stripped)
                 } else {
                     cowork_plugins_dir.join(install_path)
                 };
@@ -607,8 +613,7 @@ fn scan_cowork_plugins(home_dir: &Path) -> Vec<PluginItem> {
                         )
                     } else {
                         let name = key.split('@').next().unwrap_or(key).to_string();
-                        let version =
-                            entry.version.clone().unwrap_or_else(|| "0.0.0".to_string());
+                        let version = entry.version.clone().unwrap_or_else(|| "0.0.0".to_string());
                         (name, String::new(), version, None)
                     };
 
@@ -707,7 +712,12 @@ fn scan_cowork_skills_plugin(skills_plugin_dir: &Path, plugins: &mut Vec<PluginI
                     manifest.author.map(|a| a.name),
                 )
             } else {
-                ("anthropic-skills".to_string(), "Built-in Anthropic skills".to_string(), "0.0.0".to_string(), Some("Anthropic".to_string()))
+                (
+                    "anthropic-skills".to_string(),
+                    "Built-in Anthropic skills".to_string(),
+                    "0.0.0".to_string(),
+                    Some("Anthropic".to_string()),
+                )
             };
 
         let (components, component_details) = inventory_components(content_dir);
@@ -899,9 +909,8 @@ fn scan_marketplace_catalogs(
                             .join("marketplace.json");
                         if let Ok(catalog) = parse_marketplace_json(&catalog_path) {
                             // Only add marketplace metadata once (dedup)
-                            let already_registered = marketplaces
-                                .iter()
-                                .any(|m| m.name == catalog.name);
+                            let already_registered =
+                                marketplaces.iter().any(|m| m.name == catalog.name);
                             if !already_registered {
                                 marketplaces.push(MarketplaceInfo {
                                     name: catalog.name.clone(),
@@ -923,10 +932,7 @@ fn scan_marketplace_catalogs(
                                     .contains(&(PluginSourceTool::Claude, plugin.name.clone()));
                                 available.push(MarketplacePluginItem {
                                     name: plugin.name.clone(),
-                                    description: plugin
-                                        .description
-                                        .clone()
-                                        .unwrap_or_default(),
+                                    description: plugin.description.clone().unwrap_or_default(),
                                     version: plugin.version.clone().unwrap_or_default(),
                                     author: plugin.author.as_ref().map(|a| a.name.clone()),
                                     category: plugin.category.clone(),
@@ -959,8 +965,7 @@ fn read_readme(plugin_dir: &Path) -> Option<String> {
 
 /// Scan all plugins across Claude Code CLI, Claude Desktop Cowork, and Gemini CLI
 pub fn scan_all_plugins(_workspace_path: Option<&str>) -> Result<PluginScanResult, String> {
-    let home_dir =
-        crate::helpers::effective_home().ok_or("Could not determine home directory")?;
+    let home_dir = crate::helpers::effective_home().ok_or("Could not determine home directory")?;
 
     let mut installed: Vec<PluginItem> = Vec::new();
 
