@@ -14,11 +14,13 @@ import {
   Sun,
   Moon,
   Monitor,
+  RotateCcw,
 } from "lucide-react";
 import { getVersion } from "@tauri-apps/api/app";
 import { cn } from "@/lib/utils";
 import { useWorkspaceStore } from "@/stores/workspaceStore";
 import { useShortcutStore } from "@/stores/shortcutStore";
+import { useOnboardingStore } from "@/stores/onboardingStore";
 import { useState, useEffect, useRef, useCallback } from "react";
 import { useThemeStore } from "@/stores/themeStore";
 
@@ -48,6 +50,7 @@ function SettingsMenu({ version }: { version: string }) {
   const setShowShortcutsModal = useShortcutStore(
     (s) => s.setShowShortcutsModal
   );
+  const replayOnboarding = useOnboardingStore((s) => s.replayOnboarding);
   const { theme, setTheme } = useThemeStore();
 
   useEffect(() => {
@@ -93,6 +96,16 @@ function SettingsMenu({ version }: { version: string }) {
             <span className="text-[10px] text-muted-foreground">
               {isMac ? "\u2318" : "Ctrl"}+/
             </span>
+          </button>
+          <button
+            onClick={() => {
+              replayOnboarding();
+              setOpen(false);
+            }}
+            className="flex w-full items-center gap-2 px-3 py-1.5 text-left text-sm text-foreground hover:bg-accent"
+          >
+            <RotateCcw className="h-3.5 w-3.5 text-muted-foreground" />
+            <span className="flex-1">See Onboarding Again</span>
           </button>
           <div className="mx-2 my-1 border-t border-border" />
           <div className="flex items-center gap-2 px-3 py-1.5">
