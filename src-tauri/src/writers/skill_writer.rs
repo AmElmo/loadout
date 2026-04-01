@@ -53,6 +53,29 @@ pub fn validate_skill_name(name: &str) -> Result<String, String> {
     Ok(trimmed.to_string())
 }
 
+/// Tool-specific user-level skill directories (public for use by remove commands)
+pub fn skill_dir_for_tool_pub(tool: &str) -> Result<PathBuf, String> {
+    skill_dir_for_tool(tool)
+}
+
+/// Tool-specific project-level skill directories
+pub fn skill_dir_for_tool_project(tool: &str, workspace_path: &str) -> Result<PathBuf, String> {
+    let ws = PathBuf::from(workspace_path);
+    match tool {
+        "claude" => Ok(ws.join(".claude").join("skills")),
+        "codex" => Ok(ws.join(".codex").join("skills")),
+        "gemini" => Ok(ws.join(".gemini").join("skills")),
+        "cursor" => Ok(ws.join(".cursor").join("skills")),
+        "copilot" => Ok(ws.join(".copilot").join("skills")),
+        "windsurf" => Ok(ws.join(".codeium").join("windsurf").join("skills")),
+        "roo" => Ok(ws.join(".roo").join("skills")),
+        "cline" => Ok(ws.join(".cline").join("skills")),
+        "kilo" => Ok(ws.join(".kilocode").join("skills")),
+        "opencode" => Ok(ws.join(".config").join("opencode").join("skills")),
+        _ => Err(format!("Unknown tool: {}", tool)),
+    }
+}
+
 /// Tool-specific user-level skill directories
 fn skill_dir_for_tool(tool: &str) -> Result<PathBuf, String> {
     let home = crate::helpers::effective_home().ok_or("Could not determine home directory")?;

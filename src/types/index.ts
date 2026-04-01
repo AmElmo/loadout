@@ -393,6 +393,51 @@ export interface WriteResult {
 }
 
 /**
+ * Request to remove an MCP from one or more tools
+ */
+export interface RemoveMCPRequest {
+  name: string;
+  targetTools: SourceTool[];
+  /** Scope: user or project */
+  scope: Scope;
+  /** Config file path (used for project-scoped MCPs to target the correct file) */
+  configPath?: string;
+}
+
+/**
+ * Request to remove a skill from one or more tools
+ */
+export interface RemoveSkillRequest {
+  name: string;
+  targetTools: SourceTool[];
+  /** Whether to also remove the canonical copy in ~/.agents/skills/ */
+  removeCanonical: boolean;
+  /** Scope: user or project */
+  scope: SkillScope;
+  /** Workspace path (required for project scope) */
+  workspacePath?: string;
+}
+
+/**
+ * Request to remove an agent from one or more tools
+ */
+export interface RemoveAgentRequest {
+  filename: string;
+  targetTools: AgentSourceTool[];
+  scope: AgentScope;
+  workspacePath?: string;
+}
+
+/**
+ * Result of a remove operation
+ */
+export interface RemoveResult {
+  success: boolean;
+  removedFiles: string[];
+  errors: string[];
+}
+
+/**
  * Preview of a generated config for a single tool
  */
 export interface PreviewConfig {

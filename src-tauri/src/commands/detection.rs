@@ -44,7 +44,8 @@ pub fn detect_installed_tools() -> Result<DetectionResult, String> {
         DetectedTool {
             id: "claude".to_string(),
             label: "Claude".to_string(),
-            has_home_config: dir_exists(&home.join(".claude")) || file_exists(&home.join(".claude.json")),
+            has_home_config: dir_exists(&home.join(".claude"))
+                || file_exists(&home.join(".claude.json")),
             has_binary: has_binary("claude"),
         },
         DetectedTool {
@@ -98,7 +99,9 @@ pub fn detect_installed_tools() -> Result<DetectionResult, String> {
         DetectedTool {
             id: "opencode".to_string(),
             label: "OpenCode".to_string(),
-            has_home_config: file_exists(&home.join(".config").join("opencode").join("opencode.json")),
+            has_home_config: file_exists(
+                &home.join(".config").join("opencode").join("opencode.json"),
+            ),
             has_binary: has_binary("opencode"),
         },
     ];

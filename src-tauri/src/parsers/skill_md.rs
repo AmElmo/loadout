@@ -173,7 +173,10 @@ Content here.
         let content = "# Verify Work Skill\n\n**IMPORTANT: Only use this skill when requested.**\n\nDo the work.";
         let skill = parse_skill_content(content, "verify-work").unwrap();
         assert_eq!(skill.name, "verify-work");
-        assert_eq!(skill.description, "IMPORTANT: Only use this skill when requested.");
+        assert_eq!(
+            skill.description,
+            "IMPORTANT: Only use this skill when requested."
+        );
         assert!(skill.content.contains("# Verify Work Skill"));
     }
 

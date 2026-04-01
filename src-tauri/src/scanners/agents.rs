@@ -242,9 +242,7 @@ fn generate_agent_id(name: &str, source_tool: AgentSourceTool, scope: AgentScope
 }
 
 /// Process entries to detect conflicts, shadowing, and merge configuredIn
-fn process_agent_entries(
-    entries: Vec<RawAgentEntry>,
-) -> (Vec<AgentItem>, Vec<AgentConflict>) {
+fn process_agent_entries(entries: Vec<RawAgentEntry>) -> (Vec<AgentItem>, Vec<AgentConflict>) {
     let mut agents: Vec<AgentItem> = Vec::new();
     let mut conflicts: Vec<AgentConflict> = Vec::new();
 
@@ -264,9 +262,7 @@ fn process_agent_entries(
             let tool_agents: Vec<_> = group.iter().filter(|e| e.source_tool == tool).collect();
 
             // If both project and user exist for same tool, project shadows user
-            let project_agent = tool_agents
-                .iter()
-                .find(|e| e.scope == AgentScope::Project);
+            let project_agent = tool_agents.iter().find(|e| e.scope == AgentScope::Project);
             let user_agent = tool_agents.iter().find(|e| e.scope == AgentScope::User);
 
             if let (Some(proj), Some(_user)) = (project_agent, user_agent) {
@@ -373,9 +369,7 @@ fn process_agent_entries(
                 (AgentScope::User, AgentScope::Project) => std::cmp::Ordering::Greater,
                 _ => std::cmp::Ordering::Equal,
             })
-            .then_with(|| {
-                format!("{:?}", a.source_tool).cmp(&format!("{:?}", b.source_tool))
-            })
+            .then_with(|| format!("{:?}", a.source_tool).cmp(&format!("{:?}", b.source_tool)))
     });
 
     (agents, conflicts)
@@ -527,10 +521,7 @@ mod tests {
             .iter()
             .find(|a| a.scope == AgentScope::Project)
             .unwrap();
-        let user_agent = agents
-            .iter()
-            .find(|a| a.scope == AgentScope::User)
-            .unwrap();
+        let user_agent = agents.iter().find(|a| a.scope == AgentScope::User).unwrap();
 
         assert!(!project_agent.is_shadowed);
         assert!(user_agent.is_shadowed);

@@ -4,8 +4,8 @@ use crate::converters::{
     to_claude_json_preview, to_codex_toml_preview, to_gemini_json_preview, MCPServerInput,
 };
 use crate::helpers::github::{self, GitHubUrl};
-use crate::parsers::{parse_claude_config, parse_codex_config, parse_gemini_config};
 use crate::parsers::parse_skill_content;
+use crate::parsers::{parse_claude_config, parse_codex_config, parse_gemini_config};
 use crate::writers::{mcp_writer, skill_writer};
 use serde::{Deserialize, Serialize};
 use std::collections::HashMap;
@@ -422,6 +422,181 @@ pub fn sync_mcp_to_tools(request: SyncMCPRequest) -> Result<WriteResult, String>
     write_mcp_to_target_tools(&request.name, &mcp, &request.target_tools)
 }
 
+/// Request to remove an MCP from one or more tools
+#[derive(Debug, Clone, Deserialize)]
+#[serde(rename_all = "camelCase")]
+pub struct RemoveMCPRequest {
+    pub name: String,
+    pub target_tools: Vec<String>,
+    /// Scope: user or project
+    pub scope: String,
+    /// Config file path (used for project-scoped MCPs to target the correct file)
+    pub config_path: Option<String>,
+}
+
+/// Request to remove a skill from one or more tools
+#[derive(Debug, Clone, Deserialize)]
+#[serde(rename_all = "camelCase")]
+pub struct RemoveSkillRequest {
+    pub name: String,
+    pub target_tools: Vec<String>,
+    /// Whether to also remove the canonical copy in ~/.agents/skills/
+    pub remove_canonical: bool,
+    /// Scope: user or project
+    pub scope: String,
+    /// Workspace path (required for project scope)
+    pub workspace_path: Option<String>,
+}
+
+/// Result of a remove operation
+#[derive(Debug, Clone, Serialize)]
+#[serde(rename_all = "camelCase")]
+pub struct RemoveResult {
+    pub success: bool,
+    pub removed_files: Vec<String>,
+    pub errors: Vec<String>,
+}
+
+/// Remove an MCP from selected tools' config files
+#[tauri::command]
+pub fn remove_mcp_from_tools(request: RemoveMCPRequest) -> Result<RemoveResult, String> {
+    if request.name.trim().is_empty() {
+        return Err("MCP name is required".to_string());
+    }
+    if request.target_tools.is_empty() {
+        return Err("At least one target tool must be selected".to_string());
+    }
+
+    let mut removed_files = Vec::new();
+    let mut errors = Vec::new();
+
+    for tool in &request.target_tools {
+        // For project-scoped MCPs, use the provided config path directly
+        // (each tool's project config lives in the workspace, not in ~/)
+        let path = if request.scope == "project" {
+            match &request.config_path {
+                Some(p) => PathBuf::from(p),
+                None => {
+                    errors.push(format!(
+                        "{}: config_path required for project-scoped MCP removal",
+                        tool
+                    ));
+                    continue;
+                }
+            }
+        } else {
+            match mcp_config_path(tool) {
+                Ok(p) => p,
+                Err(e) => {
+                    errors.push(e);
+                    continue;
+                }
+            }
+        };
+
+        let result = match tool.as_str() {
+            "codex" => mcp_writer::remove_mcp_from_codex(&request.name, &path),
+            "opencode" => mcp_writer::remove_mcp_from_opencode(&request.name, &path),
+            // All other tools use mcpServers JSON format
+            _ => mcp_writer::remove_mcp_from_json(&request.name, &path),
+        };
+
+        match result {
+            Ok(()) => removed_files.push(path.to_string_lossy().to_string()),
+            Err(e) => errors.push(format!("{}: {}", tool, e)),
+        }
+    }
+
+    Ok(RemoveResult {
+        success: errors.is_empty(),
+        removed_files,
+        errors,
+    })
+}
+
+/// Remove a skill from selected tools (delete files/symlinks)
+#[tauri::command]
+pub fn remove_skill_from_tools(request: RemoveSkillRequest) -> Result<RemoveResult, String> {
+    let safe_name = skill_writer::validate_skill_name(&request.name)?;
+    if request.target_tools.is_empty() {
+        return Err("At least one target tool must be selected".to_string());
+    }
+
+    let home = crate::helpers::effective_home().ok_or("Could not determine home directory")?;
+    let mut removed_files = Vec::new();
+    let mut errors = Vec::new();
+
+    for tool in &request.target_tools {
+        let skills_dir = if request.scope == "project" {
+            match &request.workspace_path {
+                Some(ws) => skill_writer::skill_dir_for_tool_project(tool, ws),
+                None => {
+                    errors.push(format!(
+                        "{}: workspace_path required for project-scoped skill removal",
+                        tool
+                    ));
+                    continue;
+                }
+            }
+        } else {
+            skill_writer::skill_dir_for_tool_pub(tool)
+        };
+        let skills_dir = match skills_dir {
+            Ok(d) => d,
+            Err(e) => {
+                errors.push(format!("{}: {}", tool, e));
+                continue;
+            }
+        };
+        let skill_path = skills_dir.join(&safe_name);
+
+        match remove_path(&skill_path) {
+            Ok(true) => removed_files.push(skill_path.to_string_lossy().to_string()),
+            Ok(false) => {} // Didn't exist — idempotent success
+            Err(e) => errors.push(format!("{}: {}", tool, e)),
+        }
+    }
+
+    // Optionally remove canonical copy
+    if request.remove_canonical {
+        let canonical = home.join(".agents").join("skills").join(&safe_name);
+        match remove_path(&canonical) {
+            Ok(true) => removed_files.push(canonical.to_string_lossy().to_string()),
+            Ok(false) => {}
+            Err(e) => errors.push(format!("canonical: {}", e)),
+        }
+    }
+
+    Ok(RemoveResult {
+        success: errors.is_empty(),
+        removed_files,
+        errors,
+    })
+}
+
+/// Remove a path — handles regular files/dirs, symlinks, and broken symlinks.
+/// Returns Ok(true) if something was removed, Ok(false) if path didn't exist.
+fn remove_path(path: &std::path::Path) -> Result<bool, String> {
+    // Use symlink_metadata to detect symlinks (including broken ones)
+    match std::fs::symlink_metadata(path) {
+        Ok(meta) => {
+            if meta.file_type().is_symlink() {
+                std::fs::remove_file(path)
+                    .map_err(|e| format!("Failed to remove symlink {}: {}", path.display(), e))?;
+            } else if meta.is_dir() {
+                std::fs::remove_dir_all(path)
+                    .map_err(|e| format!("Failed to remove directory {}: {}", path.display(), e))?;
+            } else {
+                std::fs::remove_file(path)
+                    .map_err(|e| format!("Failed to remove file {}: {}", path.display(), e))?;
+            }
+            Ok(true)
+        }
+        Err(e) if e.kind() == std::io::ErrorKind::NotFound => Ok(false),
+        Err(e) => Err(format!("Failed to access {}: {}", path.display(), e)),
+    }
+}
+
 /// Convert a GitHub URL to a raw content URL (used in tests)
 #[cfg(test)]
 fn github_to_raw_url(url: &str) -> Option<String> {
@@ -459,7 +634,6 @@ struct GitHubContentEntry {
     size: Option<u64>,
     download_url: Option<String>,
 }
-
 
 const MAX_FILE_SIZE: u64 = 100_000; // 100 KB limit per companion file
 const SKIP_DIRS: &[&str] = &[".git", ".github", "node_modules", "__pycache__"];
@@ -511,7 +685,11 @@ async fn fetch_github_directory(
             }
             // Recurse into subdirectories
             let sub_files = Box::pin(fetch_github_directory(
-                client, owner, repo, branch, &entry.path,
+                client,
+                owner,
+                repo,
+                branch,
+                &entry.path,
             ))
             .await?;
             files.extend(sub_files);
@@ -566,7 +744,6 @@ async fn fetch_github_directory(
 
     Ok(files)
 }
-
 
 /// Fetch a skill from a URL, parse its frontmatter, and return a preview
 #[tauri::command]
@@ -692,9 +869,9 @@ pub async fn fetch_skill_from_url(url: String) -> Result<FetchedSkill, String> {
                     .map_err(|e| format!("Failed to parse skill: {}", e))?;
 
                 // Fetch companion files from repo root
-                let files =
-                    fetch_github_directory(&client, &owner, &repo, "main", "").await
-                        .unwrap_or_default();
+                let files = fetch_github_directory(&client, &owner, &repo, "main", "")
+                    .await
+                    .unwrap_or_default();
 
                 return Ok(FetchedSkill {
                     name: parsed.name,
@@ -757,8 +934,8 @@ pub fn parse_skill_file_content(content: String, filename: String) -> Result<Fet
 #[tauri::command]
 pub fn read_skill_file(path: String) -> Result<FetchedSkill, String> {
     let path_buf = PathBuf::from(&path);
-    let content = std::fs::read_to_string(&path_buf)
-        .map_err(|e| format!("Failed to read file: {}", e))?;
+    let content =
+        std::fs::read_to_string(&path_buf).map_err(|e| format!("Failed to read file: {}", e))?;
 
     let filename = path_buf
         .file_name()
@@ -770,11 +947,7 @@ pub fn read_skill_file(path: String) -> Result<FetchedSkill, String> {
         .parent()
         .and_then(|p| p.file_name())
         .map(|n| n.to_string_lossy().to_string())
-        .unwrap_or_else(|| {
-            filename
-                .trim_end_matches(".md")
-                .to_string()
-        });
+        .unwrap_or_else(|| filename.trim_end_matches(".md").to_string());
 
     let parsed = parse_skill_content(&content, &fallback_name)
         .map_err(|e| format!("Failed to parse skill: {}", e))?;
@@ -865,7 +1038,34 @@ pub fn install_skill_to_tools(request: InstallSkillRequest) -> Result<WriteResul
 mod tests {
     use super::*;
     use std::fs;
-    use tempfile::NamedTempFile;
+    use std::path::Path;
+    use std::sync::{Mutex, OnceLock};
+    use tempfile::{NamedTempFile, TempDir};
+
+    fn with_loadout_home<T>(home: &Path, f: impl FnOnce() -> T) -> T {
+        static LOCK: OnceLock<Mutex<()>> = OnceLock::new();
+        let _guard = LOCK.get_or_init(|| Mutex::new(())).lock().unwrap();
+
+        let previous = std::env::var("LOADOUT_HOME").ok();
+        std::env::set_var("LOADOUT_HOME", home);
+        let result = f();
+        if let Some(prev) = previous {
+            std::env::set_var("LOADOUT_HOME", prev);
+        } else {
+            std::env::remove_var("LOADOUT_HOME");
+        }
+        result
+    }
+
+    #[cfg(unix)]
+    fn create_dir_symlink(src: &Path, dst: &Path) -> std::io::Result<()> {
+        std::os::unix::fs::symlink(src, dst)
+    }
+
+    #[cfg(windows)]
+    fn create_dir_symlink(src: &Path, dst: &Path) -> std::io::Result<()> {
+        std::os::windows::fs::symlink_dir(src, dst)
+    }
 
     #[test]
     fn test_install_skill_rejects_unknown_method() {
@@ -1046,5 +1246,298 @@ mod tests {
 
         assert_eq!(mcp.mcp_type, "http");
         assert_eq!(mcp.url.as_deref(), Some("https://mcp.linear.app/mcp"));
+    }
+
+    #[test]
+    fn test_remove_mcp_from_specific_tool_only_updates_selected_config() {
+        let home = TempDir::new().unwrap();
+
+        with_loadout_home(home.path(), || {
+            let claude_path = home.path().join(".claude.json");
+            let gemini_path = home.path().join(".gemini").join("settings.json");
+            fs::create_dir_all(gemini_path.parent().unwrap()).unwrap();
+
+            fs::write(
+                &claude_path,
+                r#"{
+  "mcpServers": {
+    "github": { "command": "npx" },
+    "keep": { "command": "node" }
+  }
+}"#,
+            )
+            .unwrap();
+            fs::write(
+                &gemini_path,
+                r#"{
+  "mcpServers": {
+    "github": { "command": "npx" }
+  }
+}"#,
+            )
+            .unwrap();
+
+            let result = remove_mcp_from_tools(RemoveMCPRequest {
+                name: "github".to_string(),
+                target_tools: vec!["claude".to_string()],
+                scope: "user".to_string(),
+                config_path: None,
+            })
+            .unwrap();
+
+            assert!(result.success);
+            assert_eq!(result.errors, Vec::<String>::new());
+            assert_eq!(
+                result.removed_files,
+                vec![claude_path.to_string_lossy().to_string()]
+            );
+
+            let claude_content = fs::read_to_string(&claude_path).unwrap();
+            assert!(!claude_content.contains("\"github\""));
+            assert!(claude_content.contains("\"keep\""));
+
+            let gemini_content = fs::read_to_string(&gemini_path).unwrap();
+            assert!(gemini_content.contains("\"github\""));
+        });
+    }
+
+    #[test]
+    fn test_remove_linked_skill_from_one_tool_keeps_canonical_and_other_links() {
+        let home = TempDir::new().unwrap();
+
+        with_loadout_home(home.path(), || {
+            let canonical = home
+                .path()
+                .join(".agents")
+                .join("skills")
+                .join("shared-skill");
+            fs::create_dir_all(&canonical).unwrap();
+            fs::write(canonical.join("SKILL.md"), "# Shared skill").unwrap();
+
+            let claude_link = home
+                .path()
+                .join(".claude")
+                .join("skills")
+                .join("shared-skill");
+            let gemini_link = home
+                .path()
+                .join(".gemini")
+                .join("skills")
+                .join("shared-skill");
+            fs::create_dir_all(claude_link.parent().unwrap()).unwrap();
+            fs::create_dir_all(gemini_link.parent().unwrap()).unwrap();
+            create_dir_symlink(&canonical, &claude_link).unwrap();
+            create_dir_symlink(&canonical, &gemini_link).unwrap();
+
+            let result = remove_skill_from_tools(RemoveSkillRequest {
+                name: "shared-skill".to_string(),
+                target_tools: vec!["claude".to_string()],
+                remove_canonical: false,
+                scope: "user".to_string(),
+                workspace_path: None,
+            })
+            .unwrap();
+
+            assert!(result.success);
+            assert_eq!(result.errors, Vec::<String>::new());
+            assert_eq!(
+                result.removed_files,
+                vec![claude_link.to_string_lossy().to_string()]
+            );
+            assert!(!claude_link.exists());
+            assert!(fs::symlink_metadata(&gemini_link)
+                .unwrap()
+                .file_type()
+                .is_symlink());
+            assert!(canonical.join("SKILL.md").exists());
+        });
+    }
+
+    #[test]
+    fn test_remove_linked_skill_from_all_tools_also_removes_canonical_copy() {
+        let home = TempDir::new().unwrap();
+
+        with_loadout_home(home.path(), || {
+            let canonical = home
+                .path()
+                .join(".agents")
+                .join("skills")
+                .join("shared-skill");
+            fs::create_dir_all(&canonical).unwrap();
+            fs::write(canonical.join("SKILL.md"), "# Shared skill").unwrap();
+
+            let claude_link = home
+                .path()
+                .join(".claude")
+                .join("skills")
+                .join("shared-skill");
+            let gemini_link = home
+                .path()
+                .join(".gemini")
+                .join("skills")
+                .join("shared-skill");
+            fs::create_dir_all(claude_link.parent().unwrap()).unwrap();
+            fs::create_dir_all(gemini_link.parent().unwrap()).unwrap();
+            create_dir_symlink(&canonical, &claude_link).unwrap();
+            create_dir_symlink(&canonical, &gemini_link).unwrap();
+
+            let result = remove_skill_from_tools(RemoveSkillRequest {
+                name: "shared-skill".to_string(),
+                target_tools: vec!["claude".to_string(), "gemini".to_string()],
+                remove_canonical: true,
+                scope: "user".to_string(),
+                workspace_path: None,
+            })
+            .unwrap();
+
+            assert!(result.success);
+            assert_eq!(result.errors, Vec::<String>::new());
+            assert_eq!(
+                result.removed_files,
+                vec![
+                    claude_link.to_string_lossy().to_string(),
+                    gemini_link.to_string_lossy().to_string(),
+                    canonical.to_string_lossy().to_string(),
+                ]
+            );
+            assert!(!claude_link.exists());
+            assert!(!gemini_link.exists());
+            assert!(!canonical.exists());
+        });
+    }
+
+    #[test]
+    fn test_remove_skill_deletes_broken_symlink() {
+        let home = TempDir::new().unwrap();
+
+        with_loadout_home(home.path(), || {
+            let canonical = home
+                .path()
+                .join(".agents")
+                .join("skills")
+                .join("shared-skill");
+            fs::create_dir_all(canonical.parent().unwrap()).unwrap();
+
+            let claude_link = home
+                .path()
+                .join(".claude")
+                .join("skills")
+                .join("shared-skill");
+            fs::create_dir_all(claude_link.parent().unwrap()).unwrap();
+            create_dir_symlink(&canonical, &claude_link).unwrap();
+
+            let result = remove_skill_from_tools(RemoveSkillRequest {
+                name: "shared-skill".to_string(),
+                target_tools: vec!["claude".to_string()],
+                remove_canonical: false,
+                scope: "user".to_string(),
+                workspace_path: None,
+            })
+            .unwrap();
+
+            assert!(result.success);
+            assert_eq!(result.errors, Vec::<String>::new());
+            assert_eq!(
+                result.removed_files,
+                vec![claude_link.to_string_lossy().to_string()]
+            );
+            assert!(!claude_link.exists());
+        });
+    }
+
+    #[test]
+    fn test_remove_project_scoped_mcp_uses_config_path() {
+        let home = TempDir::new().unwrap();
+        let workspace = TempDir::new().unwrap();
+
+        with_loadout_home(home.path(), || {
+            // Create project-level .mcp.json
+            let config_path = workspace.path().join(".mcp.json");
+            fs::write(
+                &config_path,
+                r#"{
+  "mcpServers": {
+    "local-mcp": { "command": "node", "args": ["server.js"] },
+    "keep-mcp": { "command": "python", "args": ["serve.py"] }
+  }
+}"#,
+            )
+            .unwrap();
+
+            // Also create user-level config to verify it's NOT touched
+            let user_claude = home.path().join(".claude.json");
+            fs::write(
+                &user_claude,
+                r#"{"mcpServers": {"local-mcp": {"command": "other"}}}"#,
+            )
+            .unwrap();
+
+            let result = remove_mcp_from_tools(RemoveMCPRequest {
+                name: "local-mcp".to_string(),
+                target_tools: vec!["claude".to_string()],
+                scope: "project".to_string(),
+                config_path: Some(config_path.to_string_lossy().to_string()),
+            })
+            .unwrap();
+
+            assert!(result.success);
+            assert_eq!(result.errors, Vec::<String>::new());
+
+            // Project config should have local-mcp removed
+            let project_content = fs::read_to_string(&config_path).unwrap();
+            assert!(!project_content.contains("\"local-mcp\""));
+            assert!(project_content.contains("\"keep-mcp\""));
+
+            // User config should be untouched
+            let user_content = fs::read_to_string(&user_claude).unwrap();
+            assert!(user_content.contains("\"local-mcp\""));
+        });
+    }
+
+    #[test]
+    fn test_remove_project_scoped_skill_uses_workspace_path() {
+        let home = TempDir::new().unwrap();
+        let workspace = TempDir::new().unwrap();
+
+        with_loadout_home(home.path(), || {
+            // Create project-level skill
+            let project_skill = workspace
+                .path()
+                .join(".claude")
+                .join("skills")
+                .join("local-skill");
+            fs::create_dir_all(&project_skill).unwrap();
+            fs::write(project_skill.join("SKILL.md"), "# Project skill").unwrap();
+
+            // Also create user-level skill with same name to verify it's NOT touched
+            let user_skill = home
+                .path()
+                .join(".claude")
+                .join("skills")
+                .join("local-skill");
+            fs::create_dir_all(&user_skill).unwrap();
+            fs::write(user_skill.join("SKILL.md"), "# User skill").unwrap();
+
+            let result = remove_skill_from_tools(RemoveSkillRequest {
+                name: "local-skill".to_string(),
+                target_tools: vec!["claude".to_string()],
+                remove_canonical: false,
+                scope: "project".to_string(),
+                workspace_path: Some(workspace.path().to_string_lossy().to_string()),
+            })
+            .unwrap();
+
+            assert!(result.success);
+            assert_eq!(result.errors, Vec::<String>::new());
+            assert_eq!(
+                result.removed_files,
+                vec![project_skill.to_string_lossy().to_string()]
+            );
+
+            // Project skill should be gone
+            assert!(!project_skill.exists());
+            // User skill should still exist
+            assert!(user_skill.join("SKILL.md").exists());
+        });
     }
 }
