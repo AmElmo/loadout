@@ -35,6 +35,10 @@ pnpm tauri build         # Build full application
 
 `fixtures/home/` contains a realistic mock home directory with configurations for Claude, Codex, and Gemini (skills, rules, hooks, MCPs, and project-level settings). Use `pnpm tauri:dev:fixtures` to run the app against these fixtures instead of your real home directory. `fixtures/empty/` is a bare directory with no AI tool configs — use `pnpm tauri:dev:empty` to see all empty states across the UI. The `LOADOUT_HOME` env var is only honored in debug builds.
 
+## AI Tools Documentation
+
+`docs/ai-tools-reference.md` maps every supported tool (Claude, Codex, Gemini, Cursor, Copilot, Windsurf, Roo, Cline, Kilo, OpenCode) and concept (MCPs, skills, agents, hooks, prompts, plugins, commands) to its official documentation URL. When modifying scanners, parsers, or fixture data for any AI tool, always consult this reference **and** verify against live docs using `context7` or web search — config formats change frequently and the reference file may lag behind.
+
 ## Conventions
 
 - Use `@` path alias for `src/` imports
