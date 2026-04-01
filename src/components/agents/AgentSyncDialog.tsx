@@ -9,8 +9,6 @@ import { ToolLogo } from "@/components/ToolLogo";
 import { TOOL_CONFIG } from "@/config/tools";
 import { useEscapeKey } from "@/hooks/useEscapeKey";
 import { cn } from "@/lib/utils";
-import { useWorkspaceStore } from "@/stores/workspaceStore";
-
 const AGENT_TOOLS: AgentSourceTool[] = ["claude", "gemini"];
 
 interface AgentSyncDialogProps {
@@ -20,7 +18,6 @@ interface AgentSyncDialogProps {
 
 export function AgentSyncDialog({ group, onClose }: AgentSyncDialogProps) {
   const queryClient = useQueryClient();
-  const { current } = useWorkspaceStore();
   const stableOnClose = useCallback(() => onClose(), [onClose]);
   useEscapeKey(stableOnClose);
 
@@ -38,7 +35,7 @@ export function AgentSyncDialog({ group, onClose }: AgentSyncDialogProps) {
         sourcePath: group.primary.path,
         targetTools,
         scope: group.scope,
-        workspacePath: current?.path,
+        workspacePath: undefined,
       });
     },
     onSuccess: () => {

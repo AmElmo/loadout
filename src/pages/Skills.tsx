@@ -1,7 +1,6 @@
-import { useCallback, useEffect, useMemo, useRef, useState } from "react";
-import { RefreshCw, AlertCircle, FolderOpen, Plus, Download } from "lucide-react";
+import { useCallback, useMemo, useRef, useState } from "react";
+import { RefreshCw, AlertCircle, Plus, Download } from "lucide-react";
 import { useQuery } from "@tanstack/react-query";
-import { useWorkspaceStore } from "@/stores/workspaceStore";
 import { scanSkills } from "@/lib/api/skills";
 import { SkillList, ConflictWarning } from "@/components/skills";
 import { FilterBar, SearchBar } from "@/components/filters";
@@ -15,7 +14,6 @@ import { groupSkills } from "@/lib/groupSkills";
 import { cn } from "@/lib/utils";
 
 export function Skills() {
-  const { current } = useWorkspaceStore();
   const [showImportDialog, setShowImportDialog] = useState(false);
   const searchRef = useRef<HTMLInputElement>(null);
   useShortcutAction("focus-search", () => searchRef.current?.focus());
@@ -25,14 +23,8 @@ export function Skills() {
     name: string;
   } | null>(null);
   const [activeTools, setActiveTools] = useState<SourceTool[]>([]);
-  const [activeScopes, setActiveScopes] = useState<string[]>([]);
   const [searchQuery, setSearchQuery] = useState("");
   const [isDragOver, setIsDragOver] = useState(false);
-
-  useEffect(() => {
-    // eslint-disable-next-line react-hooks/set-state-in-effect -- reset filters when workspace changes
-    if (!current) setActiveScopes([]);
-  }, [current]);
 
   const {
     data: result,
@@ -41,8 +33,8 @@ export function Skills() {
     refetch,
     isRefetching,
   } = useQuery({
-    queryKey: ["skills", current?.repo_root ?? current?.path ?? null],
-    queryFn: () => scanSkills(current?.repo_root ?? current?.path),
+    queryKey: ["skills", null],
+    queryFn: () => scanSkills(undefined),
   });
 
   useShortcutAction("refresh", () => refetch());
@@ -66,23 +58,19 @@ export function Skills() {
       if (activeTools.length > 0 && !group.installedTools.some((t) => activeTools.includes(t))) {
         return false;
       }
-      if (activeScopes.length > 0 && !activeScopes.includes(group.scope)) {
-        return false;
-      }
       if (query && !group.name.toLowerCase().includes(query) && !group.description?.toLowerCase().includes(query)) {
         return false;
       }
       return true;
     });
-  }, [groupedSkills, activeTools, activeScopes, searchQuery]);
+  }, [groupedSkills, activeTools, searchQuery]);
 
   const { visibleItems, hasMore, sentinelRef } = useInfiniteList(filteredSkills);
 
-  const hasActiveFilters = activeTools.length > 0 || activeScopes.length > 0 || searchQuery.length > 0;
+  const hasActiveFilters = activeTools.length > 0 || searchQuery.length > 0;
 
   function clearFilters() {
     setActiveTools([]);
-    setActiveScopes([]);
     setSearchQuery("");
   }
 
@@ -159,16 +147,6 @@ export function Skills() {
         </div>
       </div>
 
-      {!current && (
-        <div className="mb-4 flex items-center gap-2 rounded-lg border border-border bg-muted/50 px-3 py-2 text-sm text-muted-foreground">
-          <FolderOpen className="h-4 w-4 shrink-0" />
-          <span>
-            Showing user-level skills. Select a workspace to also see
-            project-level skills.
-          </span>
-        </div>
-      )}
-
       {result && groupedSkills.length > 0 && (
         <div className="mb-4 flex items-center gap-4">
           <SearchBar
@@ -180,9 +158,9 @@ export function Skills() {
           <FilterBar
             activeTools={activeTools}
             onToolsChange={setActiveTools}
-            activeScopes={activeScopes}
-            onScopesChange={setActiveScopes}
-            showScopeFilter={!!current}
+            activeScopes={[]}
+            onScopesChange={() => {}}
+            showScopeFilter={false}
             availableTools={availableTools}
           />
         </div>

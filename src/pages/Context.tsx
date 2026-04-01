@@ -1,8 +1,7 @@
 import { useState, useMemo } from "react";
-import { RefreshCw, AlertCircle, FolderOpen, Zap, HelpCircle, KeyRound } from "lucide-react";
+import { RefreshCw, AlertCircle, Zap, HelpCircle, KeyRound } from "lucide-react";
 import { useQuery } from "@tanstack/react-query";
 import { cn } from "@/lib/utils";
-import { useWorkspaceStore } from "@/stores/workspaceStore";
 import { scanRules } from "@/lib/api/config";
 import { scanMCPs, fetchMCPTools } from "@/lib/api/mcps";
 import { scanSkills } from "@/lib/api/skills";
@@ -23,8 +22,6 @@ function buildToolFilters(tools: SourceTool[]) {
 }
 
 export function Context() {
-  const { current } = useWorkspaceStore();
-  const workspacePath = current?.repo_root ?? current?.path ?? undefined;
 
   const [activeTool, setActiveTool] = useState<SourceTool>("claude");
   const [showHelp, setShowHelp] = useState(false);
@@ -35,8 +32,8 @@ export function Context() {
     isLoading: rulesLoading,
     error: rulesError,
   } = useQuery({
-    queryKey: ["rules", workspacePath ?? null],
-    queryFn: () => scanRules(workspacePath),
+    queryKey: ["rules", null],
+    queryFn: () => scanRules(undefined),
   });
 
   // Fetch skills
@@ -45,16 +42,16 @@ export function Context() {
     isLoading: skillsLoading,
     error: skillsError,
   } = useQuery({
-    queryKey: ["skills", workspacePath ?? null],
-    queryFn: () => scanSkills(workspacePath),
+    queryKey: ["skills", null],
+    queryFn: () => scanSkills(undefined),
   });
 
   // Fetch MCPs
   const {
     data: mcps,
   } = useQuery({
-    queryKey: ["mcps", workspacePath ?? null],
-    queryFn: () => scanMCPs(workspacePath),
+    queryKey: ["mcps", null],
+    queryFn: () => scanMCPs(undefined),
   });
 
   // MCP tool definitions (fetched on-demand)
@@ -220,16 +217,6 @@ export function Context() {
           </div>
         )}
       </div>
-
-      {!current && (
-        <div className="mb-4 flex items-center gap-2 rounded-lg border border-border bg-muted/50 px-3 py-2 text-sm text-muted-foreground">
-          <FolderOpen className="h-4 w-4 shrink-0" />
-          <span>
-            Showing global config only. Select a workspace to include
-            project-level rules and skills.
-          </span>
-        </div>
-      )}
 
       {isLoading && (
         <div className="flex items-center justify-center py-12">
