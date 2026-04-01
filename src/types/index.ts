@@ -407,6 +407,10 @@ export interface WriteResult {
 export interface RemoveMCPRequest {
   name: string;
   targetTools: SourceTool[];
+  /** Scope: user or project */
+  scope: Scope;
+  /** Config file path (used for project-scoped MCPs to target the correct file) */
+  configPath?: string;
 }
 
 /**
@@ -417,6 +421,10 @@ export interface RemoveSkillRequest {
   targetTools: SourceTool[];
   /** Whether to also remove the canonical copy in ~/.agents/skills/ */
   removeCanonical: boolean;
+  /** Scope: user or project */
+  scope: SkillScope;
+  /** Workspace path (required for project scope) */
+  workspacePath?: string;
 }
 
 /**

@@ -428,6 +428,10 @@ pub fn sync_mcp_to_tools(request: SyncMCPRequest) -> Result<WriteResult, String>
 pub struct RemoveMCPRequest {
     pub name: String,
     pub target_tools: Vec<String>,
+    /// Scope: user or project
+    pub scope: String,
+    /// Config file path (used for project-scoped MCPs to target the correct file)
+    pub config_path: Option<String>,
 }
 
 /// Request to remove a skill from one or more tools
@@ -438,6 +442,10 @@ pub struct RemoveSkillRequest {
     pub target_tools: Vec<String>,
     /// Whether to also remove the canonical copy in ~/.agents/skills/
     pub remove_canonical: bool,
+    /// Scope: user or project
+    pub scope: String,
+    /// Workspace path (required for project scope)
+    pub workspace_path: Option<String>,
 }
 
 /// Result of a remove operation
@@ -463,11 +471,26 @@ pub fn remove_mcp_from_tools(request: RemoveMCPRequest) -> Result<RemoveResult, 
     let mut errors = Vec::new();
 
     for tool in &request.target_tools {
-        let path = match mcp_config_path(tool) {
-            Ok(p) => p,
-            Err(e) => {
-                errors.push(e);
-                continue;
+        // For project-scoped MCPs, use the provided config path directly
+        // (each tool's project config lives in the workspace, not in ~/)
+        let path = if request.scope == "project" {
+            match &request.config_path {
+                Some(p) => PathBuf::from(p),
+                None => {
+                    errors.push(format!(
+                        "{}: config_path required for project-scoped MCP removal",
+                        tool
+                    ));
+                    continue;
+                }
+            }
+        } else {
+            match mcp_config_path(tool) {
+                Ok(p) => p,
+                Err(e) => {
+                    errors.push(e);
+                    continue;
+                }
             }
         };
 
@@ -504,7 +527,21 @@ pub fn remove_skill_from_tools(request: RemoveSkillRequest) -> Result<RemoveResu
     let mut errors = Vec::new();
 
     for tool in &request.target_tools {
-        let skills_dir = match skill_writer::skill_dir_for_tool_pub(tool) {
+        let skills_dir = if request.scope == "project" {
+            match &request.workspace_path {
+                Some(ws) => skill_writer::skill_dir_for_tool_project(tool, ws),
+                None => {
+                    errors.push(format!(
+                        "{}: workspace_path required for project-scoped skill removal",
+                        tool
+                    ));
+                    continue;
+                }
+            }
+        } else {
+            skill_writer::skill_dir_for_tool_pub(tool)
+        };
+        let skills_dir = match skills_dir {
             Ok(d) => d,
             Err(e) => {
                 errors.push(format!("{}: {}", tool, e));
@@ -1243,6 +1280,8 @@ mod tests {
             let result = remove_mcp_from_tools(RemoveMCPRequest {
                 name: "github".to_string(),
                 target_tools: vec!["claude".to_string()],
+                scope: "user".to_string(),
+                config_path: None,
             })
             .unwrap();
 
@@ -1294,6 +1333,8 @@ mod tests {
                 name: "shared-skill".to_string(),
                 target_tools: vec!["claude".to_string()],
                 remove_canonical: false,
+                scope: "user".to_string(),
+                workspace_path: None,
             })
             .unwrap();
 
@@ -1344,6 +1385,8 @@ mod tests {
                 name: "shared-skill".to_string(),
                 target_tools: vec!["claude".to_string(), "gemini".to_string()],
                 remove_canonical: true,
+                scope: "user".to_string(),
+                workspace_path: None,
             })
             .unwrap();
 
@@ -1387,6 +1430,8 @@ mod tests {
                 name: "shared-skill".to_string(),
                 target_tools: vec!["claude".to_string()],
                 remove_canonical: false,
+                scope: "user".to_string(),
+                workspace_path: None,
             })
             .unwrap();
 
@@ -1397,6 +1442,102 @@ mod tests {
                 vec![claude_link.to_string_lossy().to_string()]
             );
             assert!(!claude_link.exists());
+        });
+    }
+
+    #[test]
+    fn test_remove_project_scoped_mcp_uses_config_path() {
+        let home = TempDir::new().unwrap();
+        let workspace = TempDir::new().unwrap();
+
+        with_loadout_home(home.path(), || {
+            // Create project-level .mcp.json
+            let config_path = workspace.path().join(".mcp.json");
+            fs::write(
+                &config_path,
+                r#"{
+  "mcpServers": {
+    "local-mcp": { "command": "node", "args": ["server.js"] },
+    "keep-mcp": { "command": "python", "args": ["serve.py"] }
+  }
+}"#,
+            )
+            .unwrap();
+
+            // Also create user-level config to verify it's NOT touched
+            let user_claude = home.path().join(".claude.json");
+            fs::write(
+                &user_claude,
+                r#"{"mcpServers": {"local-mcp": {"command": "other"}}}"#,
+            )
+            .unwrap();
+
+            let result = remove_mcp_from_tools(RemoveMCPRequest {
+                name: "local-mcp".to_string(),
+                target_tools: vec!["claude".to_string()],
+                scope: "project".to_string(),
+                config_path: Some(config_path.to_string_lossy().to_string()),
+            })
+            .unwrap();
+
+            assert!(result.success);
+            assert_eq!(result.errors, Vec::<String>::new());
+
+            // Project config should have local-mcp removed
+            let project_content = fs::read_to_string(&config_path).unwrap();
+            assert!(!project_content.contains("\"local-mcp\""));
+            assert!(project_content.contains("\"keep-mcp\""));
+
+            // User config should be untouched
+            let user_content = fs::read_to_string(&user_claude).unwrap();
+            assert!(user_content.contains("\"local-mcp\""));
+        });
+    }
+
+    #[test]
+    fn test_remove_project_scoped_skill_uses_workspace_path() {
+        let home = TempDir::new().unwrap();
+        let workspace = TempDir::new().unwrap();
+
+        with_loadout_home(home.path(), || {
+            // Create project-level skill
+            let project_skill = workspace
+                .path()
+                .join(".claude")
+                .join("skills")
+                .join("local-skill");
+            fs::create_dir_all(&project_skill).unwrap();
+            fs::write(project_skill.join("SKILL.md"), "# Project skill").unwrap();
+
+            // Also create user-level skill with same name to verify it's NOT touched
+            let user_skill = home
+                .path()
+                .join(".claude")
+                .join("skills")
+                .join("local-skill");
+            fs::create_dir_all(&user_skill).unwrap();
+            fs::write(user_skill.join("SKILL.md"), "# User skill").unwrap();
+
+            let result = remove_skill_from_tools(RemoveSkillRequest {
+                name: "local-skill".to_string(),
+                target_tools: vec!["claude".to_string()],
+                remove_canonical: false,
+                scope: "project".to_string(),
+                workspace_path: Some(workspace.path().to_string_lossy().to_string()),
+            })
+            .unwrap();
+
+            assert!(result.success);
+            assert_eq!(result.errors, Vec::<String>::new());
+            assert_eq!(
+                result.removed_files,
+                vec![project_skill.to_string_lossy().to_string()]
+            );
+
+            // Project skill should be gone
+            assert!(!project_skill.exists());
+            // User skill should still exist
+            assert!(user_skill.join("SKILL.md").exists());
         });
     }
 }

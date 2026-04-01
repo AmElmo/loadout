@@ -220,7 +220,12 @@ export function MCPCard({ mcp }: MCPCardProps) {
             detail: `Remove ${mcp.name} entry from ${TOOL_CONFIG[tool]?.label ?? tool}'s config file`,
           }))}
           onRemove={(targetTools) =>
-            removeMCPFromTools({ name: mcp.name, targetTools })
+            removeMCPFromTools({
+              name: mcp.name,
+              targetTools,
+              scope: mcp.scope,
+              configPath: mcp.scope === "project" ? mcp.path : undefined,
+            })
           }
           onClose={() => setShowRemove(false)}
           queryKey="mcps"

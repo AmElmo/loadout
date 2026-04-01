@@ -16,6 +16,7 @@ import { MarkdownPreview } from "@/components/ui/markdown-preview";
 import { OpenPathButton } from "@/components/ui/open-path-button";
 import { cn } from "@/lib/utils";
 import { useEscapeKey } from "@/hooks/useEscapeKey";
+import { useWorkspaceStore } from "@/stores/workspaceStore";
 
 const AGENT_TOOLS: AgentSourceTool[] = ["claude", "gemini"];
 
@@ -26,6 +27,7 @@ interface AgentViewerProps {
 
 export function AgentViewer({ group, onClose }: AgentViewerProps) {
   const queryClient = useQueryClient();
+  const { current } = useWorkspaceStore();
   const [copied, setCopied] = useState(false);
   const [showSync, setShowSync] = useState(false);
   const [showRemove, setShowRemove] = useState(false);
@@ -249,7 +251,9 @@ export function AgentViewer({ group, onClose }: AgentViewerProps) {
                 ?.replace(/\.md$/, "") ?? group.name,
               targetTools: targetTools as AgentSourceTool[],
               scope: group.scope,
-              workspacePath: undefined,
+              workspacePath: group.scope === "project"
+                ? (current?.repo_root ?? current?.path)
+                : undefined,
             })
           }
           onClose={() => setShowRemove(false)}
