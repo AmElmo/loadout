@@ -64,6 +64,8 @@ const PRUNE_DIRS: &[&str] = &[
     ".venv",
     "__pycache__",
     ".tox",
+    "Desktop",
+    "Documents",
     "Pictures",
     "Music",
     "Movies",
