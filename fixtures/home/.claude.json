@@ -1,46 +1,85 @@
 {
   "mcpServers": {
-    "github": {
-      "type": "stdio",
+    "context7": {
+      "args": [
+        "-y",
+        "@upstash/context7-mcp@latest"
+      ],
       "command": "npx",
-      "args": ["-y", "@modelcontextprotocol/server-github"],
-      "env": { "GITHUB_TOKEN": "ghp_FAKE_TOKEN_FOR_TESTING_000" }
-    },
-    "linear": {
-      "type": "http",
-      "url": "https://mcp.linear.app/sse",
-      "headers": { "x-api-key": "lin_api_FAKE_TOKEN_FOR_TESTING" }
+      "type": "stdio"
     },
     "filesystem": {
-      "type": "stdio",
+      "args": [
+        "-y",
+        "@modelcontextprotocol/server-filesystem",
+        "/Users/demo/projects"
+      ],
       "command": "npx",
-      "args": ["-y", "@modelcontextprotocol/server-filesystem", "/Users/demo/projects"]
+      "type": "stdio"
     },
-    "brave-search": {
-      "type": "stdio",
-      "command": "npx",
-      "args": ["-y", "@modelcontextprotocol/server-brave-search"],
-      "env": { "BRAVE_API_KEY": "BSA_FAKE_TOKEN_FOR_TESTING" }
-    },
-    "notion": {
+    "linear": {
+      "headers": {
+        "x-api-key": "lin_api_FAKE_TOKEN_FOR_TESTING"
+      },
       "type": "http",
-      "url": "https://mcp.notion.so/mcp",
-      "headers": { "Authorization": "Bearer ntn_FAKE_TOKEN_FOR_TESTING" }
+      "url": "https://mcp.linear.app/sse"
     },
     "memory": {
-      "type": "stdio",
+      "args": [
+        "-y",
+        "@modelcontextprotocol/server-memory"
+      ],
       "command": "npx",
-      "args": ["-y", "@modelcontextprotocol/server-memory"]
+      "type": "stdio"
+    },
+    "notion": {
+      "headers": {
+        "Authorization": "Bearer ntn_FAKE_TOKEN_FOR_TESTING"
+      },
+      "type": "http",
+      "url": "https://mcp.notion.so/mcp"
     },
     "puppeteer": {
-      "type": "stdio",
+      "args": [
+        "-y",
+        "@modelcontextprotocol/server-puppeteer"
+      ],
       "command": "npx",
-      "args": ["-y", "@modelcontextprotocol/server-puppeteer"]
+      "type": "stdio"
     },
-    "context7": {
-      "type": "stdio",
+    "github": {
+      "args": [
+        "-y",
+        "@modelcontextprotocol/server-github"
+      ],
       "command": "npx",
-      "args": ["-y", "@upstash/context7-mcp@latest"]
+      "env": {
+        "GITHUB_TOKEN": "ghp_FAKE_TOKEN_FOR_TESTING_000"
+      },
+      "type": "stdio"
+    },
+    "sentry": {
+      "args": [
+        "-y",
+        "@sentry/mcp-server"
+      ],
+      "command": "npx",
+      "env": {
+        "SENTRY_AUTH_TOKEN": "sntrys_FAKE_TOKEN_FOR_TESTING"
+      },
+      "type": "stdio"
+    },
+    "slack": {
+      "args": [
+        "-y",
+        "@modelcontextprotocol/server-slack"
+      ],
+      "command": "npx",
+      "env": {
+        "SLACK_BOT_TOKEN": "xoxb-FAKE-TOKEN-FOR-TESTING",
+        "SLACK_TEAM_ID": "T01ACME"
+      },
+      "type": "stdio"
     }
   }
 }
