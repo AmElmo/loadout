@@ -2,7 +2,7 @@
   "$schema": "../node_modules/@tauri-apps/cli/config.schema.json",
   "productName": "Loadout",
   "version": "0.2.2",
-  "identifier": "com.loadout.app",
+  "identifier": "com.amelmo.loadout",
   "build": {
     "frontendDist": "../dist",
     "devUrl": "http://localhost:5173",
