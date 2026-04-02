@@ -1037,25 +1037,10 @@ pub fn install_skill_to_tools(request: InstallSkillRequest) -> Result<WriteResul
 #[cfg(test)]
 mod tests {
     use super::*;
+    use crate::test_utils::with_loadout_home;
     use std::fs;
     use std::path::Path;
-    use std::sync::{Mutex, OnceLock};
     use tempfile::{NamedTempFile, TempDir};
-
-    fn with_loadout_home<T>(home: &Path, f: impl FnOnce() -> T) -> T {
-        static LOCK: OnceLock<Mutex<()>> = OnceLock::new();
-        let _guard = LOCK.get_or_init(|| Mutex::new(())).lock().unwrap();
-
-        let previous = std::env::var("LOADOUT_HOME").ok();
-        std::env::set_var("LOADOUT_HOME", home);
-        let result = f();
-        if let Some(prev) = previous {
-            std::env::set_var("LOADOUT_HOME", prev);
-        } else {
-            std::env::remove_var("LOADOUT_HOME");
-        }
-        result
-    }
 
     #[cfg(unix)]
     fn create_dir_symlink(src: &Path, dst: &Path) -> std::io::Result<()> {

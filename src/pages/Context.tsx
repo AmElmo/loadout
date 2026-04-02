@@ -13,6 +13,11 @@ import { Button } from "@/components/ui/button";
 import type { MCPItem, MCPToolsResult, SourceTool } from "@/types";
 import { ToolLogo } from "@/components/ToolLogo";
 import { ALL_TOOLS, TOOL_CONFIG } from "@/config/tools";
+import type { PromptFile, SkillItem } from "@/types";
+
+const EMPTY_PROMPTS: PromptFile[] = [];
+const EMPTY_SKILLS: SkillItem[] = [];
+const EMPTY_MCPS: MCPItem[] = [];
 
 function buildToolFilters(tools: SourceTool[]) {
   return tools.map((id) => ({
@@ -22,7 +27,6 @@ function buildToolFilters(tools: SourceTool[]) {
 }
 
 export function Context() {
-
   const [activeTool, setActiveTool] = useState<SourceTool>("claude");
   const [showHelp, setShowHelp] = useState(false);
 
@@ -144,9 +148,9 @@ export function Context() {
     }
   };
 
-  const prompts = rulesResult?.prompts ?? [];
-  const skills = skillsResult?.skills ?? [];
-  const mcpsList = mcps ?? [];
+  const prompts = rulesResult?.prompts ?? EMPTY_PROMPTS;
+  const skills = skillsResult?.skills ?? EMPTY_SKILLS;
+  const mcpsList = mcps ?? EMPTY_MCPS;
 
   const availableTools = useMemo(() => {
     const tools = new Set<SourceTool>();

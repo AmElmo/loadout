@@ -25,6 +25,6 @@ Loadout is a desktop application that reads and writes AI CLI configuration file
 
 | Version | Supported |
 | ------- | --------- |
-| 0.1.x   | Yes       |
+| Latest release | Yes |
 
 Only the latest release receives security patches.
