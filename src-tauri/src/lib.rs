@@ -7,6 +7,8 @@ mod converters;
 pub mod helpers;
 mod parsers;
 mod scanners;
+#[cfg(test)]
+pub(crate) mod test_utils;
 mod workspace;
 mod writers;
 

@@ -30,7 +30,6 @@ function App() {
     mainRef.current?.scrollTo(0, 0);
     // Clear selected repo when navigating away from repos tab
     if (activeTab !== "repos") {
-      // eslint-disable-next-line react-hooks/set-state-in-effect -- intentional: reset repo selection on tab change
       setSelectedRepo(null);
     }
   }, [activeTab, setSelectedRepo]);

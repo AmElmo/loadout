@@ -28,6 +28,12 @@ import type {
 import { ToolLogo } from "@/components/ToolLogo";
 import { ALL_TOOLS, toolLabel, toolTextColor, toolAccentColor } from "@/config/tools";
 
+const EMPTY_MCPS: MCPItem[] = [];
+const EMPTY_SKILLS: SkillItem[] = [];
+const EMPTY_RULES: PromptFile[] = [];
+const EMPTY_HOOKS: HookItem[] = [];
+const EMPTY_WORKSPACES: DiscoveredWorkspace[] = [];
+
 // ---------------------------------------------------------------------------
 // Stat Card
 // ---------------------------------------------------------------------------
@@ -285,11 +291,16 @@ export function Home() {
     staleTime: 5 * 60 * 1000,
   });
 
-  const mcpsList = mcps ?? [];
-  const skills = skillsResult?.skills ?? [];
-  const rules = (rulesResult?.prompts ?? []).filter((r) => r.exists);
-  const hooks = hooksResult?.hooks ?? [];
-  const workspaces = (discovery?.workspaces ?? []).filter(isRealWorkspace);
+  const mcpsList = mcps ?? EMPTY_MCPS;
+  const skills = skillsResult?.skills ?? EMPTY_SKILLS;
+  const prompts = rulesResult?.prompts ?? EMPTY_RULES;
+  const rules = useMemo(() => prompts.filter((r) => r.exists), [prompts]);
+  const hooks = hooksResult?.hooks ?? EMPTY_HOOKS;
+  const discoveredWorkspaces = discovery?.workspaces ?? EMPTY_WORKSPACES;
+  const workspaces = useMemo(
+    () => discoveredWorkspaces.filter(isRealWorkspace),
+    [discoveredWorkspaces]
+  );
 
   const error = mcpsError || skillsError || rulesError || hooksError;
 

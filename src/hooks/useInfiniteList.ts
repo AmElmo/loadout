@@ -1,14 +1,28 @@
-import { useState, useEffect, useRef, useCallback } from "react";
+import { useReducer, useEffect, useRef, useCallback } from "react";
 
 const DEFAULT_BATCH_SIZE = 20;
 
+type InfiniteListAction =
+  | { type: "reset"; batchSize: number }
+  | { type: "load-more"; batchSize: number; itemCount: number };
+
+function infiniteListReducer(visibleCount: number, action: InfiniteListAction) {
+  switch (action.type) {
+    case "reset":
+      return action.batchSize;
+    case "load-more":
+      return Math.min(visibleCount + action.batchSize, action.itemCount);
+    default:
+      return visibleCount;
+  }
+}
+
 export function useInfiniteList<T>(items: T[], batchSize = DEFAULT_BATCH_SIZE) {
-  const [visibleCount, setVisibleCount] = useState(batchSize);
+  const [visibleCount, dispatch] = useReducer(infiniteListReducer, batchSize);
   const sentinelRef = useRef<HTMLDivElement | null>(null);
 
-  // Reset visible count when items change (new search/filter)
   useEffect(() => {
-    setVisibleCount(batchSize);
+    dispatch({ type: "reset", batchSize });
   }, [items, batchSize]);
 
   const sentinelCallback = useCallback(
@@ -26,7 +40,7 @@ export function useInfiniteList<T>(items: T[], batchSize = DEFAULT_BATCH_SIZE) {
     const observer = new IntersectionObserver(
       (entries) => {
         if (entries[0].isIntersecting) {
-          setVisibleCount((prev) => Math.min(prev + batchSize, items.length));
+          dispatch({ type: "load-more", batchSize, itemCount: items.length });
         }
       },
       { rootMargin: "200px" }
@@ -34,7 +48,6 @@ export function useInfiniteList<T>(items: T[], batchSize = DEFAULT_BATCH_SIZE) {
 
     observer.observe(sentinel);
     return () => observer.disconnect();
-    // eslint-disable-next-line react-hooks/exhaustive-deps -- sentinelRef.current is set via callback ref
   }, [items.length, batchSize]);
 
   const visibleItems = items.slice(0, visibleCount);

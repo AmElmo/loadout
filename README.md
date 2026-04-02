@@ -5,8 +5,8 @@
 <p align="center">
   <a href="https://github.com/AmElmo/loadout/releases/latest"><img src="https://img.shields.io/github/v/release/AmElmo/loadout?style=flat-square&color=3B82F6" alt="Latest Release"></a>
   <a href="https://github.com/AmElmo/loadout/releases"><img src="https://img.shields.io/github/downloads/AmElmo/loadout/total?style=flat-square&color=10b981" alt="Downloads"></a>
-  <a href="https://github.com/AmElmo/loadout/blob/main/src-tauri/Cargo.toml#L6"><img src="https://img.shields.io/badge/license-MIT-blue?style=flat-square" alt="License"></a>
-  <a href="https://github.com/AmElmo/loadout/actions/workflows/release.yml"><img src="https://img.shields.io/github/actions/workflow/status/AmElmo/loadout/release.yml?style=flat-square&label=build" alt="Build"></a>
+  <a href="https://github.com/AmElmo/loadout/blob/main/LICENSE"><img src="https://img.shields.io/badge/license-MIT-blue?style=flat-square" alt="License"></a>
+  <a href="https://github.com/AmElmo/loadout/actions/workflows/ci.yml"><img src="https://img.shields.io/github/actions/workflow/status/AmElmo/loadout/ci.yml?style=flat-square&label=ci" alt="CI"></a>
 </p>
 
 <p align="center">

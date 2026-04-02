@@ -2,6 +2,14 @@
   "name": "loadout",
   "private": true,
   "version": "0.4.0",
+  "homepage": "https://github.com/AmElmo/loadout",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/AmElmo/loadout.git"
+  },
+  "bugs": {
+    "url": "https://github.com/AmElmo/loadout/issues"
+  },
   "type": "module",
   "scripts": {
     "dev": "vite",

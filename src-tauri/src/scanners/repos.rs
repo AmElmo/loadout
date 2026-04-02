@@ -354,24 +354,9 @@ pub fn scan_repos_without_rules(max_depth: u32) -> Result<RepoScanResult, String
 #[cfg(test)]
 mod tests {
     use super::*;
+    use crate::test_utils::with_loadout_home;
     use std::fs;
-    use std::sync::{Mutex, OnceLock};
     use tempfile::TempDir;
-
-    fn with_loadout_home<T>(home: &Path, f: impl FnOnce() -> T) -> T {
-        static LOCK: OnceLock<Mutex<()>> = OnceLock::new();
-        let _guard = LOCK.get_or_init(|| Mutex::new(())).lock().unwrap();
-
-        let previous = std::env::var("LOADOUT_HOME").ok();
-        std::env::set_var("LOADOUT_HOME", home);
-        let result = f();
-        if let Some(prev) = previous {
-            std::env::set_var("LOADOUT_HOME", prev);
-        } else {
-            std::env::remove_var("LOADOUT_HOME");
-        }
-        result
-    }
 
     #[test]
     fn test_has_any_rules_with_claude_md() {
